@@ -30,7 +30,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- CSS MOTORU (FIXED COLORS) ---
+# --- CSS MOTORU (FIXED TICKER & LEFT BOT) ---
 def apply_theme():
     st.session_state.plotly_template = "plotly_dark"
 
@@ -49,27 +49,39 @@ def apply_theme():
             color: #e2e8f0 !important;
         }}
         
-        /* DİKKAT: span etiketini buradan çıkardım ki renkleri ezmesin */
         h1, h2, h3, h4, h5, h6, p, label, .stMarkdown {{
             color: #f1f5f9 !important;
         }}
 
-        /* 2. TICKER RENKLERİ (ZORUNLU) */
-        .t-up {{ color: #ff4d4d !important; font-weight: 700; }} /* KIRMIZI (ZAM) */
-        .t-down {{ color: #00e676 !important; font-weight: 700; }} /* YEŞİL (İNDİRİM) */
-        
+        /* 2. TICKER (KAYAN YAZI) - KESİN ÇÖZÜM */
         .ticker-wrap {{
-            width: 100%; overflow: hidden; background: #000;
-            border-top: 1px solid #27272a; border-bottom: 1px solid #27272a;
-            padding: 12px 0; margin-bottom: 30px; white-space: nowrap;
+            width: 100%;
+            overflow: hidden;
+            background-color: #000000;
+            border-top: 1px solid #334155;
+            border-bottom: 1px solid #334155;
+            padding: 10px 0;
+            margin-bottom: 20px;
+            white-space: nowrap;
+            box-sizing: border-box;
         }}
-        .ticker-move {{ 
-            display: inline-block; padding-left: 100%; 
-            animation: marquee 60s linear infinite; 
-            font-family: 'JetBrains Mono', monospace; 
-            font-size: 15px; 
+        
+        .ticker-move {{
+            display: inline-block;
+            white-space: nowrap;
+            padding-left: 100%;
+            animation: marquee 45s linear infinite; /* Hız ayarı */
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 600;
         }}
-        @keyframes marquee {{ 0% {{ transform: translate(0, 0); }} 100% {{ transform: translate(-100%, 0); }} }}
+
+        @keyframes marquee {{
+            0% {{ transform: translate(0, 0); }}
+            100% {{ transform: translate(-100%, 0); }}
+        }}
+
+        /* Renkler HTML içinde style="..." ile verilecek, CSS ezmesin diye burayı sade bıraktım */
 
         /* 3. KPI KARTLARI */
         .kpi-card {{
@@ -109,15 +121,46 @@ def apply_theme():
         .pg-green {{ background: rgba(22, 163, 74, 0.2); color: #4ade80 !important; border: 1px solid rgba(22, 163, 74, 0.4); }}
         .pg-gray {{ background: #27272a; color: #a1a1aa !important; }}
 
-        /* 5. FLOATING CHAT BUTTON */
-        [data-testid="stPopover"] {{ position: fixed !important; bottom: 30px !important; right: 30px !important; z-index: 999999 !important; }}
+        /* 5. FLOATING CHAT BUTTON (SOL ALT KÖŞE) */
+        [data-testid="stPopover"] {{ 
+            position: fixed !important; 
+            bottom: 30px !important; 
+            left: 30px !important; /* SOLA ALINDI */
+            right: auto !important;
+            z-index: 999999 !important; 
+        }}
+        
+        /* Buton Stili */
         [data-testid="stPopover"] > button {{
             width: 60px !important; height: 60px !important; border-radius: 50% !important;
-            background: linear-gradient(135deg, #6366f1, #a855f7) !important; color: white !important;
-            border: 2px solid rgba(255,255,255,0.2) !important; box-shadow: 0 0 20px rgba(168, 85, 247, 0.6) !important;
+            background: linear-gradient(135deg, #2563eb, #7c3aed) !important; color: white !important;
+            border: 2px solid rgba(255,255,255,0.3) !important; 
+            box-shadow: 0 0 25px rgba(37, 99, 235, 0.7) !important;
             font-size: 28px !important; display: flex; justify-content: center; align-items: center;
         }}
-        [data-testid="stPopoverBody"] {{ background-color: #0f0f11 !important; border: 1px solid #334155 !important; border-radius: 12px !important; }}
+        [data-testid="stPopover"] > button:hover {{ transform: scale(1.1); box-shadow: 0 0 40px rgba(124, 58, 237, 0.9) !important; }}
+
+        /* POPOVER İÇERİĞİ (SİYAH TEMA ZORLAMASI) */
+        [data-testid="stPopoverBody"] {{ 
+            background-color: #09090b !important; 
+            border: 1px solid #3f3f46 !important; 
+            border-radius: 12px !important; 
+            color: #f8fafc !important;
+            min-width: 350px !important;
+        }}
+        
+        /* Popover içindeki başlıklar ve yazılar */
+        [data-testid="stPopoverBody"] h1, [data-testid="stPopoverBody"] h2, [data-testid="stPopoverBody"] h3, 
+        [data-testid="stPopoverBody"] p, [data-testid="stPopoverBody"] label, [data-testid="stPopoverBody"] span {{
+            color: #f1f5f9 !important;
+        }}
+        
+        /* Popover içindeki Selectbox */
+        [data-testid="stPopoverBody"] [data-baseweb="select"] > div {{
+            background-color: #18181b !important;
+            color: white !important;
+            border-color: #52525b !important;
+        }}
 
         /* DİĞER */
         section[data-testid="stSidebar"] {{ background-color: #000000 !important; border-right: 1px solid #1f2937; }}
@@ -743,13 +786,13 @@ def dashboard_modu():
                 dec = df_analiz.sort_values('Gunluk_Degisim', ascending=True).head(5)
                 items = []
                 
-                # --- TICKER RENK FIX ---
+                # --- TICKER RENK FIX (INLINE STYLE) ---
                 for _, r in inc.iterrows():
                     if r['Gunluk_Degisim'] > 0: 
-                        items.append(f"<span class='t-up'>▲ {r[ad_col]} %{r['Gunluk_Degisim'] * 100:.1f}</span>")
+                        items.append(f"<span style='color:#ff4d4d; font-weight:bold;'>▲ {r[ad_col]} %{r['Gunluk_Degisim'] * 100:.1f}</span>")
                 for _, r in dec.iterrows():
                     if r['Gunluk_Degisim'] < 0: 
-                        items.append(f"<span class='t-down'>▼ {r[ad_col]} %{r['Gunluk_Degisim'] * 100:.1f}</span>")
+                        items.append(f"<span style='color:#4ade80; font-weight:bold;'>▼ {r[ad_col]} %{r['Gunluk_Degisim'] * 100:.1f}</span>")
                 
                 ticker_html_content = " &nbsp;&nbsp; • &nbsp;&nbsp; ".join(items) if items else "<span style='color:#94a3b8'>Piyasada yatay seyir izlenmektedir.</span>"
                 st.markdown(f"""<div class="ticker-wrap"><div class="ticker-move">{ticker_html_content}</div></div>""", unsafe_allow_html=True)
@@ -908,7 +951,7 @@ def dashboard_modu():
                             st.success("✅ Rapor Hazırlandı!")
                             st.download_button("📥 PDF Raporunu İndir", data=pdf_data, file_name=f"Strateji_Raporu_{son}.pdf", mime="application/pdf")
 
-            # --- SİNYAL MERKEZİ BOTU (FLOAT POPUP) ---
+            # --- SİNYAL MERKEZİ BOTU (FLOAT POPUP - SOL ALT) ---
             with st.popover("💬"):
                 st.markdown("### 🤖 SİNYAL MERKEZİ")
                 st.caption("Veri analitiği asistanı (Offline)")
