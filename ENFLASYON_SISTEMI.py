@@ -30,7 +30,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- CSS MOTORU (FIXED & FLOAT CHAT) ---
+# --- CSS MOTORU (CYBERPUNK EXECUTIVE - FIX) ---
 def apply_theme():
     st.session_state.plotly_template = "plotly_dark"
 
@@ -41,10 +41,10 @@ def apply_theme():
 
         :root {{ color-scheme: dark; }}
 
-        /* 1. BACKGROUND */
+        /* 1. BACKGROUND & CONTAINER */
         [data-testid="stAppViewContainer"] {{
-            background-color: #050505;
-            background-image: radial-gradient(circle at 50% 0%, #111115 0%, #000000 80%);
+            background-color: #000000;
+            background-image: radial-gradient(circle at 50% 0%, #111827 0%, #000000 80%);
             font-family: 'Inter', sans-serif !important;
             color: #e2e8f0 !important;
         }}
@@ -53,28 +53,28 @@ def apply_theme():
             color: #f1f5f9 !important;
         }}
 
-        /* 2. KPI KARTLARI (DÜZELTİLDİ: BEYAZ PERDE YOK) */
+        /* 2. KPI KARTLARI (NETLEŞTİRİLDİ) */
         .kpi-card {{
-            background: rgba(20, 20, 25, 0.95); /* Çok koyu arka plan */
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(15, 15, 20, 0.9); /* Daha koyu zemin */
+            border: 1px solid rgba(255,255,255,0.15); /* Daha belirgin çerçeve */
             border-radius: 16px;
             padding: 24px;
             position: relative;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             transition: transform 0.3s ease;
         }}
         .kpi-card:hover {{
             transform: translateY(-5px);
-            border-color: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.4);
+            box-shadow: 0 15px 40px rgba(0,0,0,1);
         }}
-        /* Başlıklar ve Değerler için Renk Zorlama */
-        .kpi-title {{ font-size: 11px; font-weight: 700; color: #94a3b8 !important; text-transform: uppercase; margin-bottom: 5px; }}
-        .kpi-value {{ font-size: 36px; font-weight: 900; color: #ffffff !important; letter-spacing: -1px; text-shadow: 0 0 10px rgba(255,255,255,0.1); }}
-        .kpi-sub   {{ font-size: 12px; font-weight: 600; opacity: 0.9; }}
+        .kpi-title {{ font-size: 11px; font-weight: 800; color: #94a3b8 !important; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }}
+        .kpi-value {{ font-size: 42px; font-weight: 900; color: #ffffff !important; letter-spacing: -1.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }}
+        .kpi-sub   {{ font-size: 12px; font-weight: 600; opacity: 0.8; margin-top: 5px; }}
 
-        /* 3. ÜRÜN KARTLARI VE ETİKETLER (DÜZELTİLDİ: SİYAH YAZI) */
+        /* 3. ÜRÜN KARTLARI */
         .pg-card {{
-            background: #0f0f11;
+            background: #09090b;
             border: 1px solid #27272a;
             border-radius: 14px;
             padding: 16px;
@@ -84,73 +84,80 @@ def apply_theme():
             position: relative;
             transition: all 0.3s;
         }}
-        .pg-card:hover {{ border-color: #52525b; transform: scale(1.02); background: #18181b; }}
+        .pg-card:hover {{ border-color: #71717a; transform: scale(1.03); background: #121214; z-index:10; }}
         
-        .pg-name {{ font-size: 13px; font-weight: 600; color: #cbd5e1 !important; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }}
-        .pg-price {{ font-size: 22px; font-weight: 800; color: #ffffff !important; }}
+        .pg-name {{ font-size: 13px; font-weight: 600; color: #d4d4d8 !important; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }}
+        .pg-price {{ font-size: 24px; font-weight: 800; color: #ffffff !important; letter-spacing: -0.5px; }}
         
-        /* ZİRVE / DİP ETİKETLERİ (ÖNEMLİ DÜZELTME) */
+        /* ZİRVE / DİP ETİKETLERİ (DÜZELTME: SİYAH YAZI) */
         .status-tag {{
-            position: absolute; top: 8px; right: 8px; font-size: 10px; font-weight: 900;
-            padding: 4px 8px; border-radius: 4px; text-transform: uppercase; z-index: 5;
+            position: absolute; top: 10px; right: 10px; font-size: 10px; font-weight: 900;
+            padding: 4px 8px; border-radius: 6px; text-transform: uppercase; z-index: 5;
+            letter-spacing: 0.5px;
         }}
         .tag-peak {{ 
             background-color: #ffffff !important; 
             color: #000000 !important; /* SİYAH YAZI */
-            box-shadow: 0 0 10px rgba(255,255,255,0.3);
+            border: 1px solid #fff;
+            box-shadow: 0 0 15px rgba(255,255,255,0.4);
         }}
         .tag-dip {{ 
             background-color: #3b82f6 !important; 
             color: #ffffff !important; 
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
         }}
 
         .pg-badge {{ padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 800; width: 100%; }}
-        .pg-red {{ background: rgba(239, 68, 68, 0.2); color: #f87171 !important; border: 1px solid rgba(239, 68, 68, 0.3); }}
-        .pg-green {{ background: rgba(34, 197, 94, 0.2); color: #4ade80 !important; border: 1px solid rgba(34, 197, 94, 0.3); }}
+        .pg-red {{ background: rgba(220, 38, 38, 0.2); color: #f87171 !important; border: 1px solid rgba(220, 38, 38, 0.4); }}
+        .pg-green {{ background: rgba(22, 163, 74, 0.2); color: #4ade80 !important; border: 1px solid rgba(22, 163, 74, 0.4); }}
         .pg-gray {{ background: #27272a; color: #a1a1aa !important; }}
 
-        /* 4. FLOATING CHAT BUTTON (SAĞ ALT TOP) */
-        /* Streamlit Popover Butonunu Özelleştirme */
+        /* 4. FLOATING CHAT BUTTON (ŞEKİLLİ ŞUKULLU TOP) */
+        /* Butonun Dış Çerçevesi */
         [data-testid="stPopover"] {{
             position: fixed !important;
             bottom: 30px !important;
             right: 30px !important;
-            z-index: 99999 !important;
+            z-index: 999999 !important;
+            width: auto !important;
+            height: auto !important;
         }}
+        /* Yuvarlak Butonun Kendisi */
         [data-testid="stPopover"] > button {{
-            width: 65px !important;
-            height: 65px !important;
+            width: 60px !important;
+            height: 60px !important;
             border-radius: 50% !important;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+            background: linear-gradient(135deg, #6366f1, #a855f7) !important; /* Mor-Mavi Neon */
             color: white !important;
-            border: none !important;
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.6) !important;
-            font-size: 30px !important;
-            transition: transform 0.2s !important;
+            border: 2px solid rgba(255,255,255,0.2) !important;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.6) !important;
+            font-size: 28px !important;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
             display: flex; justify-content: center; align-items: center;
         }}
         [data-testid="stPopover"] > button:hover {{
-            transform: scale(1.1) !important;
-            box-shadow: 0 0 30px rgba(139, 92, 246, 0.8) !important;
+            transform: scale(1.15) !important;
+            box-shadow: 0 0 35px rgba(168, 85, 247, 0.9) !important;
+            border-color: #fff !important;
         }}
-        /* Chat Penceresinin İçi */
+        /* Açılan Pencerenin İçi (SİYAH YAPILDI) */
         div[data-testid="stPopoverBody"] {{
+            background-color: #0f0f11 !important;
             border: 1px solid #334155 !important;
-            background-color: #0f172a !important;
             border-radius: 12px !important;
-            width: 350px !important;
-            max-height: 500px !important;
+            color: #f1f5f9 !important;
+            min-width: 320px !important;
         }}
 
         /* 5. DİĞER BİLEŞENLER */
-        section[data-testid="stSidebar"] {{ background-color: #000000 !important; border-right: 1px solid #334155; }}
-        div.stButton > button {{ width: 100%; border-radius: 8px; font-weight: 700; background: #1e293b; color: #fff; border: 1px solid #334155; }}
-        div.stButton > button:hover {{ border-color: #fff; background: #000; }}
+        section[data-testid="stSidebar"] {{ background-color: #000000 !important; border-right: 1px solid #1f2937; }}
+        div.stButton > button {{ width: 100%; border-radius: 10px; font-weight: 700; background: #111827; color: #fff; border: 1px solid #374151; }}
+        div.stButton > button:hover {{ border-color: #fff; background: #000; color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.2); }}
         
         /* Tablo Başlıkları */
-        [data-testid="stDataFrame"] th {{ background-color: #1e293b !important; color: #cbd5e1 !important; }}
+        [data-testid="stDataFrame"] th {{ background-color: #111827 !important; color: #9ca3af !important; }}
         
-        /* Gizleme */
+        /* Header Gizleme */
         header[data-testid="stHeader"], [data-testid="stToolbar"] {{ display: none !important; }}
     </style>
     """
