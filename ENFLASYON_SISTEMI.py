@@ -38,7 +38,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- CSS MOTORU (AURORA FX & DARK MODE FIXED) ---
+# --- CSS MOTORU (AURORA FX & DARK MODE FIXED & PREMIUM UI) ---
 def apply_theme():
     # Grafikler için varsayılan tema dark
     st.session_state.plotly_template = "plotly_dark"
@@ -53,8 +53,7 @@ def apply_theme():
             color-scheme: dark;
         }}
 
-        /* 1. BACKGROUND (DARK AURORA EFFECT - BLUE REMOVED) */
-        /* Lacivert tonlar kaldırıldı, Sidebar (#0b0f19) ile uyumlu siyah/füme geçiş eklendi */
+        /* 1. BACKGROUND (DARK AURORA EFFECT - PURE BLACK/GRAY) */
         @keyframes aurora {{
             0% {{ background-position: 0% 50%; }}
             50% {{ background-position: 100% 50%; }}
@@ -68,52 +67,60 @@ def apply_theme():
             color: #f8fafc !important;
         }}
         
-        /* Genel başlıklar ve yazılar için zorlama beyaz/açık gri renkler */
+        /* Genel başlıklar ve yazılar */
         h1, h2, h3, h4, h5, h6, p, div, span, label, .stMarkdown, [data-testid="stHeader"] {{
             color: #f1f5f9 !important;
         }}
 
-        /* --- KRİTİK DÜZELTME: SELECTBOX MENÜSÜ --- */
-        /* Seçim kutusunun kendisi (Kapalı hali) */
-        div[data-baseweb="select"] > div {{
-            background-color: #0b0f19 !important; /* Sidebar rengiyle uyumlu */
-            color: #f8fafc !important; /* Beyaz Yazı */
-            border-color: #334155 !important; /* Gri Çerçeve */
+        /* 2. CUSTOM SCROLLBAR (PREMIUM LOOK) - EKLENDİ */
+        ::-webkit-scrollbar {{
+            width: 8px;
+            height: 8px;
         }}
-        
-        /* Açılır Menü Konteynerı (Popover) */
-        div[data-baseweb="popover"], div[data-baseweb="popover"] > div {{
-            background-color: #0b0f19 !important; /* Arka planı kesinlikle koyu yap */
+        ::-webkit-scrollbar-track {{
+            background: #0b0f19; 
+        }}
+        ::-webkit-scrollbar-thumb {{
+            background: #334155; 
+            border-radius: 4px;
+        }}
+        ::-webkit-scrollbar-thumb:hover {{
+            background: #475569; 
         }}
 
-        /* Liste Elemanları (Seçenekler) */
-        ul[data-baseweb="menu"] {{
+        /* 3. TABLO BAŞLIKLARI (DATA EDITOR) - EKLENDİ */
+        [data-testid="stDataFrame"] th {{
+            background-color: #0b0f19 !important;
+            color: #94a3b8 !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            font-size: 12px !important;
+            border-bottom: 1px solid #334155 !important;
+        }}
+        [data-testid="stDataFrame"] {{ background-color: #1e293b; }}
+
+        /* 4. SELECTBOX & MENÜLER (FIX) */
+        div[data-baseweb="select"] > div {{
+            background-color: #0b0f19 !important;
+            color: #f8fafc !important;
+            border-color: #334155 !important;
+        }}
+        div[data-baseweb="popover"], div[data-baseweb="popover"] > div, ul[data-baseweb="menu"] {{
             background-color: #0b0f19 !important;
         }}
-        
         li[role="option"] {{
-            color: #cbd5e1 !important; /* Seçenek yazısı açık gri */
-            background-color: #0b0f19 !important; /* Seçenek zemini koyu */
+            color: #cbd5e1 !important;
+            background-color: #0b0f19 !important;
         }}
-
-        /* Hover (Üzerine gelince) veya Seçili Durum */
         li[role="option"]:hover, li[role="option"][aria-selected="true"] {{
-            background-color: #334155 !important; /* Daha açık bir koyu gri */
-            color: #ffffff !important; /* Parlak beyaz yazı */
+            background-color: #334155 !important;
+            color: #ffffff !important;
         }}
-        
-        /* Seçili olan metin rengi */
-        div[data-baseweb="select"] span {{
-            color: #f8fafc !important;
-        }}
-        
-        /* Dropdown ok simgesi rengi */
-        div[data-baseweb="select"] svg {{
-            fill: #f8fafc !important;
+        div[data-baseweb="select"] span, div[data-baseweb="select"] svg {{
+            color: #f8fafc !important; fill: #f8fafc !important;
         }}
 
-
-        /* 2. SIDEBAR (KOYU) */
+        /* 5. SIDEBAR */
         [data-testid="stSidebar"] button[kind="header"] {{ display: none !important; }}
         [data-testid="stSidebarCollapsedControl"] {{ display: none !important; }}
         section[data-testid="stSidebar"] {{
@@ -124,7 +131,7 @@ def apply_theme():
         }}
         [data-testid="stSidebar"] * {{ color: #e2e8f0 !important; }}
 
-        /* 3. BUTONLAR (INVERTED: Siyah Zemin, Beyaz Yazı) */
+        /* 6. BUTONLAR (INVERTED) */
         div.stButton > button, [data-testid="stDownloadButton"] button {{
             width: 100% !important;
             background-color: #000000 !important; color: #ffffff !important;
@@ -141,9 +148,9 @@ def apply_theme():
         }}
         div.stButton > button:active {{ transform: translateY(4px) !important; box-shadow: none !important; }}
 
-        /* 4. KPI KARTLARI (DARK GLASS) */
+        /* 7. KPI KARTLARI */
         .kpi-card {{
-            background: rgba(11, 15, 25, 0.6); /* Sidebar rengi bazlı transparan */
+            background: rgba(11, 15, 25, 0.6);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
             padding: 24px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
@@ -154,7 +161,7 @@ def apply_theme():
             box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.5);
         }}
 
-        /* 5. ÜRÜN KARTLARI (DARK BENTO) */
+        /* 8. ÜRÜN KARTLARI */
         .pg-card {{
             background: #1e293b; border: 1px solid #334155;
             border-radius: 16px; padding: 20px; height: 180px; 
@@ -183,10 +190,10 @@ def apply_theme():
         .tag-peak {{ background: #f8fafc; color: #000000 !important; }}
         .tag-dip {{ background: #3b82f6; color: #ffffff !important; }}
 
-        /* 6. TICKER (KOYU ÇİZGİLİ) */
+        /* 9. TICKER */
         .ticker-wrap {{
             width: 100%; overflow: hidden; background: #000000;
-            border-top: 1px solid #334155; /* İnce koyu gri çizgi */
+            border-top: 1px solid #334155;
             border-bottom: 1px solid #334155;
             padding: 14px 0; margin-bottom: 30px; white-space: nowrap;
         }}
@@ -196,14 +203,13 @@ def apply_theme():
         .t-neu {{ color: #94a3b8 !important; }}
         @keyframes marquee {{ 0% {{ transform: translate(0, 0); }} 100% {{ transform: translate(-100%, 0); }} }}
 
-        /* GİZLEME */
-        header[data-testid="stHeader"], [data-testid="stToolbar"] {{ display: none !important; }}
-        
-        /* TAB STYLE (Dark) */
+        /* TAB STYLE */
         .stTabs [data-baseweb="tab-list"] {{ border-bottom: 2px solid #334155; }}
         .stTabs [data-baseweb="tab"][aria-selected="true"] {{ color: #ffffff !important; border-bottom: 2px solid #ffffff; }}
         .stTabs [data-baseweb="tab"] {{ color: #94a3b8; }}
-        [data-testid="stDataFrame"] {{ background-color: #1e293b; }}
+        
+        /* HEADER GİZLEME */
+        header[data-testid="stHeader"], [data-testid="stToolbar"] {{ display: none !important; }}
     </style>
     """
     st.markdown(final_css, unsafe_allow_html=True)
@@ -856,11 +862,12 @@ def dashboard_modu():
 
                 def kpi_card(title, val, sub, sub_color, accent_color, icon):
                       # Dark mod için renk güncellemeleri
+                      # METALLIC GRADIENT TEXT EFFECT ADDED
                       st.markdown(f"""
                         <div class="kpi-card" style="border-left: 4px solid {accent_color};">
                              <div style="position: absolute; right: 20px; top: 20px; opacity: 0.2; font-size: 40px; filter: grayscale(100%);">{icon}</div>
                             <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.5px;">{title}</div>
-                            <div style="font-size: 34px; font-weight: 900; color: #f8fafc; letter-spacing: -2px;">{val}</div>
+                            <div style="font-size: 34px; font-weight: 900; background: -webkit-linear-gradient(45deg, #f8fafc, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -2px;">{val}</div>
                             <div style="font-size: 12px; font-weight: 600; display: flex; align-items: center; margin-top: 5px; color: {sub_color};">
                                 {sub}
                             </div>
@@ -868,8 +875,8 @@ def dashboard_modu():
                     """, unsafe_allow_html=True)
 
                 c1, c2, c3, c4 = st.columns(4)
-                with c1: kpi_card("Genel Enflasyon", f"%{enf_genel:.2f}", f"Baz: {baz}", "#f87171", "#ff1414", "📈")
-                with c2: kpi_card("Gıda Enflasyonu", f"%{enf_gida:.2f}", "Mutfak Sepeti", "#f87171", "#92d200", "🛒")
+                with c1: kpi_card("Genel Enflasyon", f"%{enf_genel:.2f}", f"Baz: {baz}", "#f87171", "#f8fafc", "📈")
+                with c2: kpi_card("Gıda Enflasyonu", f"%{enf_gida:.2f}", "Mutfak Sepeti", "#f87171", "#f8fafc", "🛒")
                 with c3: kpi_card("Simülasyon Tahmini", f"%{math.floor(enf_genel)}", "Canlı Veri", "#a78bfa", "#a78bfa", "🤖")
                 with c4: kpi_card("Resmi TÜİK Verisi", f"%{resmi_aylik_enf:.2f}", f"{resmi_tarih_str}", "#fbbf24", "#fbbf24", "🏛️")
                 st.markdown("<br>", unsafe_allow_html=True)
@@ -878,12 +885,15 @@ def dashboard_modu():
                     if is_pdf:
                         fig.update_layout(template="plotly_white", font=dict(family="Arial", size=14, color="black"))
                     else:
+                        # FINTECH STYLE AREA CHART ADDED
+                        fig.update_traces(fill='tozeroy', line=dict(width=3))
                         fig.update_layout(
                             template="plotly_dark", # UI için dark mode
                             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                             font=dict(family="Inter, sans-serif", color="#f1f5f9"), # Yazılar beyaz
                             margin=dict(l=0, r=0, t=30, b=0),
-                            xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="#334155")
+                            xaxis=dict(showgrid=False), 
+                            yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.05)") # Subtle grid
                         )
                     return fig
 
@@ -1004,4 +1014,3 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
-
