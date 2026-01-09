@@ -133,18 +133,72 @@ def apply_theme():
         }}
         [data-testid="stPopover"] > button {{
             width: 60px !important; height: 60px !important; border-radius: 50% !important;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important; color: white !important;
+            background: #3b82f6 !important; /* MAVİ RENK */
+            background-color: #3b82f6 !important;
+            color: white !important;
             border: 2px solid rgba(255,255,255,0.3) !important; 
             box-shadow: 0 0 25px rgba(59, 130, 246, 0.7) !important;
             font-size: 28px !important; display: flex; justify-content: center; align-items: center;
         }}
-        [data-testid="stPopover"] > button:hover {{ transform: scale(1.1); box-shadow: 0 0 40px rgba(124, 58, 237, 0.9) !important; }}
+        [data-testid="stPopover"] > button:hover {{ transform: scale(1.1); box-shadow: 0 0 40px rgba(59, 130, 246, 0.9) !important; }}
 
         /* ============================================================ */
-        /* --- 6. POPOVER PENCERESİ (BEYAZ KUTU / SİYAH YAZI) --- */
+        /* --- 6. SELECTBOX & DROPDOWN DÜZELTMESİ (GLOBAL & POPUP) --- */
         /* ============================================================ */
         
-        /* 6.1. Pencere Arka Planı BEYAZ */
+        /* Seçim Kutusunun Kendisi (Beyaz Zemin, Siyah Yazı) */
+        div[data-baseweb="select"] > div {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border-color: #e2e8f0 !important;
+        }}
+        
+        /* Seçili Olan Metin Rengi (Siyah) */
+        div[data-baseweb="select"] span {{
+            color: #000000 !important;
+        }}
+        
+        /* Ok İşareti Rengi (Siyah) */
+        div[data-baseweb="select"] svg {{
+            fill: #000000 !important;
+        }}
+        
+        /* Açılır Liste (Dropdown) Arka Planı (Beyaz) */
+        ul[data-baseweb="menu"] {{
+            background-color: #ffffff !important;
+        }}
+        
+        /* Liste Elemanları (Siyah Yazı) */
+        li[role="option"] {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        /* Hover Durumu (Açık Gri) */
+        li[role="option"]:hover, li[role="option"][aria-selected="true"] {{
+            background-color: #e2e8f0 !important;
+            color: #000000 !important;
+        }}
+
+        /* ============================================================ */
+        /* --- 7. EXCEL İNDİRME BUTONU DÜZELTMESİ --- */
+        /* ============================================================ */
+        [data-testid="stDownloadButton"] button {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #e2e8f0 !important;
+        }}
+        [data-testid="stDownloadButton"] button:hover {{
+            background-color: #f1f5f9 !important;
+            color: #000000 !important;
+            border-color: #cbd5e1 !important;
+        }}
+
+        /* ============================================================ */
+        /* --- 8. POPOVER PENCERESİ İÇERİK --- */
+        /* ============================================================ */
+        
+        /* Pencere Arka Planı BEYAZ */
         div[data-testid="stPopoverBody"] {{ 
             background-color: #ffffff !important; 
             border: 1px solid #e2e8f0 !important; 
@@ -153,7 +207,7 @@ def apply_theme():
             box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important;
         }}
         
-        /* 6.2. İçerikteki Yazıların Hepsi SİYAH */
+        /* İçerikteki Yazıların Hepsi SİYAH */
         [data-testid="stPopoverBody"] h3, 
         [data-testid="stPopoverBody"] p, 
         [data-testid="stPopoverBody"] span, 
@@ -162,32 +216,6 @@ def apply_theme():
         [data-testid="stPopoverBody"] .stMarkdown {{
             color: #000000 !important;
         }}
-
-        /* 6.3. Selectbox (Seçim Kutusu) İçi Beyaz, Yazı Siyah */
-        [data-testid="stPopoverBody"] div[data-baseweb="select"] > div {{
-            background-color: #f8fafc !important; /* Açık gri zemin */
-            color: #000000 !important; /* Siyah yazı */
-            border-color: #cbd5e1 !important;
-        }}
-        
-        /* 6.4. Dropdown Seçenekleri Siyah */
-        [data-testid="stPopoverBody"] li[role="option"] {{
-            color: #000000 !important;
-            background-color: #ffffff !important;
-        }}
-        [data-testid="stPopoverBody"] li[role="option"]:hover {{
-            background-color: #e2e8f0 !important;
-        }}
-        
-        /* 6.5. Selectbox içindeki seçili metin */
-        [data-testid="stPopoverBody"] div[data-baseweb="select"] span {{
-            color: #000000 !important;
-        }}
-        [data-testid="stPopoverBody"] div[data-baseweb="select"] svg {{
-            fill: #000000 !important;
-        }}
-
-        /* ============================================================ */
 
         /* DİĞER */
         section[data-testid="stSidebar"] {{ background-color: #000000 !important; border-right: 1px solid #1f2937; }}
@@ -849,7 +877,7 @@ def dashboard_modu():
                 c1, c2, c3, c4 = st.columns(4)
                 with c1: kpi_card("Genel Enflasyon", f"%{enf_genel:.2f}", f"Baz: {baz}", "#f87171", "#ef4444", "📈")
                 with c2: kpi_card("Gıda Enflasyonu", f"%{enf_gida:.2f}", "Mutfak Sepeti", "#f87171", "#84cc16", "🛒")
-                with c3: kpi_card("Simülasyon Tahmini", f"%{math.floor(enf_genel)}", "Canlı Veri", "#a78bfa", "#8b5cf6", "🤖")
+                with c3: kpi_card("Simülasyon Tahmini", f"%{math.floor(enf_gida)}", "Canlı Veri", "#a78bfa", "#8b5cf6", "🤖")
                 with c4: kpi_card("Resmi TÜİK Verisi", f"%{resmi_aylik_enf:.2f}", f"{resmi_tarih_str}", "#fbbf24", "#eab308", "🏛️")
                 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1071,4 +1099,3 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
-
