@@ -30,7 +30,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- CSS MOTORU (SİTE DARK - BOT PENCERESİ LIGHT) ---
+# --- CSS MOTORU (AGRESİF STİL) ---
 def apply_theme():
     st.session_state.plotly_template = "plotly_dark"
 
@@ -49,60 +49,135 @@ def apply_theme():
             color: #e2e8f0 !important;
         }}
         
-        /* Genel Başlıklar Beyaz */
+        /* Genel Başlıklar */
         h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, div, span {{
-            color: #f1f5f9 !important;
+            color: #f1f5f9;
         }}
 
-        /* 2. TICKER (KAYAN YAZI) */
-        .ticker-wrap {{
-            width: 100%;
-            overflow: hidden;
-            background-color: #000000;
-            border-top: 1px solid #334155;
-            border-bottom: 1px solid #334155;
-            padding: 12px 0;
-            margin-bottom: 20px;
-            white-space: nowrap;
-            box-sizing: border-box;
-            position: relative;
+        /* ----------------------------------------------------------- */
+        /* --- KRİTİK DÜZELTME: SELECTBOX (AÇILIR MENÜLER) --- */
+        /* ----------------------------------------------------------- */
+        
+        /* 1. Dropdown MENÜ LİSTESİ (Açılınca çıkan liste) - GLOBAL */
+        /* Nerede olursa olsun listenin içi BEYAZ, yazılar SİYAH olsun */
+        ul[data-baseweb="menu"] {{
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
         }}
         
-        .ticker-move {{
-            display: inline-block;
-            white-space: nowrap;
-            padding-left: 100%;
-            animation: marquee 40s linear infinite;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 15px;
-            font-weight: 600;
+        /* Listedeki Seçenekler */
+        li[role="option"] {{
+            color: #000000 !important; /* SİYAH YAZI */
+            background-color: #ffffff !important; /* BEYAZ ZEMİN */
+        }}
+        
+        /* Listedeki metinlerin kapsayıcıları */
+        li[role="option"] div, li[role="option"] span {{
+             color: #000000 !important;
         }}
 
-        @keyframes marquee {{
-            0% {{ transform: translate(0, 0); }}
-            100% {{ transform: translate(-100%, 0); }}
+        /* Hover (Üzerine gelince) */
+        li[role="option"]:hover, li[role="option"][aria-selected="true"] {{
+            background-color: #f1f5f9 !important; /* Açık gri */
+            color: #000000 !important;
         }}
 
-        /* Ticker Renkleri (Zorunlu) */
-        .t-up {{ color: #ff4d4d !important; }}
-        .t-down {{ color: #4ade80 !important; }}
+        /* 2. ANA SAYFA SELECTBOX (Kapalı Hali) */
+        /* Ana sayfada arka plan siyah olduğu için kutu koyu, yazı açık kalsın */
+        /* Ancak menü açılınca (yukarıdaki kural çalışır) beyaz olur */
+        div[data-baseweb="select"] > div {{
+            background-color: #111827; 
+            color: #f8fafc;
+            border-color: #374151;
+        }}
+        
+        /* ----------------------------------------------------------- */
+        /* --- SİNYAL MERKEZİ (POPOVER) ÖZEL AYARLARI --- */
+        /* ----------------------------------------------------------- */
+        
+        /* Popover Penceresi (Beyaz Kutu) */
+        div[data-testid="stPopoverBody"] {{
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+        }}
+        
+        /* Popover içindeki TÜM yazılar SİYAH */
+        div[data-testid="stPopoverBody"] * {{
+            color: #000000 !important;
+        }}
+        
+        /* Popover içindeki Selectbox'ın KAPALI hali (Kutu) */
+        /* Burası beyaz zemin üstünde olduğu için kutu beyaz, yazı siyah olmalı */
+        div[data-testid="stPopoverBody"] div[data-baseweb="select"] > div {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #94a3b8 !important;
+        }}
+        
+        /* Popover içindeki Selectbox ikonları (Ok işareti) */
+        div[data-testid="stPopoverBody"] div[data-baseweb="select"] svg {{
+            fill: #000000 !important;
+        }}
 
-        /* 3. KPI KARTLARI */
+        /* ----------------------------------------------------------- */
+        /* --- BUTONLAR --- */
+        /* ----------------------------------------------------------- */
+
+        /* EXCEL İNDİR BUTONU (Siyah Yazı) */
+        [data-testid="stDownloadButton"] button {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 2px solid #e2e8f0 !important;
+            font-weight: 800 !important;
+        }}
+        [data-testid="stDownloadButton"] button:hover {{
+            background-color: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #000000 !important;
+        }}
+
+        /* CHAT BUTONU (Mavi Top - Sol Alt) */
+        [data-testid="stPopover"] {{ 
+            position: fixed !important; bottom: 30px !important; left: 30px !important; right: auto !important;
+            z-index: 999999 !important; width: auto !important; height: auto !important;
+        }}
+        [data-testid="stPopover"] > button {{
+            width: 65px !important; height: 65px !important; border-radius: 50% !important;
+            background-color: #2563eb !important; /* PARLAK MAVİ */
+            color: white !important;
+            border: 2px solid rgba(255,255,255,0.2) !important;
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.6) !important;
+            display: flex; justify-content: center; align-items: center; font-size: 30px !important;
+        }}
+        [data-testid="stPopover"] > button:hover {{
+            background-color: #1d4ed8 !important; transform: scale(1.1);
+        }}
+
+        /* ----------------------------------------------------------- */
+        /* --- DİĞER BİLEŞENLER --- */
+        /* ----------------------------------------------------------- */
+        
+        /* Ticker */
+        .ticker-wrap {{
+            width: 100%; overflow: hidden; background-color: #000000;
+            border-top: 1px solid #334155; border-bottom: 1px solid #334155;
+            padding: 12px 0; margin-bottom: 20px; white-space: nowrap;
+        }}
+        .ticker-move {{ display: inline-block; padding-left: 100%; animation: marquee 40s linear infinite; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; }}
+        @keyframes marquee {{ 0% {{ transform: translate(0, 0); }} 100% {{ transform: translate(-100%, 0); }} }}
+
+        /* KPI Cards */
         .kpi-card {{
-            background: rgba(10, 10, 12, 0.95);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 16px;
-            padding: 24px;
-            position: relative;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-            transition: transform 0.3s ease;
+            background: rgba(10, 10, 12, 0.95); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 24px; position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); transition: transform 0.3s ease;
         }}
         .kpi-card:hover {{ transform: translateY(-5px); border-color: rgba(255,255,255,0.3); }}
         .kpi-title {{ font-size: 11px; font-weight: 800; color: #94a3b8 !important; text-transform: uppercase; margin-bottom: 5px; }}
         .kpi-value {{ font-size: 42px; font-weight: 900; color: #ffffff !important; letter-spacing: -1px; }}
         .kpi-sub   {{ font-size: 12px; font-weight: 600; opacity: 0.7; margin-top: 5px; color: #cbd5e1 !important; }}
 
-        /* 4. ÜRÜN KARTLARI */
+        /* Product Cards */
         .pg-card {{
             background: #0a0a0c; border: 1px solid #27272a; border-radius: 14px;
             padding: 16px; height: 190px;
@@ -113,111 +188,15 @@ def apply_theme():
         .pg-name {{ font-size: 13px; font-weight: 600; color: #cbd5e1 !important; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }}
         .pg-price {{ font-size: 22px; font-weight: 800; color: #ffffff !important; letter-spacing: -0.5px; }}
         
-        .status-tag {{
-            position: absolute; top: 10px; right: 10px; font-size: 10px; font-weight: 900;
-            padding: 4px 8px; border-radius: 6px; text-transform: uppercase; z-index: 5; letter-spacing: 0.5px;
-        }}
-        .tag-peak {{ background-color: #ffffff !important; color: #000000 !important; box-shadow: 0 0 10px rgba(255,255,255,0.2); }}
-        .tag-dip {{ background-color: #3b82f6 !important; color: #ffffff !important; box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }}
-
+        .status-tag {{ position: absolute; top: 10px; right: 10px; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; z-index: 5; letter-spacing: 0.5px; }}
+        .tag-peak {{ background-color: #ffffff !important; color: #000000 !important; }}
+        .tag-dip {{ background-color: #3b82f6 !important; color: #ffffff !important; }}
         .pg-badge {{ padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 800; width: 100%; }}
         .pg-red {{ background: rgba(220, 38, 38, 0.2); color: #f87171 !important; border: 1px solid rgba(220, 38, 38, 0.4); }}
         .pg-green {{ background: rgba(22, 163, 74, 0.2); color: #4ade80 !important; border: 1px solid rgba(22, 163, 74, 0.4); }}
         .pg-gray {{ background: #27272a; color: #a1a1aa !important; }}
 
-        /* 5. FLOATING CHAT BUTTON (SOL ALT KÖŞE) */
-        [data-testid="stPopover"] {{ 
-            position: fixed !important; bottom: 30px !important; left: 30px !important; right: auto !important;
-            z-index: 999999 !important; background-color: transparent !important; border: none !important;
-            width: auto !important; height: auto !important;
-        }}
-        [data-testid="stPopover"] > button {{
-            width: 60px !important; height: 60px !important; border-radius: 50% !important;
-            background: #3b82f6 !important; /* MAVİ RENK */
-            background-color: #3b82f6 !important;
-            color: white !important;
-            border: 2px solid rgba(255,255,255,0.3) !important; 
-            box-shadow: 0 0 25px rgba(59, 130, 246, 0.7) !important;
-            font-size: 28px !important; display: flex; justify-content: center; align-items: center;
-        }}
-        [data-testid="stPopover"] > button:hover {{ transform: scale(1.1); box-shadow: 0 0 40px rgba(59, 130, 246, 0.9) !important; }}
-
-        /* ============================================================ */
-        /* --- 6. SELECTBOX & DROPDOWN DÜZELTMESİ (GLOBAL & POPUP) --- */
-        /* ============================================================ */
-        
-        /* Seçim Kutusunun Kendisi (Beyaz Zemin, Siyah Yazı) */
-        div[data-baseweb="select"] > div {{
-            background-color: #ffffff !important;
-            color: #000000 !important;
-            border-color: #e2e8f0 !important;
-        }}
-        
-        /* Seçili Olan Metin Rengi (Siyah) */
-        div[data-baseweb="select"] span {{
-            color: #000000 !important;
-        }}
-        
-        /* Ok İşareti Rengi (Siyah) */
-        div[data-baseweb="select"] svg {{
-            fill: #000000 !important;
-        }}
-        
-        /* Açılır Liste (Dropdown) Arka Planı (Beyaz) */
-        ul[data-baseweb="menu"] {{
-            background-color: #ffffff !important;
-        }}
-        
-        /* Liste Elemanları (Siyah Yazı) */
-        li[role="option"] {{
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }}
-        
-        /* Hover Durumu (Açık Gri) */
-        li[role="option"]:hover, li[role="option"][aria-selected="true"] {{
-            background-color: #e2e8f0 !important;
-            color: #000000 !important;
-        }}
-
-        /* ============================================================ */
-        /* --- 7. EXCEL İNDİRME BUTONU DÜZELTMESİ --- */
-        /* ============================================================ */
-        [data-testid="stDownloadButton"] button {{
-            background-color: #ffffff !important;
-            color: #000000 !important;
-            border: 1px solid #e2e8f0 !important;
-        }}
-        [data-testid="stDownloadButton"] button:hover {{
-            background-color: #f1f5f9 !important;
-            color: #000000 !important;
-            border-color: #cbd5e1 !important;
-        }}
-
-        /* ============================================================ */
-        /* --- 8. POPOVER PENCERESİ İÇERİK --- */
-        /* ============================================================ */
-        
-        /* Pencere Arka Planı BEYAZ */
-        div[data-testid="stPopoverBody"] {{ 
-            background-color: #ffffff !important; 
-            border: 1px solid #e2e8f0 !important; 
-            border-radius: 12px !important; 
-            min-width: 350px !important;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important;
-        }}
-        
-        /* İçerikteki Yazıların Hepsi SİYAH */
-        [data-testid="stPopoverBody"] h3, 
-        [data-testid="stPopoverBody"] p, 
-        [data-testid="stPopoverBody"] span, 
-        [data-testid="stPopoverBody"] div,
-        [data-testid="stPopoverBody"] label,
-        [data-testid="stPopoverBody"] .stMarkdown {{
-            color: #000000 !important;
-        }}
-
-        /* DİĞER */
+        /* Sidebar & Others */
         section[data-testid="stSidebar"] {{ background-color: #000000 !important; border-right: 1px solid #1f2937; }}
         div.stButton > button {{ width: 100%; border-radius: 10px; font-weight: 700; background: #111827; color: #fff; border: 1px solid #374151; }}
         div.stButton > button:hover {{ border-color: #fff; background: #000; }}
