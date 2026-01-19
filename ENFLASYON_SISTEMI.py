@@ -1226,18 +1226,24 @@ def dashboard_modu():
                     """, unsafe_allow_html=True)
                 
                 else:
-                    # Boş Durum (Placeholder) - GÖRÜNÜRLÜK DÜZELTİLDİ
+                    # Boş Durum (Placeholder) - YÜKSEK KONTRAST DÜZELTMESİ
                     st.markdown(f"""
-                    <div class="terminal-wrapper" style="background-color: #000000 !important; opacity: 1 !important; border: 1px solid #333;">
-                        <div class="terminal-header" style="color: #888; border-bottom: 1px solid #444;">
+                    <div class="terminal-wrapper" style="background-color: #050505 !important; opacity: 1 !important; border: 1px solid #333;">
+                        
+                        <div class="terminal-header" style="color: #4ade80 !important; border-bottom: 1px solid #333; opacity: 1 !important; font-weight: bold;">
                             <span>SYSTEM_STATUS</span>
                             <span>WAITING_INPUT</span>
                         </div>
-                        <div class="cmd-response" style="color: #ffffff !important; font-size: 14px; font-weight: 500; padding-top: 10px;">
-                            Sistem hazır. Analiz başlatmak için yukarıdan bir sorgu seçin.<br><br>
-                            <span style="color: #22c55e; font-weight:bold;">root@basekonomist:~$</span> Awaiting command... <span style="animation: blink 1s step-end infinite; color: #ffffff;">█</span>
+                        
+                        <div class="cmd-response" style="color: #ffffff !important; opacity: 1 !important; font-size: 13px; padding-top: 15px;">
+                            Sistem hazır. Analiz başlatmak için yukarıdan bir sorgu seçin.
+                            <br><br>
+                            <span style="color: #22c55e !important; font-weight: 900;">root@basekonomist:~$</span> 
+                            <span style="color: #ffffff !important; font-weight: normal;">Awaiting command...</span> 
+                            <span style="animation: blink 1s step-end infinite; color: #22c55e; font-weight: bold;">█</span>
                         </div>
                     </div>
+                    
                     <style>
                         @keyframes blink {{ 0% {{ opacity: 1; }} 50% {{ opacity: 0; }} 100% {{ opacity: 1; }} }}
                     </style>
@@ -1248,6 +1254,7 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
