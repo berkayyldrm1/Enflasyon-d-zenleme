@@ -21,18 +21,17 @@ import os
 import math
 import random
 import html
-import numpy as np  # GEOMETRİK ORTALAMA İÇİN EKLENDİ
+import numpy as np
 
 # --- 1. AYARLAR VE TEMA YÖNETİMİ ---
 st.set_page_config(
     page_title="Piyasa Monitörü | Pro",
     layout="wide",
     page_icon="💎",
-    initial_sidebar_state="expanded" 
+    initial_sidebar_state="expanded"
 )
 
-# --- CSS MOTORU (AGRESİF STİL) ---
-# --- CSS MOTORU (AGRESİF STİL + TERMİNAL EKLENTİSİ) ---
+# --- CSS MOTORU ---
 def apply_theme():
     st.session_state.plotly_template = "plotly_dark"
 
@@ -174,7 +173,7 @@ def apply_theme():
         [data-testid="stDataFrame"] th {{ background-color: #111827 !important; color: #9ca3af !important; }}
         header[data-testid="stHeader"], [data-testid="stToolbar"] {{ display: none !important; }}
 
-        /* --- SİNYAL MERKEZİ & TERMİNAL STİLİ (YENİ EKLENEN KISIM) --- */
+        /* --- SİNYAL MERKEZİ & TERMİNAL STİLİ --- */
         .terminal-wrapper {{
             background-color: #000000;
             border: 1px solid #333;
@@ -596,7 +595,6 @@ def html_isleyici(log_callback):
             for _, row in df_conf.iterrows():
                 if pd.notna(row[manuel_col]) and str(row[manuel_col]).strip() != "":
                     try:
-                        # 1. DEĞİŞİKLİK BURADA: int() yerine float() kullanıldı
                         fiyat_man = float(row[manuel_col]) 
                         if fiyat_man > 0:
                             veriler.append({"Tarih": bugun, "Zaman": simdi, "Kod": row['Kod'], "Madde_Adi": row[ad_col], "Fiyat": fiyat_man, "Kaynak": "Manuel", "URL": row[url_col]})
@@ -626,7 +624,6 @@ def html_isleyici(log_callback):
                                 if target['Kod'] in islenen_kodlar: continue
                                 fiyat, kaynak = fiyat_bul_siteye_gore(soup, target[url_col])
                                 if fiyat > 0:
-                                    # 2. DEĞİŞİKLİK BURADA: int(fiyat) yerine float(fiyat) yapıldı
                                     veriler.append({"Tarih": bugun, "Zaman": simdi, "Kod": target['Kod'], "Madde_Adi": target[ad_col], "Fiyat": float(fiyat), "Kaynak": kaynak, "URL": target[url_col]})
                                     islenen_kodlar.add(target['Kod']); hs += 1
             except Exception as e: log_callback(f"⚠️ Hata ({zip_file.name}): {str(e)}")
@@ -848,11 +845,6 @@ def dashboard_modu():
 
                     # Satır satır uygula
                     df_analiz['Aylik_Ortalama'] = df_analiz[bu_ay_cols].apply(geometrik_ortalama_hesapla, axis=1)
-                    
-                    # Eğer tüm ay boyunca hiç verisi olmayan (NaN) ürünler varsa, 
-                    # geçici olarak son bilinen fiyatı alabiliriz (veya hesaplamadan düşeriz).
-                    # Burada hesaplamadan düşmek daha doğrudur ama tablo bütünlüğü için fillna yapılabilir.
-                    # Biz düşürmeyi tercih ediyoruz (dropna), bu yüzden fillna yapmıyoruz.
                 else:
                     df_analiz['Aylik_Ortalama'] = df_analiz[son] # Fallback
 
@@ -959,14 +951,14 @@ def dashboard_modu():
                     except: pass
 
                 def kpi_card(title, val, sub, sub_color, accent_color, icon):
-                      st.markdown(f"""
-                        <div class="kpi-card" style="border-left: 3px solid {accent_color};">
-                             <div style="position: absolute; right: 20px; top: 20px; opacity: 0.1; font-size: 32px; filter: grayscale(100%);">{icon}</div>
-                            <div class="kpi-title">{title}</div>
-                            <div class="kpi-value">{val}</div>
-                            <div class="kpi-sub" style="color: {sub_color};">{sub}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
+                       st.markdown(f"""
+                         <div class="kpi-card" style="border-left: 3px solid {accent_color};">
+                              <div style="position: absolute; right: 20px; top: 20px; opacity: 0.1; font-size: 32px; filter: grayscale(100%);">{icon}</div>
+                             <div class="kpi-title">{title}</div>
+                             <div class="kpi-value">{val}</div>
+                             <div class="kpi-sub" style="color: {sub_color};">{sub}</div>
+                         </div>
+                     """, unsafe_allow_html=True)
 
                 c1, c2, c3, c4 = st.columns(4)
                 with c1: kpi_card("Kümülatif Enflasyon", f"%{enf_genel:.2f}", f"Baz: {baz_tanimi}", "#f87171", "#ef4444", "📈")
@@ -1190,8 +1182,9 @@ def dashboard_modu():
                                     if count > 0:
                                         ornekler = ", ".join(sabitler[ad_col].head(4).tolist())
                                         html_out = f"Toplam <span class='highlight-val'>{count}</span> ürünün fiyatı değişmedi.<br><br>Örnekler:<br><span style='font-size:11px; opacity:0.8'>{ornekler}...</span>"
-                                    else:  # BURASI 'except' DEĞİL 'else' OLMALI
+                                    else:
                                         html_out = "Baz döneme göre fiyatı değişmeyen ürün bulunamadı."
+                        
                         # TERMİNAL ÇIKTISI GÖSTERİMİ
                         st.markdown(f"""
                         <div class="terminal-wrapper">
@@ -1206,6 +1199,8 @@ def dashboard_modu():
                             <div style="margin-top:10px; font-size:9px; color:#555;">_ cursor blinking...</div>
                         </div>
                         """, unsafe_allow_html=True)
+                    
+                    except Exception as e: st.error(f"Sistem Hatası: {e}")
                     
                     else:
                         # Boş Durum (Placeholder)
@@ -1224,19 +1219,3 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
