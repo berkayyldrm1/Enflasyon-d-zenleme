@@ -64,6 +64,36 @@ def apply_theme():
         ::-webkit-scrollbar-thumb {{ background: #3f3f46; border-radius: 3px; }}
         ::-webkit-scrollbar-thumb:hover {{ background: #52525b; }}
 
+        /* --- YENİ EKLENEN: TAB (SEKME) İSİMLERİ BEYAZ --- */
+        button[data-baseweb="tab"] {{
+            background-color: transparent !important;
+        }}
+        button[data-baseweb="tab"] div[data-testid="stMarkdownContainer"] p {{
+            color: #ffffff !important; /* Yazı rengi bembeyaz */
+            font-weight: 700 !important;
+            font-size: 14px !important;
+        }}
+        /* Aktif sekme alt çizgi rengi */
+        button[data-baseweb="tab"][aria-selected="true"] {{
+            border-bottom-color: #3b82f6 !important;
+        }}
+
+        /* --- YENİ EKLENEN: EXCEL İNDİR BUTONU SİYAH --- */
+        [data-testid="stDownloadButton"] button {{
+            background-color: #000000 !important; /* Tam siyah */
+            color: #ffffff !important; /* Beyaz yazı */
+            border: 1px solid #3f3f46 !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            transition: all 0.3s ease !important;
+        }}
+        [data-testid="stDownloadButton"] button:hover {{
+            background-color: #18181b !important; /* Hoverda hafif grileşsin */
+            border-color: #ffffff !important;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1) !important;
+        }}
+
         /* KPI Kartları - Glassmorphism */
         .kpi-card {{
             background: var(--card-bg);
@@ -114,28 +144,22 @@ def apply_theme():
         .tag-peak {{ background: #ffffff !important; color: #000000 !important; border: 2px solid #000; }}
         .tag-dip {{ background: #3b82f6 !important; color: #ffffff !important; border: 2px solid #1e3a8a; }}
 
-        /* --- TICKER DÜZELTMESİ (BU BÖLÜM EKSİKTİ) --- */
+        /* Ticker - Daha İnce */
         .ticker-wrap {{
             width: 100%; overflow: hidden; background-color: rgba(0,0,0,0.3);
             border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);
             padding: 8px 0; margin-bottom: 25px; backdrop-filter: blur(5px);
-            white-space: nowrap; /* Satırın aşağı kaymasını engeller */
+            white-space: nowrap; 
         }}
         .ticker-move {{
             display: inline-block;
-            padding-left: 100%; /* Ekranın dışından başlar */
-            animation: marquee 60s linear infinite; /* Hareket animasyonu */
+            padding-left: 100%; 
+            animation: marquee 60s linear infinite; 
             font-family: 'JetBrains Mono', monospace; 
             font-size: 13px; font-weight: 600; letter-spacing: -0.5px;
         }}
-        .ticker-move:hover {{
-            animation-play-state: paused; /* Mouse üzerine gelince durur */
-        }}
-        @keyframes marquee {{
-            0% {{ transform: translate(0, 0); }}
-            100% {{ transform: translate(-100%, 0); }}
-        }}
-        /* ------------------------------------------- */
+        .ticker-move:hover {{ animation-play-state: paused; }}
+        @keyframes marquee {{ 0% {{ transform: translate(0, 0); }} 100% {{ transform: translate(-100%, 0); }} }}
 
         /* Streamlit Elementleri İyileştirme */
         section[data-testid="stSidebar"] {{ background-color: #000000 !important; border-right: 1px solid #27272a; }}
@@ -1044,6 +1068,7 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
