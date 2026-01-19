@@ -32,6 +32,7 @@ st.set_page_config(
 )
 
 # --- CSS MOTORU (AGRESİF STİL) ---
+# --- CSS MOTORU (AGRESİF STİL + TERMİNAL EKLENTİSİ) ---
 def apply_theme():
     st.session_state.plotly_template = "plotly_dark"
 
@@ -172,8 +173,9 @@ def apply_theme():
         div.stButton > button:hover {{ border-color: #fff; background: #000; }}
         [data-testid="stDataFrame"] th {{ background-color: #111827 !important; color: #9ca3af !important; }}
         header[data-testid="stHeader"], [data-testid="stToolbar"] {{ display: none !important; }}
-        /* --- SİNYAL MERKEZİ & TERMİNAL STİLİ --- */
-        .terminal-wrapper {
+
+        /* --- SİNYAL MERKEZİ & TERMİNAL STİLİ (YENİ EKLENEN KISIM) --- */
+        .terminal-wrapper {{
             background-color: #0c0c0c;
             border: 1px solid #333;
             border-radius: 8px;
@@ -182,8 +184,8 @@ def apply_theme():
             position: relative;
             overflow: hidden;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
-        }
-        .terminal-wrapper::before {
+        }}
+        .terminal-wrapper::before {{
             content: " ";
             display: block;
             position: absolute;
@@ -192,8 +194,8 @@ def apply_theme():
             z-index: 2;
             background-size: 100% 2px, 3px 100%;
             pointer-events: none;
-        }
-        .terminal-header {
+        }}
+        .terminal-header {{
             color: #4ade80;
             font-size: 10px;
             letter-spacing: 2px;
@@ -201,24 +203,24 @@ def apply_theme():
             border-bottom: 1px solid #1f2937;
             padding-bottom: 5px;
             display: flex; justify-content: space-between;
-        }
-        .cmd-line {
+        }}
+        .cmd-line {{
             color: #e2e8f0;
             font-size: 12px;
             margin-bottom: 8px;
-        }
-        .cmd-response {
+        }}
+        .cmd-response {{
             color: #a7f3d0;
             font-size: 13px;
             line-height: 1.5;
             text-shadow: 0 0 5px rgba(74, 222, 128, 0.3);
-        }
-        .highlight-val { color: #fff; font-weight: bold; background: rgba(255,255,255,0.1); padding: 0 4px; border-radius: 3px; }
-        .trend-up { color: #ef4444 !important; font-weight: bold; }
-        .trend-down { color: #4ade80 !important; font-weight: bold; }
-        .mini-table { width: 100%; font-size: 11px; border-collapse: collapse; margin-top: 8px; z-index: 5; position: relative; }
-        .mini-table td { padding: 4px; border-bottom: 1px solid #333; color: #9ca3af; }
-        .mini-table th { text-align: left; color: #6b7280; padding-bottom: 4px; }
+        }}
+        .highlight-val {{ color: #fff; font-weight: bold; background: rgba(255,255,255,0.1); padding: 0 4px; border-radius: 3px; }}
+        .trend-up {{ color: #ef4444 !important; font-weight: bold; }}
+        .trend-down {{ color: #4ade80 !important; font-weight: bold; }}
+        .mini-table {{ width: 100%; font-size: 11px; border-collapse: collapse; margin-top: 8px; z-index: 5; position: relative; }}
+        .mini-table td {{ padding: 4px; border-bottom: 1px solid #333; color: #9ca3af; }}
+        .mini-table th {{ text-align: left; color: #6b7280; padding-bottom: 4px; }}
     </style>
     """
     st.markdown(final_css, unsafe_allow_html=True)
@@ -1240,5 +1242,6 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
