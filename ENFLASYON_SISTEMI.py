@@ -21,7 +21,7 @@ import os
 import math
 import random
 import html
-import numpy as np  # GEOMETRİK ORTALAMA İÇİN EKLENDİ
+import numpy as np 
 
 # --- 1. AYARLAR VE TEMA YÖNETİMİ ---
 st.set_page_config(
@@ -50,13 +50,11 @@ def apply_theme():
         }}
         
         /* --- KRİTİK DÜZELTME: TABLOYU KARARTMA --- */
-        /* Bu komut tarayıcıya bu alanın karanlık modda olduğunu söyler */
         [data-testid="stDataEditor"], [data-testid="stDataFrame"] {{
             color-scheme: dark; 
             background-color: transparent !important;
         }}
         
-        /* Tablonun etrafındaki border ve arka plan */
         div[data-testid="stDataEditor"] > div, div[data-testid="stDataFrame"] > div {{
             background-color: rgba(24, 24, 27, 0.4) !important;
             border: 1px solid #333 !important;
@@ -68,7 +66,6 @@ def apply_theme():
         [data-testid="stToolbar"] {{ display: none; }}
         [data-testid="stDecoration"] {{ display: none; }}
         
-        /* İçerik yukarı kaysın */
         .main .block-container {{ padding-top: 2rem !important; }}
 
         /* --- GENEL ARKA PLAN --- */
@@ -757,57 +754,77 @@ def dashboard_modu():
                 bu_ay_str = f"{dt_son.year}-{dt_son.month:02d}"
                 bu_ay_cols = [c for c in gunler if c.startswith(bu_ay_str)]
                 
-                if bu_ay_cols:
-                    # Geometrik Ortalama Fonksiyonu (0 ve negatifleri hariç tutar)
-                    def geometrik_ortalama_hesapla(row):
-                        # Sadece 0'dan büyük sayıları al (Logaritma hatasını önlemek için)
-                        valid_vals = [x for x in row if isinstance(x, (int, float)) and x > 0]
-                        if not valid_vals:
-                            return np.nan
-                        # Geometrik Ortalama Formülü: exp(mean(log(x)))
-                        return np.exp(np.mean(np.log(valid_vals)))
+                # Geometrik Ortalama Fonksiyonu (0 ve negatifleri hariç tutar)
+                def geometrik_ortalama_hesapla(row):
+                    # Sadece 0'dan büyük sayıları al (Logaritma hatasını önlemek için)
+                    valid_vals = [x for x in row if isinstance(x, (int, float)) and x > 0]
+                    if not valid_vals:
+                        return np.nan
+                    # Geometrik Ortalama Formülü: exp(mean(log(x)))
+                    return np.exp(np.mean(np.log(valid_vals)))
 
+                if bu_ay_cols:
                     # Satır satır uygula
                     df_analiz['Aylik_Ortalama'] = df_analiz[bu_ay_cols].apply(geometrik_ortalama_hesapla, axis=1)
-                    
-                    # Eğer tüm ay boyunca hiç verisi olmayan (NaN) ürünler varsa, 
-                    # geçici olarak son bilinen fiyatı alabiliriz (veya hesaplamadan düşeriz).
-                    # Burada hesaplamadan düşmek daha doğrudur ama tablo bütünlüğü için fillna yapılabilir.
-                    # Biz düşürmeyi tercih ediyoruz (dropna), bu yüzden fillna yapmıyoruz.
                 else:
                     df_analiz['Aylik_Ortalama'] = df_analiz[son] # Fallback
 
-                # 3. ENDEKS VE ENFLASYON HESABI
-                # Sadece hem "Şu An (Ortalama)" hem "Baz Tarihte" veri olan ürünler üzerinden hesaplanır
+                # 3. ENDEKS VE ENFLASYON HESABI (GÜNCEL + ÖNCEKİ GÜN SİMÜLASYONU)
+                
+                # A) GÜNCEL DURUM (BUGÜN)
                 gecerli_veri = df_analiz.dropna(subset=['Aylik_Ortalama', baz_col]).copy()
-                
-                enf_genel = 0.0; enf_gida = 0.0
-                
+                enf_genel = 0.0
+                enf_gida = 0.0
+
                 if not gecerli_veri.empty:
-                    # Kümülatif (Yıl içi) Enflasyon Hesabı (GEOMETRİK ORTALAMA ÜZERİNDEN)
+                    # Kümülatif (Yıl içi) Enflasyon Hesabı
                     w = gecerli_veri[agirlik_col]
-                    
-                    # KRİTİK DEĞİŞİKLİK: [son] yerine ['Aylik_Ortalama'] kullanıyoruz
                     p_relative = gecerli_veri['Aylik_Ortalama'] / gecerli_veri[baz_col]
                     
-                    # Formül: I = Toplam(W * (Pn/P0)) / Toplam(W) * 100
                     genel_endeks = (w * p_relative).sum() / w.sum() * 100
                     enf_genel = genel_endeks - 100
                     
-                    # Gıda Enflasyonu (01 Kodlu ürünler)
+                    # Gıda Enflasyonu
                     gida_df = gecerli_veri[gecerli_veri['Kod'].astype(str).str.startswith("01")]
                     if not gida_df.empty:
                         w_g = gida_df[agirlik_col]
                         p_rel_g = gida_df['Aylik_Ortalama'] / gida_df[baz_col]
                         enf_gida = ((w_g * p_rel_g).sum() / w_g.sum() * 100) - 100
 
-                    # Ürün Bazlı Kümülatif Değişim (Tabloda % Farkı Ortalama ile gösterelim)
+                    # Ürün Bazlı Değişim
                     df_analiz['Fark'] = (df_analiz['Aylik_Ortalama'] / df_analiz[baz_col]) - 1
                 else:
                     df_analiz['Fark'] = 0.0
 
+                # B) ÖNCEKİ GÜN SİMÜLASYONU (CANLI SKOR TABLOSU İÇİN)
+                enf_onceki = 0.0
+                
+                # Eğer bu ay içinde birden fazla veri varsa (örn: ayın 1'i ve 2'si), dünü hesaplayabiliriz.
+                if len(bu_ay_cols) > 1:
+                    onceki_cols = bu_ay_cols[:-1] # Son sütunu (bugünü) hariç tut
+                    
+                    # Dünün Geometrik Ortalamasını Hesapla
+                    df_analiz['Onceki_Ortalama'] = df_analiz[onceki_cols].apply(geometrik_ortalama_hesapla, axis=1)
+                    
+                    # Dünün Endeksini Hesapla
+                    gecerli_veri_prev = df_analiz.dropna(subset=['Onceki_Ortalama', baz_col])
+                    if not gecerli_veri_prev.empty:
+                        w_p = gecerli_veri_prev[agirlik_col]
+                        p_rel_p = gecerli_veri_prev['Onceki_Ortalama'] / gecerli_veri_prev[baz_col]
+                        genel_endeks_prev = (w_p * p_rel_p).sum() / w_p.sum() * 100
+                        enf_onceki = genel_endeks_prev - 100
+                else:
+                    # Eğer ayın ilk günüyse veya tek veri varsa, değişim yok varsayalım veya manuel set edelim.
+                    enf_onceki = enf_genel
+
+                # Değişim Farkı (Bugün - Dün)
+                kumu_fark = enf_genel - enf_onceki
+                kumu_icon_color = "#ef4444" if kumu_fark > 0 else "#22c55e" # Artış varsa kırmızı, düşüş varsa yeşil
+                
+                # Alt metin formatı: "Önceki: %45.20 (+0.12)"
+                kumu_sub_text = f"Önceki: %{enf_onceki:.2f} ({'+' if kumu_fark > 0 else ''}{kumu_fark:.2f})"
+
                 # 4. ZAMAN SERİSİ / TREND HESAPLAMA (Prophet İçin - Günlük devam edebilir)
-                # Trend grafiğinde günlük değişimleri görmek isteyebilirsin, burayı günlük bırakıyorum.
                 trend_data = []
                 for g in gunler:
                     tmp_df = df_analiz.dropna(subset=[g, baz_col])
@@ -834,13 +851,11 @@ def dashboard_modu():
                 month_end_forecast = 0.0
                 if not df_forecast.empty:
                     forecast_row = df_forecast[df_forecast['ds'] == target_jan_end]
-                    # Tahmin edilen endeks değerinden enflasyona dönüştürme (Endeks - 100)
                     if not forecast_row.empty:
                         month_end_forecast = forecast_row.iloc[0]['yhat'] - 100
                     else:
                         month_end_forecast = df_forecast.iloc[-1]['yhat'] - 100
                 else: 
-                    # Prophet çalışmazsa basit projeksiyon
                     month_end_forecast = enf_genel # Basitçe mevcut durum
                 
                 month_end_forecast = math.floor(month_end_forecast + random.uniform(-0.1, 0.1)) # Hafif gürültü
@@ -894,7 +909,8 @@ def dashboard_modu():
                     """, unsafe_allow_html=True)
 
                 c1, c2, c3, c4 = st.columns(4)
-                with c1: kpi_card("Kümülatif Enflasyon", f"%{enf_genel:.2f}", f"Baz: {baz_tanimi}", "#f87171", "#ef4444", "📈")
+                # GÜNCELLENEN KPI KARTI BURADA:
+                with c1: kpi_card("Kümülatif Enflasyon", f"%{enf_genel:.2f}", kumu_sub_text, kumu_icon_color, "#ef4444", "📈")
                 with c2: kpi_card("Gıda Enflasyonu", f"%{enf_gida:.2f}", "Mutfak Sepeti", "#f87171", "#84cc16", "🛒")
                 with c3: kpi_card("Simülasyon Tahmini", f"%{math.floor(enf_genel):.2f}", "Canlı Veri", "#a78bfa", "#8b5cf6", "🤖") 
                 with c4: kpi_card("Resmi TÜİK Verisi", f"%{resmi_aylik_enf:.2f}", f"{resmi_tarih_str}", "#fbbf24", "#eab308", "🏛️")
@@ -1040,9 +1056,3 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
-
-
-
-
-
-
