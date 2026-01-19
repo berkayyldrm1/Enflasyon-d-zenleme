@@ -172,6 +172,53 @@ def apply_theme():
         div.stButton > button:hover {{ border-color: #fff; background: #000; }}
         [data-testid="stDataFrame"] th {{ background-color: #111827 !important; color: #9ca3af !important; }}
         header[data-testid="stHeader"], [data-testid="stToolbar"] {{ display: none !important; }}
+        /* --- SİNYAL MERKEZİ & TERMİNAL STİLİ --- */
+        .terminal-wrapper {
+            background-color: #0c0c0c;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        .terminal-wrapper::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        .terminal-header {
+            color: #4ade80;
+            font-size: 10px;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #1f2937;
+            padding-bottom: 5px;
+            display: flex; justify-content: space-between;
+        }
+        .cmd-line {
+            color: #e2e8f0;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .cmd-response {
+            color: #a7f3d0;
+            font-size: 13px;
+            line-height: 1.5;
+            text-shadow: 0 0 5px rgba(74, 222, 128, 0.3);
+        }
+        .highlight-val { color: #fff; font-weight: bold; background: rgba(255,255,255,0.1); padding: 0 4px; border-radius: 3px; }
+        .trend-up { color: #ef4444 !important; font-weight: bold; }
+        .trend-down { color: #4ade80 !important; font-weight: bold; }
+        .mini-table { width: 100%; font-size: 11px; border-collapse: collapse; margin-top: 8px; z-index: 5; position: relative; }
+        .mini-table td { padding: 4px; border-bottom: 1px solid #333; color: #9ca3af; }
+        .mini-table th { text-align: left; color: #6b7280; padding-bottom: 4px; }
     </style>
     """
     st.markdown(final_css, unsafe_allow_html=True)
@@ -1058,89 +1105,133 @@ def dashboard_modu():
                             st.download_button("📥 PDF Raporunu İndir", data=pdf_data, file_name=f"Strateji_Raporu_{son}.pdf", mime="application/pdf")
 
             # --- SİNYAL MERKEZİ BOTU ---
-            with st.popover("💬"):
-                st.markdown("### 🤖 SİNYAL MERKEZİ")
-                st.caption("Veri analitiği asistanı (Offline)")
+            # --- SİNYAL MERKEZİ BOTU (GELİŞMİŞ VERSİYON) ---
+            with st.popover("💬", help="AI Asistan"):
+                st.markdown("🧬 VERİ MERKEZİ")
                 
+                # Kapsam Seçimi
                 tum_kategoriler = ["TÜMÜ"] + sorted(df_analiz['Grup'].unique().tolist())
-                bot_kapsam = st.selectbox("Kapsam:", tum_kategoriler, key="bot_kapsam_float")
+                c_bot1, c_bot2 = st.columns([1, 2])
                 
+                with c_bot1:
+                    bot_kapsam = st.selectbox("Kapsam", tum_kategoriler, label_visibility="collapsed", key="bot_kapsam_yeni")
+                
+                with c_bot2:
+                    sorular = [
+                        "Analiz Seçiniz...",
+                        "🚀 Zam Şampiyonları (Top 3)",
+                        "📉 İndirim Liderleri (Top 3)",
+                        "📊 Enflasyon/Değişim Ortalaması",
+                        "💎 En Pahalı Ürünler",
+                        "🏷️ En Ucuz Ürünler",
+                        "🧱 Fiyatı Sabit Kalanlar",
+                        "📈 Pazar Yönü (Artan/Azalan)"
+                    ]
+                    bot_soru = st.selectbox("Soru", sorular, label_visibility="collapsed", key="bot_soru_yeni")
+            
+                # Veri Filtreleme
                 df_bot = df_analiz.copy()
                 if bot_kapsam != "TÜMÜ":
                     df_bot = df_bot[df_bot['Grup'] == bot_kapsam]
-
-                sorular = [
-                    "Soru Seçiniz...",
-                    "📈 En yüksek artış (Zam Şampiyonu)?",
-                    "📉 En büyük düşüş (İndirim Lideri)?",
-                    "📊 Ortalama değişim (Enflasyon) ne kadar?",
-                    "💎 En pahalı ürün hangisi?",
-                    "🏷️ En ucuz ürün hangisi?",
-                    "⚖️ Fiyatı değişmeyen (Sabit) ürün var mı?",
-                    "🔢 Kaç ürün arttı / kaç ürün düştü?",
-                    "🔥 %10'dan fazla artan ürünler?",
-                    "🧊 %10'dan fazla düşen ürünler?"
-                ]
-                
-                bot_soru = st.selectbox("Soru:", sorular, key="bot_soru_float")
-                
-                if bot_soru != "Soru Seçiniz...":
-                    cevap = ""
+            
+                # Cevap Mantığı ve HTML Oluşturma
+                if bot_soru != "Analiz Seçiniz...":
+                    html_out = ""
+                    header_txt = f"SYSTEM_ANALYSIS :: {bot_kapsam.upper()} :: {datetime.now().strftime('%H:%M:%S')}"
+                    
                     if df_bot.empty:
-                        cevap = "Seçilen kapsamda veri bulunamadı."
+                        html_out = "<span style='color:red'>HATA: Veri seti boş.</span>"
                     else:
-                        if "Zam Şampiyonu" in bot_soru:
-                            row = df_bot.sort_values('Fark', ascending=False).iloc[0]
-                            cevap = f"Zirvedeki ürün: **{row[ad_col]}**.<br>Kümülatif Artış: <span style='color:#f87171'>%{row['Fark']*100:.2f}</span>"
-                        elif "İndirim Lideri" in bot_soru:
-                            row = df_bot.sort_values('Fark', ascending=True).iloc[0]
-                            renk = "#4ade80" if row['Fark'] < 0 else "#a1a1aa"
-                            cevap = f"En dipteki ürün: **{row[ad_col]}**.<br>Değişim: <span style='color:{renk}'>%{row['Fark']*100:.2f}</span>"
-                        elif "Ortalama değişim" in bot_soru:
-                            # Ağırlıklı ortalamayı burada da kullanabiliriz ama basit soru için aritmetik
-                            ort = df_bot['Fark'].mean() * 100
-                            renk = "#f87171" if ort > 0 else "#4ade80"
-                            cevap = f"Bu kapsamdaki ({len(df_bot)} ürün) basit ortalama: <span style='color:{renk}'>%{ort:.2f}</span>"
-                        elif "En pahalı" in bot_soru:
-                            row = df_bot.sort_values(son, ascending=False).iloc[0]
-                            cevap = f"Etiket fiyatı en yüksek: **{row[ad_col]}**.<br>Fiyat: **{row[son]:.2f} TL**"
-                        elif "En ucuz" in bot_soru:
-                            row = df_bot.sort_values(son, ascending=True).iloc[0]
-                            cevap = f"Etiket fiyatı en düşük: **{row[ad_col]}**.<br>Fiyat: **{row[son]:.2f} TL**"
-                        elif "Sabit" in bot_soru:
-                            sabitler = df_bot[df_bot['Fark'] == 0]
-                            count = len(sabitler)
-                            if count > 0:
-                                ornekler = ", ".join(sabitler[ad_col].head(3).tolist())
-                                cevap = f"Toplam **{count}** ürünün fiyatı baz döneme göre değişmedi.<br>Örnekler: {ornekler}..."
-                            else:
-                                cevap = "Fiyatı sabit kalan ürün bulunmuyor."
-                        elif "Kaç ürün" in bot_soru:
-                            artan = len(df_bot[df_bot['Fark'] > 0])
-                            dusen = len(df_bot[df_bot['Fark'] < 0])
-                            sabit = len(df_bot[df_bot['Fark'] == 0])
-                            cevap = f"🔺 Artan: **{artan}**<br>🔻 Düşen: **{dusen}**<br>➖ Sabit: **{sabit}**"
-                        elif "%10'dan fazla artan" in bot_soru:
-                            liste = df_bot[df_bot['Fark'] > 0.10]
-                            count = len(liste)
-                            if count > 0:
-                                ornek = liste.sort_values('Fark', ascending=False).iloc[0][ad_col]
-                                cevap = f"Toplam **{count}** üründe %10 üzeri artış var.<br>Lider: {ornek}"
-                            else:
-                                cevap = "Bu kriterde ürün yok."
-                        elif "%10'dan fazla düşen" in bot_soru:
-                            liste = df_bot[df_bot['Fark'] < -0.10]
-                            count = len(liste)
-                            if count > 0:
-                                ornek = liste.sort_values('Fark', ascending=True).iloc[0][ad_col]
-                                cevap = f"Toplam **{count}** üründe %10 üzeri düşüş var.<br>Lider: {ornek}"
-                            else:
-                                cevap = "Bu kriterde ürün yok."
-
+                        try:
+                            if "Zam Şampiyonları" in bot_soru:
+                                top3 = df_bot.sort_values('Fark', ascending=False).head(3)
+                                rows = ""
+                                for i, (_, r) in enumerate(top3.iterrows()):
+                                    rows += f"<tr><td>#{i+1} {r[ad_col][:20]}..</td><td style='text-align:right' class='trend-up'>%{(r['Fark']*100):.2f} ▲</td></tr>"
+                                html_out = f"Dönemin en yüksek fiyat artışları:<table class='mini-table'><tr><th>ÜRÜN</th><th style='text-align:right'>DEĞİŞİM</th></tr>{rows}</table>"
+            
+                            elif "İndirim Liderleri" in bot_soru:
+                                top3 = df_bot.sort_values('Fark', ascending=True).head(3)
+                                rows = ""
+                                for i, (_, r) in enumerate(top3.iterrows()):
+                                    # Sadece düşenleri veya en az artanları göster
+                                    color_cls = "trend-down" if r['Fark'] < 0 else "cmd-response"
+                                    rows += f"<tr><td>#{i+1} {r[ad_col][:20]}..</td><td style='text-align:right' class='{color_cls}'>%{(r['Fark']*100):.2f} ▼</td></tr>"
+                                html_out = f"Fiyatı gevşeyen veya en az artanlar:<table class='mini-table'><tr><th>ÜRÜN</th><th style='text-align:right'>DEĞİŞİM</th></tr>{rows}</table>"
+            
+                            elif "Ortalama" in bot_soru:
+                                ort = df_bot['Fark'].mean() * 100
+                                med = df_bot['Fark'].median() * 100
+                                trend = "trend-up" if ort > 0 else "trend-down"
+                                arrow = "▲" if ort > 0 else "▼"
+                                html_out = f"""
+                                Bu kapsamdaki ({len(df_bot)}) ürün için istatistikler:<br><br>
+                                • Aritmetik Ort: <span class='{trend}'>%{ort:.2f} {arrow}</span><br>
+                                • Medyan (Ortanca): <span class='highlight-val'>%{med:.2f}</span>
+                                """
+            
+                            elif "En Pahalı" in bot_soru:
+                                top3 = df_bot.sort_values(son, ascending=False).head(3)
+                                rows = ""
+                                for i, (_, r) in enumerate(top3.iterrows()):
+                                    rows += f"<tr><td>{r[ad_col][:18]}..</td><td style='text-align:right' class='highlight-val'>{r[son]:.2f} ₺</td></tr>"
+                                html_out = f"Etiket fiyatı en yüksek ürünler:<table class='mini-table'>{rows}</table>"
+            
+                            elif "En Ucuz" in bot_soru:
+                                top3 = df_bot.sort_values(son, ascending=True).head(3)
+                                rows = ""
+                                for i, (_, r) in enumerate(top3.iterrows()):
+                                    rows += f"<tr><td>{r[ad_col][:18]}..</td><td style='text-align:right' class='highlight-val'>{r[son]:.2f} ₺</td></tr>"
+                                html_out = f"Etiket fiyatı en düşük ürünler:<table class='mini-table'>{rows}</table>"
+            
+                            elif "Sabit" in bot_soru:
+                                sabitler = df_bot[df_bot['Fark'] == 0]
+                                count = len(sabitler)
+                                if count > 0:
+                                    ornekler = ", ".join(sabitler[ad_col].head(4).tolist())
+                                    html_out = f"Toplam <span class='highlight-val'>{count}</span> ürünün fiyatı değişmedi.<br><br>Örnekler:<br><span style='font-size:11px; opacity:0.8'>{ornekler}...</span>"
+                                else:
+                                    html_out = "Baz döneme göre fiyatı değişmeyen ürün bulunamadı."
+            
+                            elif "Pazar Yönü" in bot_soru:
+                                artan = len(df_bot[df_bot['Fark'] > 0])
+                                dusen = len(df_bot[df_bot['Fark'] < 0])
+                                sabit = len(df_bot[df_bot['Fark'] == 0])
+                                html_out = f"""
+                                Piyasa hareket özeti:<br>
+                                <table class='mini-table'>
+                                <tr><td>Yükselen</td><td style='text-align:right; color:#ef4444'>{artan}</td></tr>
+                                <tr><td>Düşen</td><td style='text-align:right; color:#4ade80'>{dusen}</td></tr>
+                                <tr><td>Değişmeyen</td><td style='text-align:right; color:#9ca3af'>{sabit}</td></tr>
+                                </table>
+                                """
+                        except Exception as e:
+                            html_out = f"<span style='color:red'>HESAPLAMA HATASI: {str(e)}</span>"
+            
+                    # TERMİNAL ÇIKTISI GÖSTERİMİ
                     st.markdown(f"""
-                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-left:3px solid #3b82f6; padding:12px; border-radius:8px; margin-top:10px;">
-                        <div style="font-size:10px; color:#64748b; margin-bottom:4px; text-transform:uppercase;">ANALİZ SONUCU:</div>
-                        <div style="color:#0f172a; font-size:13px; line-height:1.4;">{cevap}</div>
+                    <div class="terminal-wrapper">
+                        <div class="terminal-header">
+                            <span>TERMINAL_OUTPUT</span>
+                            <span>{bot_kapsam[:3].upper()}</span>
+                        </div>
+                        <div class="cmd-line">user@basekonomist:~$ ./analyze --{bot_soru.split(' ')[1].lower()}</div>
+                        <div class="cmd-response">
+                            {html_out}
+                        </div>
+                        <div style="margin-top:10px; font-size:9px; color:#555;">_ cursor blinking...</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                else:
+                    # Boş Durum (Placeholder)
+                    st.markdown(f"""
+                    <div class="terminal-wrapper" style="opacity:0.7">
+                        <div class="terminal-header"><span>READY</span><span>IDLE</span></div>
+                        <div class="cmd-response" style="color:#555">
+                            Sistem hazır. Analiz başlatmak için yukarıdan bir sorgu seçin.<br><br>
+                            > Awaiting input...
+                        </div>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -1149,4 +1240,5 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
