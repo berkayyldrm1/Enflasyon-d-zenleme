@@ -1226,7 +1226,7 @@ def dashboard_modu():
                     """, unsafe_allow_html=True)
                 
                 else:
-                    # Boş Durum (Placeholder) - DÜZELTİLMİŞ VERSİYON
+                    # Boş Durum (Placeholder) - DÜZELTİLMİŞ KOD
                     st.markdown(f"""
                     <div class="terminal-wrapper" style="background-color: #050505 !important; opacity: 1 !important; border: 1px solid #333;">
                         
@@ -1247,13 +1247,15 @@ def dashboard_modu():
                     <style>
                         @keyframes blink {{ 0% {{ opacity: 1; }} 50% {{ opacity: 0; }} 100% {{ opacity: 1; }} }}
                     </style>
-                    """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)  # <--- BU KISIM ÇOK ÖNEMLİ
 
+                
         except Exception as e: st.error(f"Sistem Hatası: {e}")
     st.markdown('<div style="text-align:center; color:#52525b; font-size:11px; margin-top:50px;">VALIDASYON MUDURLUGU © 2026 - CONFIDENTIAL</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
