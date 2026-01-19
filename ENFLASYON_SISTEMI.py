@@ -1190,9 +1190,8 @@ def dashboard_modu():
                                     if count > 0:
                                         ornekler = ", ".join(sabitler[ad_col].head(4).tolist())
                                         html_out = f"Toplam <span class='highlight-val'>{count}</span> ürünün fiyatı değişmedi.<br><br>Örnekler:<br><span style='font-size:11px; opacity:0.8'>{ornekler}...</span>"
-                                    else:
+                                    except Exception as e:
                                         html_out = "Baz döneme göre fiyatı değişmeyen ürün bulunamadı."
-                                    """, unsafe_allow_html=True)
                         # TERMİNAL ÇIKTISI GÖSTERİMİ
                         st.markdown(f"""
                         <div class="terminal-wrapper">
@@ -1225,6 +1224,7 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
