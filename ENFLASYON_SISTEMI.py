@@ -1226,15 +1226,21 @@ def dashboard_modu():
                     """, unsafe_allow_html=True)
                 
                 else:
-                    # Boş Durum (Placeholder)
+                    # Boş Durum (Placeholder) - GÖRÜNÜRLÜK DÜZELTİLDİ
                     st.markdown(f"""
-                    <div class="terminal-wrapper" style="opacity:0.7">
-                        <div class="terminal-header"><span>READY</span><span>IDLE</span></div>
-                        <div class="cmd-response" style="color:#555">
+                    <div class="terminal-wrapper" style="background-color: #000000 !important; opacity: 1 !important; border: 1px solid #333;">
+                        <div class="terminal-header" style="color: #888; border-bottom: 1px solid #444;">
+                            <span>SYSTEM_STATUS</span>
+                            <span>WAITING_INPUT</span>
+                        </div>
+                        <div class="cmd-response" style="color: #ffffff !important; font-size: 14px; font-weight: 500; padding-top: 10px;">
                             Sistem hazır. Analiz başlatmak için yukarıdan bir sorgu seçin.<br><br>
-                            > Awaiting input...
+                            <span style="color: #22c55e; font-weight:bold;">root@basekonomist:~$</span> Awaiting command... <span style="animation: blink 1s step-end infinite; color: #ffffff;">█</span>
                         </div>
                     </div>
+                    <style>
+                        @keyframes blink {{ 0% {{ opacity: 1; }} 50% {{ opacity: 0; }} 100% {{ opacity: 1; }} }}
+                    </style>
                     """, unsafe_allow_html=True)
 
         except Exception as e: st.error(f"Sistem Hatası: {e}")
@@ -1242,6 +1248,7 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
