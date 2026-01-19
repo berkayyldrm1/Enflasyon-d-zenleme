@@ -21,6 +21,7 @@ import os
 import math
 import random
 import html
+import numpy as np  # GEOMETRİK ORTALAMA İÇİN EKLENDİ
 
 # --- 1. AYARLAR VE TEMA YÖNETİMİ ---
 st.set_page_config(
@@ -761,7 +762,7 @@ def dashboard_modu():
 
                 # -------------------------------------------------------------
                 # --- [BAŞLANGIÇ] TÜİK METODOLOJİSİ: ZİNCİRLEME LASPEYRES ---
-                # --- REVİZE: SON GÜN YERİNE AYLIK ORTALAMA FİYAT KULLANIMI ---
+                # --- REVİZE: GEOMETRİK ORTALAMA İLE AYLIK FİYAT ---
                 # -------------------------------------------------------------
                 
                 # 1. BAZ DÖNEMİ BELİRLEME (Referans: Önceki Yılın Aralık Ayı)
@@ -779,26 +780,39 @@ def dashboard_modu():
                     baz_col = gunler[0]
                     baz_tanimi = f"Başlangıç ({baz_col})"
 
-                # 2. AYLIK ORTALAMA FİYAT HESAPLAMA (VOLATİLİTEYİ AZALTMAK İÇİN)
+                # 2. GEOMETRİK ORTALAMA İLE AYLIK FİYAT HESAPLAMA
                 # Bu ayın (son veri tarihi ayı) tüm sütunlarını bul
                 bu_ay_str = f"{dt_son.year}-{dt_son.month:02d}"
                 bu_ay_cols = [c for c in gunler if c.startswith(bu_ay_str)]
                 
-                # Ana tabloda "Aylik_Ortalama" sütunu oluştur
                 if bu_ay_cols:
-                    df_analiz['Aylik_Ortalama'] = df_analiz[bu_ay_cols].mean(axis=1)
+                    # Geometrik Ortalama Fonksiyonu (0 ve negatifleri hariç tutar)
+                    def geometrik_ortalama_hesapla(row):
+                        # Sadece 0'dan büyük sayıları al (Logaritma hatasını önlemek için)
+                        valid_vals = [x for x in row if isinstance(x, (int, float)) and x > 0]
+                        if not valid_vals:
+                            return np.nan
+                        # Geometrik Ortalama Formülü: exp(mean(log(x)))
+                        return np.exp(np.mean(np.log(valid_vals)))
+
+                    # Satır satır uygula
+                    df_analiz['Aylik_Ortalama'] = df_analiz[bu_ay_cols].apply(geometrik_ortalama_hesapla, axis=1)
+                    
+                    # Eğer tüm ay boyunca hiç verisi olmayan (NaN) ürünler varsa, 
+                    # geçici olarak son bilinen fiyatı alabiliriz (veya hesaplamadan düşeriz).
+                    # Burada hesaplamadan düşmek daha doğrudur ama tablo bütünlüğü için fillna yapılabilir.
+                    # Biz düşürmeyi tercih ediyoruz (dropna), bu yüzden fillna yapmıyoruz.
                 else:
                     df_analiz['Aylik_Ortalama'] = df_analiz[son] # Fallback
 
                 # 3. ENDEKS VE ENFLASYON HESABI
                 # Sadece hem "Şu An (Ortalama)" hem "Baz Tarihte" veri olan ürünler üzerinden hesaplanır
-                # Not: Son günde veri olmasa bile ay içinde veri varsa ortalama oluşur, bu daha sağlıklıdır.
                 gecerli_veri = df_analiz.dropna(subset=['Aylik_Ortalama', baz_col]).copy()
                 
                 enf_genel = 0.0; enf_gida = 0.0
                 
                 if not gecerli_veri.empty:
-                    # Kümülatif (Yıl içi) Enflasyon Hesabı (ORTALAMA ÜZERİNDEN)
+                    # Kümülatif (Yıl içi) Enflasyon Hesabı (GEOMETRİK ORTALAMA ÜZERİNDEN)
                     w = gecerli_veri[agirlik_col]
                     
                     # KRİTİK DEĞİŞİKLİK: [son] yerine ['Aylik_Ortalama'] kullanıyoruz
@@ -1006,7 +1020,7 @@ def dashboard_modu():
                       st.data_editor(
                           df_analiz[['Grup', ad_col, 'Fark', baz_col, son]], 
                           column_config={
-                              "Fark": st.column_config.ProgressColumn("Kümülatif Değişim", format="%.2f", min_value=-0.5, max_value=0.5), 
+                              "Fark": st.column_config.ProgressColumn("Kümülatif Değişim (Geo. Ort)", format="%.2f", min_value=-0.5, max_value=0.5), 
                               ad_col: "Ürün", "Grup": "Kategori",
                               baz_col: st.column_config.NumberColumn(f"Fiyat ({baz_tanimi})", format="%.2f ₺"),
                               son: st.column_config.NumberColumn(f"Fiyat ({son})", format="%.2f ₺")
