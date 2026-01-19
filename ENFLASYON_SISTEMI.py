@@ -21,24 +21,22 @@ import os
 import math
 import random
 import html
-import numpy as np
+import numpy as np  # GEOMETRİK ORTALAMA İÇİN EKLENDİ
 
 # --- 1. AYARLAR VE TEMA YÖNETİMİ ---
 st.set_page_config(
     page_title="Piyasa Monitörü | Pro",
     layout="wide",
     page_icon="💎",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded" 
 )
 
-# --- CSS MOTORU ---
-# --- CSS MOTORU (HİBRİT: GENEL SİTE SAKİN + POP-UP NEON) ---
+# --- CSS MOTORU (AGRESİF STİL) ---
 def apply_theme():
     st.session_state.plotly_template = "plotly_dark"
 
     final_css = f"""
     <style>
-        /* --- GENEL SİTE AYARLARI (ESKİ HALİ) --- */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&display=swap');
 
@@ -51,90 +49,94 @@ def apply_theme():
             color: #e2e8f0 !important;
         }}
         
-        /* Genel başlık ve metin renkleri */
         h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, div, span {{
             color: #f1f5f9;
         }}
 
-        /* Streamlit Bileşen Düzeltmeleri */
-        ul[data-baseweb="menu"] {{ background-color: #ffffff !important; border: 1px solid #e2e8f0 !important; }}
-        li[role="option"] {{ color: #000000 !important; background-color: #ffffff !important; }}
-        li[role="option"]:hover, li[role="option"][aria-selected="true"] {{ background-color: #f1f5f9 !important; color: #000000 !important; }}
-        div[data-baseweb="select"] > div {{ background-color: #111827; color: #f8fafc; border-color: #374151; }}
-        
-        /* Popover Gövdesi (Beyaz Kutu) */
-        div[data-testid="stPopoverBody"] {{ background-color: #ffffff !important; border: 1px solid #cbd5e1 !important; }}
-        div[data-testid="stPopoverBody"] * {{ color: #000000 !important; }}
-
-        /* --- SADECE POP-UP (SİNYAL MERKEZİ) İÇİN ÖZEL STİLLER --- */
-        /* Bu bölümdeki kodlar sadece terminal ve bot çıktılarını etkiler */
-
-        .terminal-wrapper {{
-            background-color: #050505 !important;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 15px;
-            font-family: 'JetBrains Mono', monospace;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 0 15px rgba(0,0,0,1);
-            margin-top: 10px;
+        /* SELECTBOX DÜZELTMELERİ */
+        ul[data-baseweb="menu"] {{
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+        }}
+        li[role="option"] {{
+            color: #000000 !important;
+            background-color: #ffffff !important;
+        }}
+        li[role="option"] div, li[role="option"] span {{
+             color: #000000 !important;
+        }}
+        li[role="option"]:hover, li[role="option"][aria-selected="true"] {{
+            background-color: #f1f5f9 !important;
+            color: #000000 !important;
+        }}
+        div[data-baseweb="select"] > div {{
+            background-color: #111827; 
+            color: #f8fafc;
+            border-color: #374151;
         }}
         
-        .terminal-wrapper * {{
-            color: #e2e8f0 !important; /* Terminal içindeki her şeyi varsayılan olarak açık renk yap */
+        /* POPOVER DÜZELTMELERİ */
+        div[data-testid="stPopoverBody"] {{
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
         }}
-        
-        .terminal-wrapper::before {{
-            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 0; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        div[data-testid="stPopoverBody"] * {{
+            color: #000000 !important;
         }}
-
-        .terminal-header {{
-            color: #a1a1aa !important;
-            font-size: 10px; letter-spacing: 2px; margin-bottom: 15px;
-            border-bottom: 1px solid #333; padding-bottom: 5px;
-            display: flex; justify-content: space-between; position: relative; z-index: 1;
+        div[data-testid="stPopoverBody"] div[data-baseweb="select"] > div {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #94a3b8 !important;
         }}
-
-        .cmd-line {{
-            color: #fbbf24 !important; font-size: 12px; margin-bottom: 15px; position: relative; z-index: 1;
+        div[data-testid="stPopoverBody"] div[data-baseweb="select"] svg {{
+            fill: #000000 !important;
         }}
 
-        .cmd-response {{
-            color: #e2e8f0 !important; font-size: 13px; line-height: 1.6; position: relative; z-index: 1;
+        /* BUTONLAR */
+        [data-testid="stDownloadButton"] button {{
+            background-color: #ffffff !important;
+            border: 2px solid #e2e8f0 !important;
+        }}
+        [data-testid="stDownloadButton"] button,
+        [data-testid="stDownloadButton"] button * {{
+            color: #000000 !important;
+            font-weight: 800 !important;
+        }}
+        [data-testid="stDownloadButton"] button:hover {{
+            background-color: #f8fafc !important;
+            border-color: #cbd5e1 !important;
         }}
 
-        /* Mini Tablo - Sadece Pop-up içindeki tabloları hedefler */
-        .mini-table {{ 
-            width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 10px; position: relative; z-index: 5; 
+        /* FLOATING CHAT BUTTON */
+        [data-testid="stPopover"] {{ 
+            position: fixed !important; bottom: 30px !important; left: 30px !important; right: auto !important;
+            z-index: 999999 !important; background-color: transparent !important; border: none !important;
+            width: auto !important; height: auto !important;
         }}
-        
-        .mini-table th {{ 
-            text-align: left; color: #94a3b8 !important; border-bottom: 1px solid #52525b; padding-bottom: 8px; font-weight: 700;
+        [data-testid="stPopover"] button {{
+            width: 65px !important; height: 65px !important; border-radius: 50% !important;
+            background-color: #3b82f6 !important;
+            color: white !important;
+            border: 2px solid rgba(255,255,255,0.2) !important; 
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.8) !important;
+            font-size: 28px !important; display: flex; justify-content: center; align-items: center;
         }}
-        
-        .mini-table td {{ 
-            padding: 8px 4px; border-bottom: 1px solid #27272a; 
-            color: #ffffff !important; /* Hücre yazılarını BEYAZ zorla */
-            font-weight: 500;
-        }}
-
-        /* Neon Renk Sınıfları */
-        .highlight-val {{ 
-            color: #ffffff !important; font-weight: bold; background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 4px; 
-        }}
-        
-        .trend-up {{ 
-            color: #f87171 !important; font-weight: 800; text-shadow: 0 0 10px rgba(248, 113, 113, 0.4);
-        }}
-        
-        .trend-down {{ 
-            color: #4ade80 !important; font-weight: 800; text-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
+        [data-testid="stPopover"] button:hover {{ 
+            background-color: #2563eb !important;
+            transform: scale(1.1); 
+            box-shadow: 0 0 40px rgba(59, 130, 246, 1) !important; 
         }}
 
-        /* --- DİĞER KARTLAR VE DASHBOARD BİLEŞENLERİ (ORİJİNAL) --- */
+        /* Ticker */
+        .ticker-wrap {{
+            width: 100%; overflow: hidden; background-color: #000000;
+            border-top: 1px solid #334155; border-bottom: 1px solid #334155;
+            padding: 12px 0; margin-bottom: 20px; white-space: nowrap;
+        }}
+        .ticker-move {{ display: inline-block; padding-left: 100%; animation: marquee 40s linear infinite; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; }}
+        @keyframes marquee {{ 0% {{ transform: translate(0, 0); }} 100% {{ transform: translate(-100%, 0); }} }}
+
+        /* KPI Cards */
         .kpi-card {{
             background: rgba(10, 10, 12, 0.95); border: 1px solid rgba(255,255,255,0.1);
             border-radius: 16px; padding: 24px; position: relative;
@@ -145,6 +147,7 @@ def apply_theme():
         .kpi-value {{ font-size: 42px; font-weight: 900; color: #ffffff !important; letter-spacing: -1px; }}
         .kpi-sub   {{ font-size: 12px; font-weight: 600; opacity: 0.7; margin-top: 5px; color: #cbd5e1 !important; }}
 
+        /* Product Cards */
         .pg-card {{
             background: #0a0a0c; border: 1px solid #27272a; border-radius: 14px;
             padding: 16px; height: 190px;
@@ -163,13 +166,12 @@ def apply_theme():
         .pg-green {{ background: rgba(22, 163, 74, 0.2); color: #4ade80 !important; border: 1px solid rgba(22, 163, 74, 0.4); }}
         .pg-gray {{ background: #27272a; color: #a1a1aa !important; }}
 
-        /* Ticker ve Chat Butonu */
-        .ticker-wrap {{ width: 100%; overflow: hidden; background-color: #000000; border-top: 1px solid #334155; border-bottom: 1px solid #334155; padding: 12px 0; margin-bottom: 20px; white-space: nowrap; }}
-        .ticker-move {{ display: inline-block; padding-left: 100%; animation: marquee 40s linear infinite; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; }}
-        @keyframes marquee {{ 0% {{ transform: translate(0, 0); }} 100% {{ transform: translate(-100%, 0); }} }}
-
-        [data-testid="stPopover"] {{ position: fixed !important; bottom: 30px !important; left: 30px !important; z-index: 999999 !important; }}
-        [data-testid="stPopover"] button {{ width: 65px !important; height: 65px !important; border-radius: 50% !important; background-color: #3b82f6 !important; color: white !important; font-size: 28px !important; box-shadow: 0 0 25px rgba(59, 130, 246, 0.8) !important; }}
+        /* Sidebar & Others */
+        section[data-testid="stSidebar"] {{ background-color: #000000 !important; border-right: 1px solid #1f2937; }}
+        div.stButton > button {{ width: 100%; border-radius: 10px; font-weight: 700; background: #111827; color: #fff; border: 1px solid #374151; }}
+        div.stButton > button:hover {{ border-color: #fff; background: #000; }}
+        [data-testid="stDataFrame"] th {{ background-color: #111827 !important; color: #9ca3af !important; }}
+        header[data-testid="stHeader"], [data-testid="stToolbar"] {{ display: none !important; }}
     </style>
     """
     st.markdown(final_css, unsafe_allow_html=True)
@@ -545,6 +547,7 @@ def html_isleyici(log_callback):
             for _, row in df_conf.iterrows():
                 if pd.notna(row[manuel_col]) and str(row[manuel_col]).strip() != "":
                     try:
+                        # 1. DEĞİŞİKLİK BURADA: int() yerine float() kullanıldı
                         fiyat_man = float(row[manuel_col]) 
                         if fiyat_man > 0:
                             veriler.append({"Tarih": bugun, "Zaman": simdi, "Kod": row['Kod'], "Madde_Adi": row[ad_col], "Fiyat": fiyat_man, "Kaynak": "Manuel", "URL": row[url_col]})
@@ -574,6 +577,7 @@ def html_isleyici(log_callback):
                                 if target['Kod'] in islenen_kodlar: continue
                                 fiyat, kaynak = fiyat_bul_siteye_gore(soup, target[url_col])
                                 if fiyat > 0:
+                                    # 2. DEĞİŞİKLİK BURADA: int(fiyat) yerine float(fiyat) yapıldı
                                     veriler.append({"Tarih": bugun, "Zaman": simdi, "Kod": target['Kod'], "Madde_Adi": target[ad_col], "Fiyat": float(fiyat), "Kaynak": kaynak, "URL": target[url_col]})
                                     islenen_kodlar.add(target['Kod']); hs += 1
             except Exception as e: log_callback(f"⚠️ Hata ({zip_file.name}): {str(e)}")
@@ -795,6 +799,11 @@ def dashboard_modu():
 
                     # Satır satır uygula
                     df_analiz['Aylik_Ortalama'] = df_analiz[bu_ay_cols].apply(geometrik_ortalama_hesapla, axis=1)
+                    
+                    # Eğer tüm ay boyunca hiç verisi olmayan (NaN) ürünler varsa, 
+                    # geçici olarak son bilinen fiyatı alabiliriz (veya hesaplamadan düşeriz).
+                    # Burada hesaplamadan düşmek daha doğrudur ama tablo bütünlüğü için fillna yapılabilir.
+                    # Biz düşürmeyi tercih ediyoruz (dropna), bu yüzden fillna yapmıyoruz.
                 else:
                     df_analiz['Aylik_Ortalama'] = df_analiz[son] # Fallback
 
@@ -901,14 +910,14 @@ def dashboard_modu():
                     except: pass
 
                 def kpi_card(title, val, sub, sub_color, accent_color, icon):
-                       st.markdown(f"""
-                         <div class="kpi-card" style="border-left: 3px solid {accent_color};">
-                              <div style="position: absolute; right: 20px; top: 20px; opacity: 0.1; font-size: 32px; filter: grayscale(100%);">{icon}</div>
-                             <div class="kpi-title">{title}</div>
-                             <div class="kpi-value">{val}</div>
-                             <div class="kpi-sub" style="color: {sub_color};">{sub}</div>
-                         </div>
-                     """, unsafe_allow_html=True)
+                      st.markdown(f"""
+                        <div class="kpi-card" style="border-left: 3px solid {accent_color};">
+                             <div style="position: absolute; right: 20px; top: 20px; opacity: 0.1; font-size: 32px; filter: grayscale(100%);">{icon}</div>
+                            <div class="kpi-title">{title}</div>
+                            <div class="kpi-value">{val}</div>
+                            <div class="kpi-sub" style="color: {sub_color};">{sub}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
                 c1, c2, c3, c4 = st.columns(4)
                 with c1: kpi_card("Kümülatif Enflasyon", f"%{enf_genel:.2f}", f"Baz: {baz_tanimi}", "#f87171", "#ef4444", "📈")
@@ -1047,127 +1056,97 @@ def dashboard_modu():
                             pdf_data = create_pdf_report_advanced(text_content=rap_text, df_table=df_analiz.sort_values('Fark', ascending=False).head(20), figures=figs, manset_oran=enf_genel, metrics_dict=metrics, date_str_ignored="-")
                             st.success("✅ Rapor Hazırlandı!")
                             st.download_button("📥 PDF Raporunu İndir", data=pdf_data, file_name=f"Strateji_Raporu_{son}.pdf", mime="application/pdf")
-                # --- SİNYAL MERKEZİ BOTU (GELİŞMİŞ VERSİYON) ---
-                with st.popover("💬", help="AI Asistan"):
-                    st.markdown("### 🧬 SİNYAL MERKEZİ v2.0")
-                    
-                    # Kapsam Seçimi
-                    tum_kategoriler = ["TÜMÜ"] + sorted(df_analiz['Grup'].unique().tolist())
-                    c_bot1, c_bot2 = st.columns([1, 2])
-                    
-                    with c_bot1:
-                        bot_kapsam = st.selectbox("Kapsam", tum_kategoriler, label_visibility="collapsed", key="bot_kapsam_yeni")
-                    
-                    with c_bot2:
-                        sorular = [
-                            "Analiz Seçiniz...",
-                            "🚀 Zam Şampiyonları (Top 3)",
-                            "📉 İndirim Liderleri (Top 3)",
-                            "📊 Enflasyon/Değişim Ortalaması",
-                            "💎 En Pahalı Ürünler",
-                            "🏷️ En Ucuz Ürünler",
-                            "🧱 Fiyatı Sabit Kalanlar",
-                        ]
-                        bot_soru = st.selectbox("Soru", sorular, label_visibility="collapsed", key="bot_soru_yeni")
+
+            # --- SİNYAL MERKEZİ BOTU ---
+            with st.popover("💬"):
+                st.markdown("### 🤖 SİNYAL MERKEZİ")
+                st.caption("Veri analitiği asistanı (Offline)")
                 
-                    # Veri Filtreleme
-                    df_bot = df_analiz.copy()
-                    if bot_kapsam != "TÜMÜ":
-                        df_bot = df_bot[df_bot['Grup'] == bot_kapsam]
+                tum_kategoriler = ["TÜMÜ"] + sorted(df_analiz['Grup'].unique().tolist())
+                bot_kapsam = st.selectbox("Kapsam:", tum_kategoriler, key="bot_kapsam_float")
                 
-                    # --- CEVAP MANTIĞI ---
-                    if bot_soru != "Analiz Seçiniz...":
-                        try:
-                            html_out = ""
-                            header_txt = f"SYSTEM_ANALYSIS :: {bot_kapsam.upper()} :: {datetime.now().strftime('%H:%M:%S')}"
-                            
-                            if df_bot.empty:
-                                html_out = "<span style='color:red'>HATA: Veri seti boş.</span>"
-                            else:
-                                if "Zam Şampiyonları" in bot_soru:
-                                    top3 = df_bot.sort_values('Fark', ascending=False).head(3)
-                                    rows = ""
-                                    for i, (_, r) in enumerate(top3.iterrows()):
-                                        rows += f"<tr><td>#{i+1} {r[ad_col][:20]}..</td><td style='text-align:right' class='trend-up'>%{(r['Fark']*100):.2f} ▲</td></tr>"
-                                    html_out = f"Dönemin en yüksek fiyat artışları:<table class='mini-table'><tr><th>ÜRÜN</th><th style='text-align:right'>DEĞİŞİM</th></tr>{rows}</table>"
-            
-                                elif "İndirim Liderleri" in bot_soru:
-                                    top3 = df_bot.sort_values('Fark', ascending=True).head(3)
-                                    rows = ""
-                                    for i, (_, r) in enumerate(top3.iterrows()):
-                                        # Sadece düşenleri veya en az artanları göster
-                                        color_cls = "trend-down" if r['Fark'] < 0 else "cmd-response"
-                                        rows += f"<tr><td>#{i+1} {r[ad_col][:20]}..</td><td style='text-align:right' class='{color_cls}'>%{(r['Fark']*100):.2f} ▼</td></tr>"
-                                    html_out = f"Fiyatı gevşeyen veya en az artanlar:<table class='mini-table'><tr><th>ÜRÜN</th><th style='text-align:right'>DEĞİŞİM</th></tr>{rows}</table>"
-            
-                                elif "Ortalama" in bot_soru:
-                                    ort = df_bot['Fark'].mean() * 100
-                                    med = df_bot['Fark'].median() * 100
-                                    trend = "trend-up" if ort > 0 else "trend-down"
-                                    arrow = "▲" if ort > 0 else "▼"
-                                    html_out = f"""
-                                    Bu kapsamdaki ({len(df_bot)}) ürün için istatistikler:<br><br>
-                                    • Aritmetik Ort: <span class='{trend}'>%{ort:.2f} {arrow}</span><br>
-                                    • Medyan (Ortanca): <span class='highlight-val'>%{med:.2f}</span>
-                                    """
-            
-                                elif "En Pahalı" in bot_soru:
-                                    top3 = df_bot.sort_values(son, ascending=False).head(3)
-                                    rows = ""
-                                    for i, (_, r) in enumerate(top3.iterrows()):
-                                        rows += f"<tr><td>{r[ad_col][:18]}..</td><td style='text-align:right' class='highlight-val'>{r[son]:.2f} ₺</td></tr>"
-                                    html_out = f"Etiket fiyatı en yüksek ürünler:<table class='mini-table'>{rows}</table>"
-            
-                                elif "En Ucuz" in bot_soru:
-                                    top3 = df_bot.sort_values(son, ascending=True).head(3)
-                                    rows = ""
-                                    for i, (_, r) in enumerate(top3.iterrows()):
-                                        rows += f"<tr><td>{r[ad_col][:18]}..</td><td style='text-align:right' class='highlight-val'>{r[son]:.2f} ₺</td></tr>"
-                                    html_out = f"Etiket fiyatı en düşük ürünler:<table class='mini-table'>{rows}</table>"
-            
-                                elif "Sabit" in bot_soru:
-                                    sabitler = df_bot[df_bot['Fark'] == 0]
-                                    count = len(sabitler)
-                                    if count > 0:
-                                        ornekler = ", ".join(sabitler[ad_col].head(4).tolist())
-                                        html_out = f"Toplam <span class='highlight-val'>{count}</span> ürünün fiyatı değişmedi.<br><br>Örnekler:<br><span style='font-size:11px; opacity:0.8'>{ornekler}...</span>"
-                                    else:
-                                        html_out = "Baz döneme göre fiyatı değişmeyen ürün bulunamadı."
+                df_bot = df_analiz.copy()
+                if bot_kapsam != "TÜMÜ":
+                    df_bot = df_bot[df_bot['Grup'] == bot_kapsam]
 
-                            # TERMİNAL ÇIKTISI (TRY BLOĞUNUN İÇİNDE OLMALI)
-                            st.markdown(f"""
-                            <div class="terminal-wrapper">
-                                <div class="terminal-header">
-                                    <span>TERMINAL_OUTPUT</span>
-                                    <span>{bot_kapsam[:3].upper()}</span>
-                                </div>
-                                <div class="cmd-line">user@basekonomist:~$ ./analyze --{bot_soru.split(' ')[1].lower()}</div>
-                                <div class="cmd-response">
-                                    {html_out}
-                                </div>
-                                <div style="margin-top:10px; font-size:9px; color:#555;">_ cursor blinking...</div>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                        except Exception as e:
-                            st.error(f"Sistem Hatası: {e}")
-
+                sorular = [
+                    "Soru Seçiniz...",
+                    "📈 En yüksek artış (Zam Şampiyonu)?",
+                    "📉 En büyük düşüş (İndirim Lideri)?",
+                    "📊 Ortalama değişim (Enflasyon) ne kadar?",
+                    "💎 En pahalı ürün hangisi?",
+                    "🏷️ En ucuz ürün hangisi?",
+                    "⚖️ Fiyatı değişmeyen (Sabit) ürün var mı?",
+                    "🔢 Kaç ürün arttı / kaç ürün düştü?",
+                    "🔥 %10'dan fazla artan ürünler?",
+                    "🧊 %10'dan fazla düşen ürünler?"
+                ]
+                
+                bot_soru = st.selectbox("Soru:", sorular, key="bot_soru_float")
+                
+                if bot_soru != "Soru Seçiniz...":
+                    cevap = ""
+                    if df_bot.empty:
+                        cevap = "Seçilen kapsamda veri bulunamadı."
                     else:
-                        # BOŞ DURUM (ANALİZ SEÇİLMEDİĞİNDE)
-                        st.markdown(f"""
-                        <div class="terminal-wrapper" style="opacity:0.7">
-                            <div class="terminal-header"><span>READY</span><span>IDLE</span></div>
-                            <div class="cmd-response" style="color:#555">
-                                Sistem hazır. Analiz başlatmak için yukarıdan bir sorgu seçin.<br><br>
-                                > Awaiting input...
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        if "Zam Şampiyonu" in bot_soru:
+                            row = df_bot.sort_values('Fark', ascending=False).iloc[0]
+                            cevap = f"Zirvedeki ürün: **{row[ad_col]}**.<br>Kümülatif Artış: <span style='color:#f87171'>%{row['Fark']*100:.2f}</span>"
+                        elif "İndirim Lideri" in bot_soru:
+                            row = df_bot.sort_values('Fark', ascending=True).iloc[0]
+                            renk = "#4ade80" if row['Fark'] < 0 else "#a1a1aa"
+                            cevap = f"En dipteki ürün: **{row[ad_col]}**.<br>Değişim: <span style='color:{renk}'>%{row['Fark']*100:.2f}</span>"
+                        elif "Ortalama değişim" in bot_soru:
+                            # Ağırlıklı ortalamayı burada da kullanabiliriz ama basit soru için aritmetik
+                            ort = df_bot['Fark'].mean() * 100
+                            renk = "#f87171" if ort > 0 else "#4ade80"
+                            cevap = f"Bu kapsamdaki ({len(df_bot)} ürün) basit ortalama: <span style='color:{renk}'>%{ort:.2f}</span>"
+                        elif "En pahalı" in bot_soru:
+                            row = df_bot.sort_values(son, ascending=False).iloc[0]
+                            cevap = f"Etiket fiyatı en yüksek: **{row[ad_col]}**.<br>Fiyat: **{row[son]:.2f} TL**"
+                        elif "En ucuz" in bot_soru:
+                            row = df_bot.sort_values(son, ascending=True).iloc[0]
+                            cevap = f"Etiket fiyatı en düşük: **{row[ad_col]}**.<br>Fiyat: **{row[son]:.2f} TL**"
+                        elif "Sabit" in bot_soru:
+                            sabitler = df_bot[df_bot['Fark'] == 0]
+                            count = len(sabitler)
+                            if count > 0:
+                                ornekler = ", ".join(sabitler[ad_col].head(3).tolist())
+                                cevap = f"Toplam **{count}** ürünün fiyatı baz döneme göre değişmedi.<br>Örnekler: {ornekler}..."
+                            else:
+                                cevap = "Fiyatı sabit kalan ürün bulunmuyor."
+                        elif "Kaç ürün" in bot_soru:
+                            artan = len(df_bot[df_bot['Fark'] > 0])
+                            dusen = len(df_bot[df_bot['Fark'] < 0])
+                            sabit = len(df_bot[df_bot['Fark'] == 0])
+                            cevap = f"🔺 Artan: **{artan}**<br>🔻 Düşen: **{dusen}**<br>➖ Sabit: **{sabit}**"
+                        elif "%10'dan fazla artan" in bot_soru:
+                            liste = df_bot[df_bot['Fark'] > 0.10]
+                            count = len(liste)
+                            if count > 0:
+                                ornek = liste.sort_values('Fark', ascending=False).iloc[0][ad_col]
+                                cevap = f"Toplam **{count}** üründe %10 üzeri artış var.<br>Lider: {ornek}"
+                            else:
+                                cevap = "Bu kriterde ürün yok."
+                        elif "%10'dan fazla düşen" in bot_soru:
+                            liste = df_bot[df_bot['Fark'] < -0.10]
+                            count = len(liste)
+                            if count > 0:
+                                ornek = liste.sort_values('Fark', ascending=True).iloc[0][ad_col]
+                                cevap = f"Toplam **{count}** üründe %10 üzeri düşüş var.<br>Lider: {ornek}"
+                            else:
+                                cevap = "Bu kriterde ürün yok."
+
+                    st.markdown(f"""
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-left:3px solid #3b82f6; padding:12px; border-radius:8px; margin-top:10px;">
+                        <div style="font-size:10px; color:#64748b; margin-bottom:4px; text-transform:uppercase;">ANALİZ SONUCU:</div>
+                        <div style="color:#0f172a; font-size:13px; line-height:1.4;">{cevap}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
         except Exception as e: st.error(f"Sistem Hatası: {e}")
     st.markdown('<div style="text-align:center; color:#52525b; font-size:11px; margin-top:50px;">VALIDASYON MUDURLUGU © 2026 - CONFIDENTIAL</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     dashboard_modu()
-
 
