@@ -1226,7 +1226,7 @@ def dashboard_modu():
                 else:
                     # Boş Durum (Placeholder) - SİYAH EKRAN DÜZELTMESİ
                     st.markdown(f"""
-                    <div class="terminal-wrapper" style="background-color: #050505 !important; opacity: 1 !important; border: 1px solid #333;">
+                    <div class="terminal-wrapper" style="background-color: #000000 !important; opacity: 1 !important; border: 1px solid #333;">
                         <div class="terminal-header" style="color: #ffffff !important; border-bottom: 1px solid #333; opacity: 1 !important; font-weight: bold;">
                             <span>SYSTEM_STATUS</span>
                             <span>WAITING_INPUT</span>
@@ -1250,6 +1250,7 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
