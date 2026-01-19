@@ -895,17 +895,24 @@ def dashboard_modu():
                     except: pass
 
                 def kpi_card(title, val, sub, sub_color, accent_color, icon):
-                      st.markdown(f"""
-                        <div class="kpi-card">
-                            <div style="position: absolute; left: 0; top: 15px; bottom: 15px; width: 3px; background: {accent_color}; border-radius: 0 4px 4px 0; box-shadow: 0 0 10px {accent_color};"></div>
-                            <div style="position: absolute; right: 20px; top: 20px; font-size: 28px; opacity: 0.8; filter: drop-shadow(0 0 15px {accent_color}50);">{icon}</div>
-                            <div class="kpi-title">{title}</div>
-                            <div class="kpi-value">{val}</div>
-                            <div class="kpi-sub">
-                                <span style="display:inline-block; width:6px; height:6px; background:{sub_color}; border-radius:50%;"></span>
-                                <span style="color: {sub_color}; filter: brightness(1.2);">{sub}</span>
-                            </div>
+                    # Alt metin (sub) varsa HTML'ini hazırla, yoksa boş bırak
+                    sub_html = ""
+                    if sub:
+                        sub_html = f"""
+                        <div class="kpi-sub">
+                            <span style="display:inline-block; width:6px; height:6px; background:{sub_color}; border-radius:50%;"></span>
+                            <span style="color: {sub_color}; filter: brightness(1.2);">{sub}</span>
                         </div>
+                        """
+                
+                    st.markdown(f"""
+                    <div class="kpi-card">
+                        <div style="position: absolute; left: 0; top: 15px; bottom: 15px; width: 3px; background: {accent_color}; border-radius: 0 4px 4px 0; box-shadow: 0 0 10px {accent_color};"></div>
+                        <div style="position: absolute; right: 20px; top: 20px; font-size: 28px; opacity: 0.8; filter: drop-shadow(0 0 15px {accent_color}50);">{icon}</div>
+                        <div class="kpi-title">{title}</div>
+                        <div class="kpi-value">{val}</div>
+                        {sub_html}
+                    </div>
                     """, unsafe_allow_html=True)
 
                 c1, c2, c3, c4 = st.columns(4)
@@ -1056,6 +1063,7 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
