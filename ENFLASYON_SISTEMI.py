@@ -1075,18 +1075,7 @@ def dashboard_modu():
                     else:
                         st.info("🔍 Aradığınız kriterlere uygun ürün bulunamadı.")
                 
-                with t_ozet:
-                    # --- YENİ EKLENEN ÖZELLİK: ZAMAN SERİSİ GRAFİĞİ ---
-                    if not df_trend.empty:
-                        st.subheader("📈 Enflasyon Seyri (Ay İçi Trend)")
-                        df_trend['TÜFE_Oran'] = df_trend['TÜFE'] - 100
-                        fig_trend = px.area(df_trend, x='Tarih', y='TÜFE_Oran', 
-                                            line_shape='spline', markers=True)
-                        fig_trend.update_traces(line_color='#3b82f6', fillcolor='rgba(59, 130, 246, 0.1)')
-                        fig_trend.update_yaxes(title=None, ticksuffix="%")
-                        fig_trend.update_xaxes(title=None)
-                        st.plotly_chart(style_chart(fig_trend), use_container_width=True)
-                    
+                with t_ozet:                    
                     # --- MEVCUT ÖZETLER ---
                     rising = len(df_analiz[df_analiz['Fark'] > 0])
                     falling = len(df_analiz[df_analiz['Fark'] < 0])
@@ -1182,3 +1171,4 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
