@@ -31,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- CSS MOTORU (AGRESİF STİL) ---
+# --- CSS MOTORU (CYBERPUNK / FINTECH STİL) ---
 def apply_theme():
     st.session_state.plotly_template = "plotly_dark"
 
@@ -49,16 +49,42 @@ def apply_theme():
             --neon-red: #ef4444;
         }}
         
-        /* --- KRİTİK DÜZELTME: TABLOYU KARARTMA --- */
+        /* --- SAYFA GİRİŞ ANİMASYONU --- */
+        @keyframes fadeIn {{
+            0% {{ opacity: 0; transform: translateY(10px); }}
+            100% {{ opacity: 1; transform: translateY(0); }}
+        }}
+        .block-container {{ 
+            animation: fadeIn 0.8s ease-out; 
+            padding-top: 2rem !important;
+        }}
+
+        /* --- INPUT ALANLARINI GÜZELLEŞTİRME --- */
+        .stSelectbox > div > div {{
+            background-color: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid var(--border-color) !important;
+            color: #e4e4e7 !important;
+            border-radius: 8px !important;
+        }}
+        .stSelectbox > div > div:hover {{
+            border-color: rgba(255, 255, 255, 0.3) !important;
+        }}
+        /* Dropdown açıldığındaki liste rengi */
+        ul[data-baseweb="menu"] {{
+            background-color: #18181b !important;
+            border: 1px solid #3f3f46 !important;
+        }}
+
+        /* --- TABLO ESTETİĞİ --- */
         [data-testid="stDataEditor"], [data-testid="stDataFrame"] {{
             color-scheme: dark; 
             background-color: transparent !important;
         }}
-        
         div[data-testid="stDataEditor"] > div, div[data-testid="stDataFrame"] > div {{
             background-color: rgba(24, 24, 27, 0.4) !important;
             border: 1px solid #333 !important;
             border-radius: 8px !important;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
         }}
 
         /* --- HEADER VE TOOLBAR YOK ETME --- */
@@ -66,82 +92,87 @@ def apply_theme():
         [data-testid="stToolbar"] {{ display: none; }}
         [data-testid="stDecoration"] {{ display: none; }}
         
-        .main .block-container {{ padding-top: 2rem !important; }}
-
         /* --- GENEL ARKA PLAN --- */
         [data-testid="stAppViewContainer"] {{
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08), transparent 25%), 
-                radial-gradient(circle at 85% 30%, rgba(239, 68, 68, 0.05), transparent 25%);
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.06), transparent 25%), 
+                radial-gradient(circle at 85% 30%, rgba(239, 68, 68, 0.04), transparent 25%);
             font-family: 'Inter', sans-serif !important;
             color: #e4e4e7 !important;
         }}
 
-        /* --- TAB (SEKME) İSİMLERİ BEYAZ --- */
+        /* --- TAB (SEKME) İSİMLERİ --- */
         button[data-baseweb="tab"] {{ background-color: transparent !important; }}
         button[data-baseweb="tab"] div[data-testid="stMarkdownContainer"] p {{
+            color: #a1a1aa !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+            transition: color 0.3s;
+        }}
+        button[data-baseweb="tab"]:hover div[data-testid="stMarkdownContainer"] p {{
             color: #ffffff !important;
-            font-weight: 700 !important;
-            font-size: 14px !important;
         }}
         button[data-baseweb="tab"][aria-selected="true"] {{ border-bottom-color: #3b82f6 !important; }}
+        button[data-baseweb="tab"][aria-selected="true"] div[data-testid="stMarkdownContainer"] p {{
+            color: #ffffff !important;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }}
 
-        /* --- EXCEL İNDİR BUTONU SİYAH --- */
+        /* --- EXCEL İNDİR BUTONU --- */
         [data-testid="stDownloadButton"] button {{
             background-color: #000000 !important;
             color: #ffffff !important;
             border: 1px solid #3f3f46 !important;
-            font-weight: 800 !important;
+            font-weight: 700 !important;
             text-transform: uppercase !important;
-            letter-spacing: 0.5px !important;
+            letter-spacing: 1px !important;
             transition: all 0.3s ease !important;
+            border-radius: 6px !important;
         }}
         [data-testid="stDownloadButton"] button:hover {{
             background-color: #18181b !important;
-            border-color: #ffffff !important;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1) !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2) !important;
+            color: #3b82f6 !important;
         }}
 
         /* --- KPI KARTLARI (NEON GLOW) --- */
         .kpi-card {{
-            background: linear-gradient(145deg, rgba(24, 24, 27, 0.8), rgba(24, 24, 27, 0.4));
+            background: linear-gradient(145deg, rgba(39, 39, 42, 0.4), rgba(24, 24, 27, 0.6));
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
             padding: 24px;
             position: relative;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
         }}
         .kpi-card:hover {{ 
             transform: translateY(-5px); 
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(59, 130, 246, 0.1);
-            border-color: rgba(255, 255, 255, 0.2); 
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255,255,255,0.1);
         }}
         
-        .kpi-card::before {{
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 60%);
-            transform: rotate(30deg);
-            pointer-events: none;
-        }}
-
-        .kpi-title {{ font-size: 11px; font-weight: 700; color: #a1a1aa !important; text-transform: uppercase; margin-bottom: 8px; position: relative; z-index: 1; }}
-        .kpi-value {{ font-size: 38px; font-weight: 800; color: #ffffff !important; text-shadow: 0 0 20px rgba(255,255,255,0.1); position: relative; z-index: 1; }}
+        .kpi-title {{ font-size: 11px; font-weight: 700; color: #a1a1aa !important; text-transform: uppercase; margin-bottom: 8px; position: relative; z-index: 1; letter-spacing: 0.5px; }}
+        .kpi-value {{ font-size: 38px; font-weight: 800; color: #ffffff !important; text-shadow: 0 0 30px rgba(255,255,255,0.1); position: relative; z-index: 1; font-family: 'Inter', sans-serif; }}
         .kpi-sub {{ font-size: 12px; font-weight: 500; margin-top: 8px; color: #d4d4d8 !important; display: flex; align-items: center; gap: 5px; position: relative; z-index: 1; }}
 
         /* --- ÜRÜN KARTLARI --- */
-        .pg-card {{ background: rgba(39, 39, 42, 0.4); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; height: 180px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; position: relative; transition: all 0.3s ease; }}
-        .pg-card:hover {{ background: rgba(63, 63, 70, 0.6); border-color: rgba(255,255,255,0.2); transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); }}
+        .pg-card {{ 
+            background: rgba(39, 39, 42, 0.3); 
+            border: 1px solid var(--border-color); 
+            border-radius: 12px; padding: 16px; height: 180px; 
+            display: flex; flex-direction: column; justify-content: space-between; align-items: center; 
+            text-align: center; position: relative; transition: all 0.3s ease; 
+        }}
+        .pg-card:hover {{ 
+            background: rgba(63, 63, 70, 0.5); 
+            border-color: rgba(255,255,255,0.15); 
+            transform: translateY(-3px); 
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); 
+        }}
         
         .pg-name {{ 
             font-size: 13px; font-weight: 600; color: #e4e4e7 !important; line-height: 1.4; opacity: 0.9; 
@@ -149,18 +180,21 @@ def apply_theme():
         }}
         
         .pg-price {{ font-size: 24px; font-weight: 900; color: #ffffff !important; letter-spacing: -0.5px; margin: 10px 0; }}
+        
         .pg-badge {{ padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; width: auto; min-width: 80px; display: inline-flex; justify-content: center; align-items: center; gap: 4px; }}
-        .pg-red {{ background: rgba(239, 68, 68, 0.15); color: #fca5a5 !important; border: 1px solid rgba(239, 68, 68, 0.2); }}
-        .pg-green {{ background: rgba(34, 197, 94, 0.15); color: #86efac !important; border: 1px solid rgba(34, 197, 94, 0.2); }}
-        .pg-gray {{ background: #27272a; color: #a1a1aa !important; }}
+        .pg-red {{ background: rgba(239, 68, 68, 0.1); color: #fca5a5 !important; border: 1px solid rgba(239, 68, 68, 0.3); }}
+        .pg-green {{ background: rgba(34, 197, 94, 0.1); color: #86efac !important; border: 1px solid rgba(34, 197, 94, 0.3); }}
+        .pg-gray {{ background: #27272a; color: #a1a1aa !important; border: 1px solid #3f3f46; }}
 
-        .ticker-wrap {{ width: 100%; overflow: hidden; background-color: rgba(0,0,0,0.3); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 8px 0; margin-bottom: 25px; backdrop-filter: blur(5px); white-space: nowrap; }}
+        /* --- TICKER --- */
+        .ticker-wrap {{ width: 100%; overflow: hidden; background-color: rgba(0,0,0,0.2); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 8px 0; margin-bottom: 25px; backdrop-filter: blur(5px); white-space: nowrap; }}
         .ticker-move {{ display: inline-block; padding-left: 100%; animation: marquee 60s linear infinite; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; letter-spacing: -0.5px; }}
         .ticker-move:hover {{ animation-play-state: paused; }}
         @keyframes marquee {{ 0% {{ transform: translate(0, 0); }} 100% {{ transform: translate(-100%, 0); }} }}
 
-        section[data-testid="stSidebar"] {{ background-color: #000000 !important; border-right: 1px solid #27272a; }}
+        section[data-testid="stSidebar"] {{ background-color: #050505 !important; border-right: 1px solid #27272a; }}
         
+        /* --- BUTONLAR --- */
         div.stButton > button {{ 
             width: 100%; border-radius: 8px; font-weight: 600; 
             background: linear-gradient(to bottom, #27272a, #18181b); 
@@ -172,13 +206,15 @@ def apply_theme():
         }}
         div.stButton > button:hover {{ 
             border-color: #3b82f6; color: #fff; background: #27272a;
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+            transform: scale(1.01);
         }}
         div.stButton > button:active {{ transform: scale(0.98); }}
         
         ::-webkit-scrollbar {{ width: 6px; height: 6px; }}
         ::-webkit-scrollbar-track {{ background: transparent; }}
         ::-webkit-scrollbar-thumb {{ background: #3f3f46; border-radius: 3px; }}
+        ::-webkit-scrollbar-thumb:hover {{ background: #52525b; }}
     </style>
     """
     st.markdown(final_css, unsafe_allow_html=True)
@@ -637,13 +673,16 @@ def dashboard_modu():
 
     # SIDEBAR (HABER AKIŞI)
     with st.sidebar:
-        # SIDEBAR LOGO/ICON
+        # SIDEBAR LOGO/ICON (Gradient Metin)
         st.markdown("""
             <div style="text-align: center; padding-bottom: 20px;">
-                <div style="font-size: 60px; filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));">💎</div>
+                <div style="font-size: 60px; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.6)); animation: float 6s ease-in-out infinite;">💎</div>
+                <div style="font-size: 24px; font-weight: 800; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-top: 10px;">PİYASA MONİTÖRÜ</div>
             </div>
+            <style>
+                @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+            </style>
         """, unsafe_allow_html=True)
-        st.title("PİYASA MONİTÖRÜ")
         
         tv_theme = "dark" 
         symbols = [
@@ -687,16 +726,16 @@ def dashboard_modu():
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap');
             body { margin: 0; padding: 0; background: transparent; font-family: 'Inter', sans-serif; overflow: hidden; }
             .header-wrapper {
-                background: rgba(10, 10, 12, 0.6); backdrop-filter: blur(15px);
-                border-bottom: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+                background: rgba(20, 20, 25, 0.4); backdrop-filter: blur(20px);
+                border-bottom: 1px solid rgba(255,255,255,0.05); border-radius: 16px;
                 padding: 20px 30px; display: flex; justify-content: space-between; align-items: center;
-                box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+                box-shadow: 0 4px 30px rgba(0,0,0,0.3);
             }
-            .app-title { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
-            .app-subtitle { font-size: 12px; color: #71717a; font-weight: 600; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
-            .live-badge { display: inline-flex; align-items: center; background: rgba(255,255,255,0.1); color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; margin-left: 15px; border: 1px solid rgba(255,255,255,0.1); }
+            .app-title { font-size: 28px; font-weight: 900; background: linear-gradient(90deg, #ffffff, #a1a1aa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -1px; }
+            .app-subtitle { font-size: 11px; color: #71717a; font-weight: 600; margin-top: 4px; letter-spacing: 2px; text-transform: uppercase; }
+            .live-badge { display: inline-flex; align-items: center; background: rgba(34, 197, 94, 0.1); color: #4ade80; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; margin-left: 15px; border: 1px solid rgba(34, 197, 94, 0.2); box-shadow: 0 0 15px rgba(34, 197, 94, 0.2); }
             .live-dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px #22c55e; animation: pulse 2s infinite; }
-            @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+            @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
             .clock-container { text-align: right; }
             .location-tag { font-size: 9px; color: #52525b; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
             #live_clock { font-family: 'Inter', monospace; font-size: 26px; font-weight: 700; color: #e4e4e7; letter-spacing: -1px; }
@@ -989,8 +1028,8 @@ def dashboard_modu():
                         )
                         if not is_sunburst:
                              layout_args.update(dict(
-                                 xaxis=dict(showgrid=False, zeroline=False, showline=True, linecolor="#3f3f46"), 
-                                 yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.03)", zeroline=False) # Gridleri çok silik yap
+                                 xaxis=dict(showgrid=False, zeroline=False, showline=True, linecolor="#3f3f46", gridcolor='rgba(255,255,255,0.05)', gridwidth=1, dtick="M1"), 
+                                 yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.05)", zeroline=False, gridwidth=1, griddash='dot') 
                              ))
                         fig.update_layout(**layout_args)
                         # Modebar'ı (grafik üzerindeki butonları) gizle, sadece hoverda göster
