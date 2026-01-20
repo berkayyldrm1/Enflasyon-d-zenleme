@@ -6,4 +6,5 @@ PyGithub
 requests
 urllib3
 fpdf
+prophet
 openpyxl
