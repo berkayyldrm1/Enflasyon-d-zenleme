@@ -1100,12 +1100,13 @@ def dashboard_modu():
                         pass
 
                 def kpi_card(title, val, sub, sub_color, accent_color, icon):
-                    # Alt metin HTML'ini TEK SATIRDA hazırlıyoruz ki Streamlit bunu kod bloğu sanmasın
+                    # Alt metin varsa HTML oluştur, yoksa boş string ata
                     sub_html = ""
                     if sub:
                         sub_html = f"<div class='kpi-sub'><span style='display:inline-block; width:6px; height:6px; background:{sub_color}; border-radius:50%; box-shadow:0 0 5px {sub_color};'></span><span style='color:{sub_color}; filter: brightness(1.2);'>{sub}</span></div>"
-
-                    st.markdown(f"""
+                    
+                    # HTML'i tek bir f-string bloğu olarak, gereksiz satır boşluklarını temizleyerek yazıyoruz
+                    card_html = f"""
                     <div class="kpi-card">
                         <div class="kpi-bg-icon" style="color:{accent_color};">{icon}</div>
                         <div class="kpi-content">
@@ -1114,7 +1115,8 @@ def dashboard_modu():
                             {sub_html}
                         </div>
                     </div>
-                    """, unsafe_allow_html=True)
+                    """
+                    st.markdown(card_html, unsafe_allow_html=True)
 
                 c1, c2, c3, c4 = st.columns(4)
 
@@ -1316,5 +1318,6 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
