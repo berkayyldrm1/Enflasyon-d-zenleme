@@ -1100,22 +1100,14 @@ def dashboard_modu():
                         pass
 
                 def kpi_card(title, val, sub, sub_color, accent_color, icon):
-                    # Alt metin varsa HTML oluştur, yoksa boş string ata
-                    sub_html = ""
-                    if sub:
-                        sub_html = f"<div class='kpi-sub'><span style='display:inline-block; width:6px; height:6px; background:{sub_color}; border-radius:50%; box-shadow:0 0 5px {sub_color};'></span><span style='color:{sub_color}; filter: brightness(1.2);'>{sub}</span></div>"
-                    
-                    # HTML'i tek bir f-string bloğu olarak, gereksiz satır boşluklarını temizleyerek yazıyoruz
-                    card_html = f"""
-                    <div class="kpi-card">
-                        <div class="kpi-bg-icon" style="color:{accent_color};">{icon}</div>
-                        <div class="kpi-content">
-                            <div class="kpi-title">{title}</div>
-                            <div class="kpi-value">{val}</div>
-                            {sub_html}
-                        </div>
-                    </div>
-                    """
+                    # Alt metin varsa HTML hazırla, yoksa boş string
+                    # sub_html'i de tek satırda tutuyoruz
+                    sub_html = f"<div class='kpi-sub'><span style='display:inline-block; width:6px; height:6px; background:{sub_color}; border-radius:50%; box-shadow:0 0 5px {sub_color};'></span><span style='color:{sub_color}; filter: brightness(1.2);'>{sub}</span></div>" if sub else ""
+
+                    # KESİN ÇÖZÜM: HTML'i tek satırda birleştiriyoruz. 
+                    # Bu sayede Streamlit/Markdown parser boşlukları yanlış yorumlayıp ekrana </div> basamaz.
+                    card_html = f'<div class="kpi-card"><div class="kpi-bg-icon" style="color:{accent_color};">{icon}</div><div class="kpi-content"><div class="kpi-title">{title}</div><div class="kpi-value">{val}</div>{sub_html}</div></div>'
+
                     st.markdown(card_html, unsafe_allow_html=True)
 
                 c1, c2, c3, c4 = st.columns(4)
@@ -1318,6 +1310,7 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
