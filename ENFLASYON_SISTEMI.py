@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.figure_factory as ff  # YENİ: Dağılım grafikleri için
 from bs4 import BeautifulSoup
 import re
 import calendar
@@ -22,6 +23,14 @@ import math
 import random
 import html
 import numpy as np
+import matplotlib.pyplot as plt # YENİ: WordCloud için
+
+# WordCloud opsiyonel (Yüklü değilse hata vermesin)
+try:
+    from wordcloud import WordCloud
+    WORDCLOUD_ACTIVE = True
+except ImportError:
+    WORDCLOUD_ACTIVE = False
 
 # --- 1. AYARLAR VE TEMA YÖNETİMİ ---
 st.set_page_config(
@@ -31,7 +40,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS MOTORU (PREMIUM FINTECH / GLASSMORPHISM) ---
 # --- CSS MOTORU (PREMIUM FINTECH / GLASSMORPHISM) ---
 def apply_theme():
     st.session_state.plotly_template = "plotly_dark"
@@ -743,6 +751,143 @@ Hesaplanan veriler, fiyat istikrarında henüz tam bir dengelenme (konsolidasyon
 """
     return text.strip()
 
+# --- 7.5 YENİ GÖRSELLEŞTİRME FONKSİYONLARI ---
+
+def plot_price_distribution(df):
+    # Sadece anlamlı değişimleri al (-%50 ile +%50 arası)
+    data = df[(df['Fark'] != 0) & (df['Fark'] > -0.5) & (df['Fark'] < 0.5)]['Fark'] * 100
+    
+    if len(data) < 2: return go.Figure()
+
+    # KDE ve Histogram
+    fig = ff.create_distplot([data], ['Fiyat Değişimleri'], bin_size=0.5, 
+                             show_hist=True, show_rug=False, 
+                             colors=['#3b82f6'])
+
+    fig.update_layout(
+        title="Fiyat Değişim Dağılımı (Histogram & Yoğunluk)",
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        showlegend=False,
+        margin=dict(l=0, r=0, t=40, b=0),
+        xaxis=dict(title="Değişim (%)", showgrid=False, zeroline=True, zerolinecolor='rgba(255,255,255,0.2)'),
+        yaxis=dict(showgrid=False, showticklabels=False)
+    )
+    return fig
+
+def plot_volatility_gauge(df):
+    # Standart sapma üzerinden basit bir volatilite skoru
+    std_dev = df['Fark'].std() * 100 
+    # Tansiyon skoru: Standart sapma 5 üzerindeyse max risk (100) kabul edelim
+    score = min(std_dev * 20, 100) 
+    
+    fig = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = score,
+        domain = {'x': [0, 1], 'y': [0, 1]},
+        title = {'text': "PİYASA TANSİYONU", 'font': {'size': 14, 'color': '#a1a1aa'}},
+        gauge = {
+            'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "#333"},
+            'bar': {'color': "rgba(0,0,0,0)"}, # İbreyi gizle
+            'bgcolor': "rgba(0,0,0,0)",
+            'borderwidth': 0,
+            'steps': [
+                {'range': [0, 30], 'color': "rgba(16, 185, 129, 0.3)"},  # Yeşil
+                {'range': [30, 70], 'color': "rgba(251, 191, 36, 0.3)"}, # Sarı
+                {'range': [70, 100], 'color': "rgba(239, 68, 68, 0.3)"}  # Kırmızı
+            ],
+            'threshold': {
+                'line': {'color': "white", 'width': 4},
+                'thickness': 0.75,
+                'value': score
+            }
+        }
+    ))
+    
+    fig.update_layout(paper_bgcolor = "rgba(0,0,0,0)", font = {'color': "white", 'family': "Inter"}, height=250)
+    return fig
+
+def plot_gradient_trend(df_trend):
+    fig = go.Figure()
+    
+    # Alan Grafiği (Gradient Fill)
+    fig.add_trace(go.Scatter(
+        x=df_trend['Tarih'], 
+        y=df_trend['TÜFE'],
+        mode='lines',
+        line=dict(color='#8b5cf6', width=3),
+        fill='tozeroy', 
+        name='Endeks'
+    ))
+    
+    fig.update_layout(
+        title="Kümülatif Endeks Trendi (Gradient Area)",
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(showgrid=False, showline=False),
+        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)'),
+        showlegend=False,
+        hovermode="x unified"
+    )
+    return fig
+
+def plot_correlation_heatmap(df_pivot, grup_map):
+    #df_pivot'un indexi Kod. Sütunlar Tarih.
+    # Önce kodları gruplara çevirelim
+    
+    df_temp = df_pivot.copy()
+    df_temp['Grup'] = df_temp['Kod'].str[:2].map(grup_map).fillna("Diğer")
+    
+    # Sadece sayısal (tarih) sütunlarını alalım
+    date_cols = [c for c in df_temp.columns if c not in ['Kod', 'Grup']]
+    
+    # Gruplara göre ortalama al (Zaman serisi oluşturuyoruz)
+    grouped = df_temp.groupby('Grup')[date_cols].mean().T # Transpose: Satırlar Tarih, Sütunlar Grup
+    
+    if grouped.empty or len(grouped.columns) < 2: return go.Figure()
+
+    corr = grouped.corr()
+    
+    fig = go.Figure(data=go.Heatmap(
+        z=corr.values,
+        x=corr.columns,
+        y=corr.index,
+        colorscale='Viridis', 
+        zmin=-1, zmax=1
+    ))
+    
+    fig.update_layout(
+        title="Sektörel Korelasyon Matrisi",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color="#a1a1aa"),
+        height=500
+    )
+    return fig
+
+def generate_wordcloud(df):
+    if not WORDCLOUD_ACTIVE:
+        return None
+    
+    # Sadece artanlar
+    artanlar = df[df['Fark'] > 0]
+    if artanlar.empty: return None
+    
+    # {Ürün Adı: Artış Oranı} sözlüğü
+    data = dict(zip(artanlar['Madde_Adi'], artanlar['Fark']))
+    
+    wc = WordCloud(width=800, height=400, background_color=None, mode="RGBA", 
+                   colormap="Reds").generate_from_frequencies(data)
+    
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.imshow(wc, interpolation='bilinear')
+    ax.axis('off')
+    # Şeffaf arka plan için
+    fig.patch.set_alpha(0)
+    ax.patch.set_alpha(0)
+    return fig
 
 # --- 8. DASHBOARD MODU (GÜNCELLENMİŞ: TARİH FİLTRESİ + RENK DÜZENİ) ---
 def dashboard_modu():
@@ -915,6 +1060,7 @@ def dashboard_modu():
                 axis=1).bfill(axis=1).reset_index()
 
             if not pivot.empty:
+                grup_map = {}
                 if 'Grup' not in df_s.columns:
                     grup_map = {"01": "Gıda", "02": "Alkol ve Tütünlü İçecekler", "03": "Giyim", "04": "Konut",
                                 "05": "Ev Eşyası", "06": "Sağlık", "07": "Ulaşım", "08": "Haberleşme", "09": "Eğlence",
@@ -1081,7 +1227,7 @@ def dashboard_modu():
                     df_forecast = predict_inflation_prophet(df_trend)
 
                 target_jan_end = pd.Timestamp(dt_son.year, dt_son.month,
-                                              calendar.monthrange(dt_son.year, dt_son.month)[1])
+                                                calendar.monthrange(dt_son.year, dt_son.month)[1])
                 month_end_forecast = 0.0
                 if not df_forecast.empty:
                     forecast_row = df_forecast[df_forecast['ds'] == target_jan_end]
@@ -1228,6 +1374,7 @@ def dashboard_modu():
                         st.info("🔍 Aradığınız kriterlere uygun ürün bulunamadı.")
 
                 with t_ozet:
+                    # 1. PİYASA DERİNLİĞİ (MEVCUT)
                     rising = len(df_analiz[df_analiz['Fark'] > 0])
                     falling = len(df_analiz[df_analiz['Fark'] < 0])
                     total = len(df_analiz)
@@ -1248,6 +1395,40 @@ def dashboard_modu():
                         </div>
                         """, unsafe_allow_html=True)
 
+                    # 2. VOLATİLİTE VE DAĞILIM (YENİ)
+                    st.markdown("---")
+                    c_new1, c_new2 = st.columns(2)
+                    with c_new1:
+                         # VOLATİLİTE GAUGE (YENİ)
+                         st.plotly_chart(plot_volatility_gauge(df_analiz), use_container_width=True)
+                    with c_new2:
+                         # FİYAT DAĞILIM GRAFİĞİ (YENİ)
+                         st.plotly_chart(plot_price_distribution(df_analiz), use_container_width=True)
+
+                    # 3. GRADIENT TREND (YENİ)
+                    st.markdown("---")
+                    st.plotly_chart(plot_gradient_trend(df_trend), use_container_width=True)
+
+                    # 4. KORELASYON VE WORDCLOUD (YENİ)
+                    st.markdown("---")
+                    c_new3, c_new4 = st.columns(2)
+                    with c_new3:
+                        # Pivot tablosunu kullanarak korelasyon hesapla
+                        # Not: pivot tablosu sadece seçilen tarihleri içermeli
+                        st.plotly_chart(plot_correlation_heatmap(pivot[ ['Kod'] + gunler ], grup_map), use_container_width=True)
+                    with c_new4:
+                        if WORDCLOUD_ACTIVE:
+                            st.subheader("🔥 En Çok Artanlar (WordCloud)")
+                            wc_fig = generate_wordcloud(df_analiz)
+                            if wc_fig:
+                                st.pyplot(wc_fig, transparent=True)
+                            else:
+                                st.info("Yeterli veri yok.")
+                        else:
+                            st.warning("WordCloud modülü yüklü değil.")
+
+                    # 5. MEVCUT GÖRSELLER (HEATMAP & WATERFALL)
+                    st.markdown("---")
                     c_ozet1, c_ozet2 = st.columns(2)
                     with c_ozet1:
                         st.subheader("☀️ Isı Haritası")
@@ -1274,45 +1455,44 @@ def dashboard_modu():
                         ))
                         st.plotly_chart(style_chart(fig_water), use_container_width=True)
 
-                    with t_veri:
-                        st.markdown("### 📋 Veri Seti")
-                        
-                        # --- HATA DÜZELTİCİ BLOK BAŞLANGIÇ ---
-                        # Sabit fiyatlarda (min=max) grafik motorunun çökmesini engellemek için
-                        # veriye mikroskobik bir fark ekliyoruz.
-                        def fix_sparkline(row):
-                            vals = row.tolist()
-                            # Eğer veri yoksa veya hepsi eşitse (sabit fiyat)
-                            if vals and min(vals) == max(vals):
-                                vals[-1] += 0.00001  # Gözle görülmez, ama motoru çalıştırır
-                            return vals
+                with t_veri:
+                    st.markdown("### 📋 Veri Seti")
+                    
+                    # --- HATA DÜZELTİCİ BLOK BAŞLANGIÇ ---
+                    # Sabit fiyatlarda (min=max) grafik motorunun çökmesini engellemek için
+                    # veriye mikroskobik bir fark ekliyoruz.
+                    def fix_sparkline(row):
+                        vals = row.tolist()
+                        # Eğer veri yoksa veya hepsi eşitse (sabit fiyat)
+                        if vals and min(vals) == max(vals):
+                            vals[-1] += 0.00001  # Gözle görülmez, ama motoru çalıştırır
+                        return vals
     
-                        # apply fonksiyonu ile 'Fiyat_Trendi' sütununu oluşturuyoruz
-                        df_analiz['Fiyat_Trendi'] = df_analiz[gunler].apply(fix_sparkline, axis=1)
-                        # --- HATA DÜZELTİCİ BLOK BİTİŞ ---
+                    # apply fonksiyonu ile 'Fiyat_Trendi' sütununu oluşturuyoruz
+                    df_analiz['Fiyat_Trendi'] = df_analiz[gunler].apply(fix_sparkline, axis=1)
+                    # --- HATA DÜZELTİCİ BLOK BİTİŞ ---
     
-                        st.data_editor(
-                            df_analiz[['Grup', ad_col, 'Fiyat_Trendi', baz_col, son]], 
-                            column_config={
-                                "Fiyat_Trendi": st.column_config.LineChartColumn(
-                                    "Fiyat Grafiği",
-                                    width="medium",
-                                    help="Seçilen dönem içindeki fiyat hareketi",
-                                ),
-                                ad_col: "Ürün", 
-                                "Grup": "Kategori",
-                                baz_col: st.column_config.NumberColumn(f"Fiyat ({baz_tanimi})", format="%.2f ₺"),
-                                son: st.column_config.NumberColumn(f"Fiyat ({son})", format="%.2f ₺")
-                            },
-                            hide_index=True, use_container_width=True, height=600
-                        )
-                        
-                        # (Alt kısımdaki Excel indirme kodları aynı kalacak...)
-                        output = BytesIO()
-                        with pd.ExcelWriter(output, engine='openpyxl') as writer: 
-                            df_analiz.to_excel(writer, index=False, sheet_name='Analiz')
-                        st.download_button("📥 Excel İndir", data=output.getvalue(), file_name=f"Rapor_{son}.xlsx",
-                                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    st.data_editor(
+                        df_analiz[['Grup', ad_col, 'Fiyat_Trendi', baz_col, son]], 
+                        column_config={
+                            "Fiyat_Trendi": st.column_config.LineChartColumn(
+                                "Fiyat Grafiği",
+                                width="medium",
+                                help="Seçilen dönem içindeki fiyat hareketi",
+                            ),
+                            ad_col: "Ürün", 
+                            "Grup": "Kategori",
+                            baz_col: st.column_config.NumberColumn(f"Fiyat ({baz_tanimi})", format="%.2f ₺"),
+                            son: st.column_config.NumberColumn(f"Fiyat ({son})", format="%.2f ₺")
+                        },
+                        hide_index=True, use_container_width=True, height=600
+                    )
+                    
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer: 
+                        df_analiz.to_excel(writer, index=False, sheet_name='Analiz')
+                    st.download_button("📥 Excel İndir", data=output.getvalue(), file_name=f"Rapor_{son}.xlsx",
+                                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
                 with t_rapor:
                     st.markdown("### 📝 Stratejik Görünüm Raporu")
@@ -1363,14 +1543,3 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
-
-
-
-
-
-
-
-
-
-
-
