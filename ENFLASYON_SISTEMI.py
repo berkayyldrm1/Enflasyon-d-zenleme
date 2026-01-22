@@ -1,3 +1,6 @@
+# ÖNCE BU KÜTÜPHANEYİ KURMALISINIZ:
+# pip install streamlit-lottie
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -22,6 +25,12 @@ import math
 import random
 import html
 import numpy as np
+
+# --- YENİ KÜTÜPHANE ---
+try:
+    from streamlit_lottie import st_lottie
+except ImportError:
+    st.error("Lütfen 'pip install streamlit-lottie' komutunu çalıştırın.")
 
 # --- 1. AYARLAR VE TEMA YÖNETİMİ ---
 st.set_page_config(
@@ -213,6 +222,16 @@ apply_theme()
 EXCEL_DOSYASI = "TUFE_Konfigurasyon.xlsx"
 FIYAT_DOSYASI = "Fiyat_Veritabani.xlsx"
 SAYFA_ADI = "Madde_Sepeti"
+
+# --- LOTTIE LOADER ---
+def load_lottieurl(url: str):
+    try:
+        r = requests.get(url)
+        if r.status_code != 200:
+            return None
+        return r.json()
+    except:
+        return None
 
 # --- 3. PDF MOTORU ---
 class PDFReport(FPDF):
@@ -743,16 +762,20 @@ def dashboard_modu():
 
     # 2. SIDEBAR
     with st.sidebar:
-        # LOGO ALANI
+        # --- LOTTIE ANİMASYONU ---
+        lottie_url = "https://lottie.host/98606416-297c-4a37-9b2a-714013063529/5D6o8k8fW0.json" 
+        lottie_json = load_lottieurl(lottie_url)
+        if lottie_json:
+             st_lottie(lottie_json, height=180, key="finance_anim")
+        else:
+             # Fallback eğer yüklenemezse
+             st.markdown("""<div style="font-size: 50px; text-align:center; filter: drop-shadow(0 0 25px rgba(59, 130, 246, 0.6)); animation: float 6s ease-in-out infinite;">💎</div>""", unsafe_allow_html=True)
+
         st.markdown("""
-            <div style="text-align: center; padding: 20px 0;">
-                <div style="font-size: 50px; filter: drop-shadow(0 0 25px rgba(59, 130, 246, 0.6)); animation: float 6s ease-in-out infinite;">💎</div>
-                <div style="font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-top: 15px;">PİYASA MONİTÖRÜ</div>
+            <div style="text-align: center; padding-bottom: 20px;">
+                <div style="font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-top: 5px;">PİYASA MONİTÖRÜ</div>
                 <div style="font-size: 11px; font-weight: 600; color: #60a5fa; letter-spacing: 3px; text-transform:uppercase; margin-top:4px;">Pro Analytics</div>
             </div>
-            <style>
-                @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-            </style>
         """, unsafe_allow_html=True)
 
         st.markdown("---")
@@ -1109,7 +1132,55 @@ def dashboard_modu():
                 with c4:
                     kpi_card("Resmi TÜİK Verisi", f"%{resmi_aylik_enf:.2f}", f"{resmi_tarih_str}", "#fbbf24", "#f59e0b",
                              "🏛️")
+                
+                # --- YENİ EKLENEN AI ANALİST KARTI (OPTION 3) ---
                 st.markdown("<br>", unsafe_allow_html=True)
+                
+                # Veriye göre dinamik mesaj belirleme
+                durum_mesaji = ""
+                if enf_genel > 5:
+                    durum_emoji = "🔥"
+                    durum_baslik = "YÜKSEK RİSK UYARISI"
+                    durum_mesaji = "Piyasada volatilite kritik seviyelerde. Özellikle gıda sepetindeki artış trendi, ay sonu hedeflerini riske atıyor."
+                    kutu_rengi = "linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%)" 
+                    kenar_rengi = "#ef4444"
+                elif enf_genel > 2:
+                    durum_emoji = "⚠️"
+                    durum_baslik = "DİKKATLİ İZLEME"
+                    durum_mesaji = "Piyasa beklentilerin hafif üzerinde seyrediyor. Ürün bazlı şoklar gözlemlendi."
+                    kutu_rengi = "linear-gradient(90deg, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%)" 
+                    kenar_rengi = "#f59e0b"
+                else:
+                    durum_emoji = "✅"
+                    durum_baslik = "STABİL GÖRÜNÜM"
+                    durum_mesaji = "Fiyatlamalar olağan seyirde. Piyasa volatilitesi düşük."
+                    kutu_rengi = "linear-gradient(90deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)" 
+                    kenar_rengi = "#10b981"
+
+                # HTML Kartı
+                ai_card_html = f"""
+                <div style="
+                    background: {kutu_rengi}; 
+                    border-left: 4px solid {kenar_rengi}; 
+                    border-radius: 12px; 
+                    padding: 24px; 
+                    margin-bottom: 30px;
+                    border-top: 1px solid rgba(255,255,255,0.05);
+                    border-right: 1px solid rgba(255,255,255,0.05);
+                    border-bottom: 1px solid rgba(255,255,255,0.05);
+                    backdrop-filter: blur(10px);">
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+                        <span style="font-size:24px;">{durum_emoji}</span>
+                        <span style="font-weight:700; color:#fff; letter-spacing:1px; font-size:14px; font-family:'Inter', sans-serif;">AI MARKET ANALİSTİ: <span style="color:{kenar_rengi}">{durum_baslik}</span></span>
+                    </div>
+                    <div style="font-size:14px; color:#d4d4d8; line-height:1.6; font-style:italic; padding-left:42px;">
+                        "{durum_mesaji}"
+                    </div>
+                </div>
+                """
+                st.markdown(ai_card_html, unsafe_allow_html=True)
+                
+                # --- NORMALE DÖNÜŞ ---
 
                 def style_chart(fig, is_pdf=False, is_sunburst=False):
                     if is_pdf:
