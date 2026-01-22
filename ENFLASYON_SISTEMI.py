@@ -17,7 +17,7 @@ import zipfile
 import base64
 import requests
 from prophet import Prophet
-from prophet.plot import plot_components_plotly # YENİ: Prophet görselleştirme
+from prophet.plot import plot_components_plotly 
 import streamlit.components.v1 as components
 import tempfile
 import os
@@ -400,7 +400,8 @@ def predict_inflation_prophet(df_trend):
         m.fit(df_p)
         future = m.make_future_dataframe(periods=90)
         forecast = m.predict(future)
-        return m, forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper', 'trend', 'daily']] # Modeli de döndür (YENİ)
+        # HATA DUZELTMESI: trend_upper gibi sütunların eksik gitmemesi için tüm forecast'i döndürüyoruz.
+        return m, forecast 
     except Exception as e:
         st.error(f"Prophet Hatası: {str(e)}")
         return None, pd.DataFrame()
@@ -730,7 +731,7 @@ def dashboard_modu():
                 status.update(label="Senkronizasyon Başarılı", state="complete", expanded=False)
             if "OK" in res:
                 st.cache_data.clear()
-                st.toast('Veri Seti Yenilendi', icon='⚡') # YENİ: Toast Mesajı
+                st.toast('Veri Seti Yenilendi', icon='⚡') 
                 time.sleep(1);
                 st.rerun()
             elif "Veri bulunamadı" in res:
@@ -816,7 +817,7 @@ def dashboard_modu():
 
                 df_analiz['Aylik_Ortalama'] = df_analiz[bu_ay_cols].apply(geometrik_ortalama_hesapla, axis=1)
                 
-                # YENİ: Volatilite Hesaplama
+                # Volatilite Hesaplama
                 df_analiz['Volatilite'] = df_analiz[gunler].std(axis=1)
 
                 gecerli_veri = df_analiz.dropna(subset=['Aylik_Ortalama', baz_col]).copy()
@@ -894,7 +895,7 @@ def dashboard_modu():
                 df_analiz['Min_Fiyat'] = df_analiz[gunler].min(axis=1)
 
                 with st.spinner(f"{header_date} tarihi için modeller çalıştırılıyor..."):
-                    # YENİ: Prophet modelini de alıyoruz
+                    # Prophet modelini ve tüm veriyi alıyoruz
                     prophet_model, df_forecast = predict_inflation_prophet(df_trend)
 
                 target_jan_end = pd.Timestamp(dt_son.year, dt_son.month,
@@ -916,7 +917,7 @@ def dashboard_modu():
                     df_analiz['Gunluk_Degisim'] = (df_analiz[son] / df_analiz[onceki_gun]) - 1
                     gun_farki = (dt_son - datetime.strptime(baz_col, '%Y-%m-%d')).days
                     
-                    # YENİ: Anomali Tespiti (Son fiyat > 3 günlük ortalama * 1.10)
+                    # Anomali Tespiti (Son fiyat > 3 günlük ortalama * 1.10)
                     if len(gunler) >= 3:
                         df_analiz['MA_3'] = df_analiz[gunler[-3:]].mean(axis=1)
                         anomaliler = df_analiz[df_analiz[son] > df_analiz['MA_3'] * 1.10]
@@ -979,13 +980,13 @@ def dashboard_modu():
                     kpi_card("Resmi TÜİK Verisi", f"%{resmi_aylik_enf:.2f}", f"{resmi_tarih_str}", "#fbbf24", "#f59e0b",
                              "🏛️")
                 
-                # YENİ: Anomali Uyarısı
+                # Anomali Uyarısı
                 if not anomaliler.empty:
                     st.error(f"⚠️ DİKKAT: Piyasadaki {len(anomaliler)} üründe ani fiyat şoku tespit edildi!")
                     with st.expander("Şok Yaşanan Ürünleri İncele"):
                         st.dataframe(anomaliler[[ad_col, son, 'MA_3', 'Gunluk_Degisim']], use_container_width=True)
 
-                # --- YENİ EKLENEN AI ANALİST KARTI ---
+                # --- AI ANALİST KARTI ---
                 st.markdown("<br>", unsafe_allow_html=True)
                 
                 # Veriye göre dinamik mesaj belirleme
@@ -1057,7 +1058,7 @@ def dashboard_modu():
                         fig.update_layout(modebar=dict(bgcolor='rgba(0,0,0,0)', color='#71717a', activecolor='#fff'))
                     return fig
                 
-                # YENİ: Heatmap Fonksiyonu
+                # Heatmap Fonksiyonu
                 def plot_correlation_heatmap(df_pivot):
                     try:
                         corr_matrix = df_pivot.iloc[:, 1:].T.corr() 
@@ -1075,9 +1076,9 @@ def dashboard_modu():
 
                 df_analiz['Fark_Yuzde'] = df_analiz['Fark'] * 100
                 
-                # YENİ SEKMELER EKLENDİ: ANALİTİK ve SİMÜLASYON
-                t_sektor, t_ozet, t_analitik, t_simulasyon, t_veri, t_rapor = st.tabs(
-                    ["📂 KATEGORİ DETAY", "📊 PİYASA ÖZETİ", "📈 ANALİTİK", "🎧 SİMÜLASYON", "📋 TAM LİSTE", "📝 RAPORLAMA"])
+                # Simülasyon sekmesi KALDIRILDI
+                t_sektor, t_ozet, t_analitik, t_veri, t_rapor = st.tabs(
+                    ["📂 KATEGORİ DETAY", "📊 PİYASA ÖZETİ", "📈 ANALİTİK", "📋 TAM LİSTE", "📝 RAPORLAMA"])
 
                 with t_sektor:
                     st.markdown("### 🔍 Detaylı Fiyat Analizi")
@@ -1164,7 +1165,7 @@ def dashboard_modu():
                         ))
                         st.plotly_chart(style_chart(fig_water), use_container_width=True)
                 
-                # YENİ: ANALİTİK SEKME İÇERİĞİ
+                # ANALİTİK SEKME İÇERİĞİ
                 with t_analitik:
                     col_a1, col_a2 = st.columns(2)
                     with col_a1:
@@ -1196,34 +1197,7 @@ def dashboard_modu():
                          except Exception as e:
                              st.warning(f"Bileşenler çizilemedi: {e}")
                 
-                # YENİ: SİMÜLASYON SEKME İÇERİĞİ
-                with t_simulasyon:
-                    st.markdown("### 🎧 Kişisel Enflasyon Simülatörü")
-                    st.info("Aşağıdaki kaydırıcıları kullanarak kendi harcama alışkanlıklarınıza göre kişisel enflasyonunuzu hesaplayın.")
-                    
-                    col_sim1, col_sim2 = st.columns([1, 2])
-                    with col_sim1:
-                        st.markdown("**Harcama Ağırlıklarınız**")
-                        w_gida = st.slider("Gıda Harcaması (%)", 0, 100, 25)
-                        w_ulasim = st.slider("Ulaşım (%)", 0, 100, 15)
-                        w_konut = st.slider("Konut/Kira (%)", 0, 100, 20)
-                        kalan = max(0, 100 - (w_gida + w_ulasim + w_konut))
-                        st.markdown(f"**Diğer Kalemler: %{kalan}** (Otomatik)")
-                        
-                    with col_sim2:
-                        # Basit simülasyon mantığı: Genel enflasyon ile kullanıcının girdiği ağırlıkların kombinasyonu
-                        # Gerçekte alt grupların enflasyonunu çekmek gerekir ama burada basitleştirilmiş bir model kuruyoruz.
-                        # Gıda enflasyonunu zaten hesaplamıştık (enf_gida). Diğerleri için genel enflasyonu baz alalım.
-                        
-                        simule_enf = (enf_gida * (w_gida/100)) + (enf_genel * (1 - (w_gida/100))) 
-                        
-                        st.markdown("#### Sizin Enflasyonunuz:")
-                        st.metric(label="Kişisel TÜFE", value=f"%{simule_enf:.2f}", delta=f"{simule_enf-enf_genel:.2f} (Genele Göre)")
-                        st.progress(min(simule_enf/100, 1.0))
-                        
-                        st.markdown("""
-                        > *Bu simülasyon, gıda enflasyonunun sizin bütçenizdeki ağırlığına göre genel endeksi yeniden ağırlıklandırır.*
-                        """)
+                # SİMÜLASYON SEKMESİ KALDIRILDI
 
                 with t_veri:
                     st.markdown("### 📋 Veri Seti")
