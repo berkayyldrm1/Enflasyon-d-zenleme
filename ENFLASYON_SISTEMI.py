@@ -199,7 +199,7 @@ def apply_theme():
         .pg-badge {{ padding: 3px 10px; border-radius: 99px; font-size: 10px; font-weight: 700; border: 1px solid transparent; }}
         .pg-red {{ background: rgba(239, 68, 68, 0.1); color: #fca5a5; border-color: rgba(239, 68, 68, 0.2); }}
         .pg-green {{ background: rgba(16, 185, 129, 0.1); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.2); }}
-        .pg-gray {{ background: rgba(255, 255, 255, 0.05); color: #a1a1aa; }}
+        .pg-yellow {{ background: rgba(255, 255, 255, 0.05); color: #ffd966; }}
 
         /* --- TICKER --- */
         .ticker-wrap {{
@@ -1209,3 +1209,4 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
