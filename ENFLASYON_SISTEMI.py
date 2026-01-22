@@ -1174,28 +1174,37 @@ def dashboard_modu():
                         st.info("🔍 Aradığınız kriterlere uygun ürün bulunamadı.")
 
                 with t_ozet:
-                    # --- YENİ EKLENEN: FİYAT DAĞILIM HİSTOGRAMI ---
+                    # --- YENİ EKLENEN: FİYAT DAĞILIM HİSTOGRAMI (DÜZELTİLMİŞ) ---
                     st.subheader("📊 Piyasa Derinliği ve Dağılım")
                     
                     ozet_col1, ozet_col2 = st.columns([2, 1])
                     
                     with ozet_col1:
-                        # --- GÜNCELLENMİŞ KOD BAŞLANGICI ---
-                        fig_hist = px.histogram(df_analiz, x="Fark_Yuzde", nbins=30, 
-                                                title="Fiyat Değişim Dağılımı (Histogram)",
+                        # 1. Önce veriyi temizle ve float olduğundan emin ol
+                        df_analiz['Fark_Yuzde'] = pd.to_numeric(df_analiz['Fark_Yuzde'], errors='coerce')
+                        
+                        # 2. Grafiği oluştur
+                        fig_hist = px.histogram(df_analiz, x="Fark_Yuzde", nbins=20, 
+                                                title="Fiyat Değişim Dağılımı",
                                                 labels={"Fark_Yuzde": "Değişim Oranı (%)"},
                                                 color_discrete_sequence=["#3b82f6"])
                         
-                        fig_hist.update_layout(bargap=0.1)
-                        
-                        # --- DÜZELTME BURADA ---
-                        # X eksenindeki etiket sayısını maksimum 10 ile sınırla ve formatı sadeleştir
-                        fig_hist.update_xaxes(
-                            nticks=10,             # En fazla 10 adet sayı göster (kalabalığı önler)
-                            tickformat=".1f",      # Sayıları virgülden sonra 1 basamak göster (örn: 12.5)
-                            tickangle=0            # Yazıları düz tut
+                        fig_hist.update_layout(
+                            bargap=0.1,
+                            margin=dict(l=10, r=10, t=40, b=10) # Kenar boşluklarını ayarla
                         )
-                        # -----------------------
+                        
+                        # 3. KESİN ÇÖZÜM: Ekseni formatla
+                        fig_hist.update_xaxes(
+                            type="linear",       # Ekseni sayısal olmaya zorla
+                            tickmode="auto",     # Otomatik aralık belirle
+                            nticks=5,            # Maksimum 5-6 tane sayı göster (Kalabalığı engeller)
+                            tickformat=".0f",    # Virgülleri at (Sadeleştirir)
+                            title_font=dict(size=11),
+                            tickfont=dict(size=10, color="#a1a1aa")
+                        )
+                        
+                        fig_hist.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.05)")
                         
                         st.plotly_chart(style_chart(fig_hist), use_container_width=True)
                         
@@ -1334,4 +1343,5 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
