@@ -1325,25 +1325,6 @@ def dashboard_modu():
                             totals={"marker": {"color": "#f8fafc"}}
                         ))
                         st.plotly_chart(style_chart(fig_water), use_container_width=True)
-                    
-                    # --- KORELASYON MATRİSİ ---
-                    st.markdown("---")
-                    st.subheader("🔗 Fiyat Korelasyon Analizi")
-                    st.markdown("<div style='font-size:12px; color:#a1a1aa; margin-bottom:10px;'>Ürünlerin fiyat hareketlerinin birbirleriyle olan ilişkisi (1: Tam Benzer, -1: Tam Zıt).</div>", unsafe_allow_html=True)
-                    
-                    populer_urunler = df_analiz.sort_values(agirlik_col, ascending=False).head(10)[ad_col].tolist()
-                    df_corr = df_analiz[df_analiz[ad_col].isin(populer_urunler)].set_index(ad_col)[gunler].T
-                    df_corr = df_corr.astype(float)
-                    corr_matrix = df_corr.corr()
-                    
-                    fig_corr = px.imshow(
-                        corr_matrix, 
-                        text_auto=".2f",
-                        aspect="auto",
-                        color_continuous_scale="RdBu_r", 
-                        zmin=-1, zmax=1
-                    )
-                    st.plotly_chart(style_chart(fig_corr), use_container_width=True)
 
                 with t_veri:
                     st.markdown("### 📋 Veri Seti")
@@ -1463,6 +1444,7 @@ def dashboard_modu():
         
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
