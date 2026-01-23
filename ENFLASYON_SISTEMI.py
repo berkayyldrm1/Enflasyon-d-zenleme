@@ -1255,28 +1255,28 @@ def dashboard_modu():
 
                     c_ozet1, c_ozet2 = st.columns(2)
                     with c_ozet1:
-                    st.subheader("☀️ Pazar Dağılımı")
-                    
-                    # --- YENİ EKLENEN: GRAFİK SEÇİCİ ---
-                    grafik_tipi = st.radio("Görünüm Modu:", ["Halka (Sunburst)", "Kutu (Treemap)"], 
-                                         horizontal=True, label_visibility="collapsed")
-                    
-                    if grafik_tipi == "Halka (Sunburst)":
-                        fig_sun = px.sunburst(
-                            df_analiz, path=['Grup', ad_col], values=agirlik_col, color='Fark',
-                            color_continuous_scale='RdYlGn_r', title=None
-                        )
-                        st.plotly_chart(style_chart(fig_sun, is_sunburst=True), use_container_width=True)
-                    else:
-                        # --- YENİ EKLENEN: TREEMAP ---
-                        fig_tree = px.treemap(
-                            df_analiz, path=[px.Constant("Piyasa"), 'Grup', ad_col], 
-                            values=agirlik_col, color='Fark',
-                            color_continuous_scale='RdYlGn_r',
-                            hover_data={ad_col:True, 'Fark':':.2%'}
-                        )
-                        fig_tree.update_layout(margin=dict(t=0, l=0, r=0, b=0))
-                        st.plotly_chart(style_chart(fig_tree, is_sunburst=True), use_container_width=True)
+                        st.subheader("☀️ Pazar Dağılımı")
+                        
+                        # --- YENİ EKLENEN: GRAFİK SEÇİCİ ---
+                        grafik_tipi = st.radio("Görünüm Modu:", ["Halka (Sunburst)", "Kutu (Treemap)"], 
+                                             horizontal=True, label_visibility="collapsed")
+                        
+                        if grafik_tipi == "Halka (Sunburst)":
+                            fig_sun = px.sunburst(
+                                df_analiz, path=['Grup', ad_col], values=agirlik_col, color='Fark',
+                                color_continuous_scale='RdYlGn_r', title=None
+                            )
+                            st.plotly_chart(style_chart(fig_sun, is_sunburst=True), use_container_width=True)
+                        else:
+                            # --- YENİ EKLENEN: TREEMAP ---
+                            fig_tree = px.treemap(
+                                df_analiz, path=[px.Constant("Piyasa"), 'Grup', ad_col], 
+                                values=agirlik_col, color='Fark',
+                                color_continuous_scale='RdYlGn_r',
+                                hover_data={ad_col:True, 'Fark':':.2%'}
+                            )
+                            fig_tree.update_layout(margin=dict(t=0, l=0, r=0, b=0))
+                            st.plotly_chart(style_chart(fig_tree, is_sunburst=True), use_container_width=True)
 
                     with c_ozet2:
                         st.subheader("💧 Sektörel Etki")
@@ -1413,4 +1413,5 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
