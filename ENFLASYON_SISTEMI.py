@@ -658,7 +658,7 @@ def dashboard_modu():
 
         st.markdown("---")
         
-        st.markdown("<h3 style='color: #e4e4e7; font-size: 14px; font-weight: 600; text-transform:uppercase; letter-spacing:1px; margin-bottom: 15px;'>⏳ Zaman Makinesi</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='color: #e4e4e7; font-size: 14px; font-weight: 600; text-transform:uppercase; letter-spacing:1px; margin-bottom: 15px;'>⏳ GEÇMİŞ VERİ</h3>", unsafe_allow_html=True)
         
         if tum_tarihler:
             secilen_tarih = st.selectbox(
@@ -701,22 +701,6 @@ def dashboard_modu():
         components.html(f'<div style="display:flex; flex-direction:column; overflow:hidden;">{widgets_html}</div>',
                         height=len(symbols) * 125)
         
-        # --- SİSTEM STATUS PANELİ ---
-        st.markdown("---")
-        st.markdown("<h3 style='color: #e4e4e7; font-size: 14px; font-weight: 600; text-transform:uppercase; letter-spacing:1px; margin-bottom: 10px;'>📡 SİSTEM SAĞLIĞI</h3>", unsafe_allow_html=True)
-        
-        simulasyon_durumu = "Online"
-        toplam_veri = len(df_f) if not df_f.empty else 0
-        son_guncelleme = tum_tarihler[0] if tum_tarihler else "-"
-        
-        status_html = f"""
-        <div class="sys-status">
-            <div class="sys-row"><span>API DURUMU:</span><span><div class="sys-dot"></div>{simulasyon_durumu}</span></div>
-            <div class="sys-row"><span>SON VERİ:</span><span style="color:#fff">{son_guncelleme}</span></div>
-            <div class="sys-row"><span>TOPLAM KAYIT:</span><span style="color:#fff">{toplam_veri:,}</span></div>
-            <div class="sys-row"><span>MOD:</span><span style="color:#3b82f6">Simülasyon</span></div>
-        </div>
-        """
         st.markdown(status_html, unsafe_allow_html=True)
 
 
@@ -1392,7 +1376,7 @@ def dashboard_modu():
                              df_export.to_excel(writer, index=False)
 
                     st.download_button(
-                        label="📥 Akıllı Excel İndir (Sadeleştirilmiş)", 
+                        label="📥 Excel İndir", 
                         data=output.getvalue(), 
                         file_name=f"Fiyat_Analizi_{son}.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -1429,7 +1413,7 @@ def dashboard_modu():
                     with c_dl1:
                         word_buffer = create_word_report(rap_text, son)
                         st.download_button(
-                            label="📥 Raporu Word Olarak İndir (.docx)",
+                            label="📥 Rapor İndir ",
                             data=word_buffer,
                             file_name=f"Strateji_Raporu_{son}.docx",
                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -1444,6 +1428,7 @@ def dashboard_modu():
         
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
