@@ -1294,76 +1294,72 @@ def dashboard_modu():
                             totals={"marker": {"color": "#f8fafc"}}
                         ))
                         st.plotly_chart(style_chart(fig_water), use_container_width=True)
-
-                   with t_veri:
-                    st.markdown("### 📋 Veri Seti")
-                    
-                    def fix_sparkline(row):
-                        vals = row.tolist()
-                        if vals and min(vals) == max(vals):
-                            vals[-1] += 0.00001
-                        return vals
+                    with t_veri:
+                        st.markdown("### 📋 Veri Seti")
+                        
+                        def fix_sparkline(row):
+                            vals = row.tolist()
+                            if vals and min(vals) == max(vals):
+                                vals[-1] += 0.00001
+                            return vals
+        
+                        df_analiz['Fiyat_Trendi'] = df_analiz[gunler].apply(fix_sparkline, axis=1)
+        
+                        # --- GÜNCELLEME: 'Fark' sütununu ekledik ve Görselleştirdik ---
+                        st.data_editor(
+                            # Listeye 'Fark' sütununu da ekledik
+                            df_analiz[['Grup', ad_col, 'Fiyat_Trendi', baz_col, son, 'Fark']], 
+                            column_config={
+                                "Fiyat_Trendi": st.column_config.LineChartColumn(
+                                    "Fiyat Grafiği", width="medium", help="Seçilen dönem içindeki fiyat hareketi"
+                                ),
+                                ad_col: "Ürün", 
+                                "Grup": "Kategori",
+                                baz_col: st.column_config.NumberColumn(f"Fiyat ({baz_tanimi})", format="%.4f ₺"),
+                                son: st.column_config.NumberColumn(f"Fiyat ({son})", format="%.4f ₺"),
+                                # --- YENİ EKLENEN: FARK SÜTUNU GÖRSELLEŞTİRME ---
+                                "Fark": st.column_config.ProgressColumn(
+                                    "Değişim Şiddeti",
+                                    help="Dönemsel değişim oranı",
+                                    format="%.2f%%",
+                                    min_value=-0.5, # Ölçeklendirme için min/max
+                                    max_value=0.5,
+                                ),
+                            },
+                            hide_index=True, use_container_width=True, height=600
+                        )
+                        
+                        # --- YENİ EKLENEN: GELİŞMİŞ EXCEL ÇIKTISI (RENKLENDİRME) ---
+                        output = BytesIO()
+                        # xlsxwriter motorunu kullanıyoruz
+                        with pd.ExcelWriter(output, engine='xlsxwriter') as writer: 
+                            df_analiz.to_excel(writer, index=False, sheet_name='Analiz')
+                            
+                            workbook = writer.book
+                            worksheet = writer.sheets['Analiz']
+                            
+                            # Formatları Tanımla
+                            format_red = workbook.add_format({'bg_color': '#FFC7CE', 'font_color': '#9C0006'})
+                            format_green = workbook.add_format({'bg_color': '#C6EFCE', 'font_color': '#006100'})
+                            
+                            # Sütun Genişlikleri
+                            worksheet.set_column('A:Z', 15) 
+                            
+                            # 'Fark' sütununun harfini bul (Otomatik)
+                            if 'Fark' in df_analiz.columns:
+                                fark_col_idx = df_analiz.columns.get_loc('Fark')
+                                row_count = len(df_analiz)
+                                
+                                # Koşullu Biçimlendirme: Fark > 0 ise Kırmızı
+                                worksheet.conditional_format(1, fark_col_idx, row_count, fark_col_idx,
+                                                            {'type': 'cell', 'criteria': '>', 'value': 0, 'format': format_red})
+                                
+                                # Koşullu Biçimlendirme: Fark < 0 ise Yeşil
+                                worksheet.conditional_format(1, fark_col_idx, row_count, fark_col_idx,
+                                                            {'type': 'cell', 'criteria': '<', 'value': 0, 'format': format_green})
     
-                    df_analiz['Fiyat_Trendi'] = df_analiz[gunler].apply(fix_sparkline, axis=1)
-    
-                    # --- GÜNCELLEME: 'Fark' sütununu ekledik ve Görselleştirdik ---
-                    st.data_editor(
-                        # Listeye 'Fark' sütununu da ekledik
-                        df_analiz[['Grup', ad_col, 'Fiyat_Trendi', baz_col, son, 'Fark']], 
-                        column_config={
-                            "Fiyat_Trendi": st.column_config.LineChartColumn(
-                                "Fiyat Grafiği", width="medium", help="Seçilen dönem içindeki fiyat hareketi"
-                            ),
-                            ad_col: "Ürün", 
-                            "Grup": "Kategori",
-                            baz_col: st.column_config.NumberColumn(f"Fiyat ({baz_tanimi})", format="%.4f ₺"),
-                            son: st.column_config.NumberColumn(f"Fiyat ({son})", format="%.4f ₺"),
-                            # --- YENİ EKLENEN: FARK SÜTUNU GÖRSELLEŞTİRME ---
-                            "Fark": st.column_config.ProgressColumn(
-                                "Değişim Şiddeti",
-                                help="Dönemsel değişim oranı",
-                                format="%.2f%%",
-                                min_value=-0.5, # Ölçeklendirme için min/max
-                                max_value=0.5,
-                            ),
-                        },
-                        hide_index=True, use_container_width=True, height=600
-                    )
-                    
-                    # --- YENİ EKLENEN: GELİŞMİŞ EXCEL ÇIKTISI (RENKLENDİRME) ---
-                    output = BytesIO()
-                    # xlsxwriter motorunu kullanıyoruz
-                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer: 
-                        df_analiz.to_excel(writer, index=False, sheet_name='Analiz')
-                        
-                        workbook = writer.book
-                        worksheet = writer.sheets['Analiz']
-                        
-                        # Formatları Tanımla
-                        format_red = workbook.add_format({'bg_color': '#FFC7CE', 'font_color': '#9C0006'})
-                        format_green = workbook.add_format({'bg_color': '#C6EFCE', 'font_color': '#006100'})
-                        format_num = workbook.add_format({'num_format': '0.00'})
-                        
-                        # Sütun Genişlikleri ve Sayı Formatı
-                        worksheet.set_column('A:Z', 15) # Genel genişlik
-                        
-                        # 'Fark' sütununun harfini bul (Otomatik)
-                        fark_col_idx = df_analiz.columns.get_loc('Fark')
-                        # Excel'de sütun harfine çevirmek için basit bir yöntem (veya direkt index ile conditional_format)
-                        # xlsxwriter row/col index (0-based) ile çalışır.
-                        
-                        row_count = len(df_analiz)
-                        
-                        # Koşullu Biçimlendirme: Fark > 0 ise Kırmızı
-                        worksheet.conditional_format(1, fark_col_idx, row_count, fark_col_idx,
-                                                    {'type': 'cell', 'criteria': '>', 'value': 0, 'format': format_red})
-                        
-                        # Koşullu Biçimlendirme: Fark < 0 ise Yeşil
-                        worksheet.conditional_format(1, fark_col_idx, row_count, fark_col_idx,
-                                                    {'type': 'cell', 'criteria': '<', 'value': 0, 'format': format_green})
-
-                    st.download_button("📥 Akıllı Excel İndir (Renklendirilmiş)", data=output.getvalue(), file_name=f"Rapor_{son}.xlsx",
-                                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                        st.download_button("📥 Akıllı Excel İndir (Renklendirilmiş)", data=output.getvalue(), file_name=f"Rapor_{son}.xlsx",
+                                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
                 with t_rapor:
                     st.markdown("### 📝 Stratejik Görünüm Raporu")
@@ -1413,6 +1409,7 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
