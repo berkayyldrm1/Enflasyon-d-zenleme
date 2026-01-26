@@ -623,19 +623,11 @@ def html_isleyici(log_callback):
         return f"Hata: {str(e)}"
 
 
-# --- 7. STATİK ANALİZ MOTORU (GÖRSEL RAPOR) ---
+# --- 7. STATİK ANALİZ MOTORU (TEMİZ & GÖRSEL) ---
 def generate_detailed_static_report(df_analiz, tarih, enf_genel, enf_gida, gun_farki, tahmin, ad_col, agirlik_col):
     import numpy as np
     
-    # --- YARDIMCI: Metin Tabanlı Grafik Çizici (Word uyumlu) ---
-    def draw_bar(percent, length=10):
-        # Yüzdeyi 0-100 arasına sabitle
-        p = max(0, min(100, percent))
-        filled = int(length * p / 100)
-        bar = "▓" * filled + "░" * (length - filled)
-        return bar
-
-    # --- 1. HESAPLAMALAR ---
+    # --- 1. VERİ HAZIRLIĞI ---
     df_clean = df_analiz.dropna(subset=['Fark'])
     toplam_urun = len(df_clean)
     
@@ -643,42 +635,32 @@ def generate_detailed_static_report(df_analiz, tarih, enf_genel, enf_gida, gun_f
     ortalama_fark = df_clean['Fark'].mean()
     medyan_fark = df_clean['Fark'].median()
     
-    # Yorum Mantığı
+    # Durum Tespiti
     piyasa_yorumu = ""
     if ortalama_fark > (medyan_fark * 1.2):
-        piyasa_yorumu = "Bazı ürünlerdeki AŞIRI fiyat artışları ortalamayı yükseltiyor. (Lokal Şoklar)"
+        piyasa_yorumu = "Lokal Şoklar (Belirli Ürünler Endeksi Yükseltiyor)"
     elif ortalama_fark < (medyan_fark * 0.8):
-        piyasa_yorumu = "Kampanyalı ürünler genel artışı frenliyor."
+        piyasa_yorumu = "İndirim Ağırlıklı (Kampanyalar Etkili)"
     else:
-        piyasa_yorumu = "Fiyat artışları marketin geneline yayılmış durumda. (Genele Yayılım)"
+        piyasa_yorumu = "Genele Yayılım (Fiyat Artışı Homojen)"
 
-    # Artan/Azalan Sayıları
+    # Hareket Yönü
     artanlar = df_clean[df_clean['Fark'] > 0]
     dusenler = df_clean[df_clean['Fark'] < 0]
     sabitler = df_clean[df_clean['Fark'] == 0]
     
     artan_sayisi = len(artanlar)
     yayilim_orani = (artan_sayisi / toplam_urun) * 100
-    yayilim_bari = draw_bar(yayilim_orani, 15)
     
-    # En Çok Artanlar (Görselleştirilmiş)
+    # En Çok Artan ve Düşenler (Görsel Liste)
     inc = df_clean.sort_values('Fark', ascending=False).head(5)
     dec = df_clean.sort_values('Fark', ascending=True).head(5)
     
-    inc_str = ""
-    for _, row in inc.iterrows():
-        val = row['Fark'] * 100
-        bar = draw_bar(min(val*2, 100), 10) # Ölçeği biraz büyütelim
-        inc_str += f"   📈 {row[ad_col][:20]:<20} {bar} %{val:.2f}\n"
+    inc_str = "\n".join([f"   🔴 %{row['Fark']*100:5.2f} | {row[ad_col]}" for _, row in inc.iterrows()])
+    dec_str = "\n".join([f"   🟢 %{abs(row['Fark']*100):5.2f} | {row[ad_col]}" for _, row in dec.iterrows()])
 
-    dec_str = ""
-    for _, row in dec.iterrows():
-        val = abs(row['Fark'] * 100)
-        bar = draw_bar(min(val*2, 100), 10)
-        dec_str += f"   📉 {row[ad_col][:20]:<20} {bar} -%{val:.2f}\n"
-
-    # Sektör Analizi (Görselleştirilmiş)
-    sektor_tablosu = ""
+    # Sektör Analizi (Basitleştirilmiş)
+    sektor_ozet = ""
     if 'Grup' in df_analiz.columns:
         df_clean['Agirlikli_Etki'] = df_clean['Fark'] * df_clean[agirlik_col]
         sektor_grp = df_clean.groupby('Grup').agg({
@@ -687,61 +669,53 @@ def generate_detailed_static_report(df_analiz, tarih, enf_genel, enf_gida, gun_f
         })
         toplam_agirlik = df_clean[agirlik_col].sum()
         sektor_grp['Katki'] = (sektor_grp['Agirlikli_Etki'] / toplam_agirlik) * 100
-        sektor_sirali = sektor_grp.sort_values('Katki', ascending=False).head(5) # İlk 5 sektör
+        sektor_sirali = sektor_grp.sort_values('Katki', ascending=False).head(3)
         
         for sek, row in sektor_sirali.iterrows():
-            katki = row['Katki']
-            isaret = "+" if katki > 0 else ""
-            # Görsel Bar (Negatif/Pozitif ayrımı zor olduğu için mutlak büyüklük)
-            bar_len = int(abs(katki) * 20) # Hassasiyeti artır
-            bar = "▮" * min(bar_len, 10)
-            sektor_tablosu += f"   • {sek:<25} {bar:<10} {isaret}%{katki:.2f} Puan\n"
+            sektor_ozet += f"   • {sek}: {row['Katki']:+.2f} Puan Etki\n"
     else:
-        sektor_tablosu = "   (Kategori verisi bulunamadı)"
+        sektor_ozet = "   (Veri yok)\n"
 
-    # --- 2. RAPOR METNİ (GÖRSEL DESTEKLİ) ---
+    # --- 2. RAPOR METNİ (KART GÖRÜNÜMLÜ) ---
     text = f"""
 **PİYASA GÖRÜNÜM RAPORU**
 **Tarih:** {tarih}
 
-**1. 📊 GENEL GÖRÜNÜM PANOSU**
---------------------------------------------------
+**1. 📊 ANA GÖSTERGELER**
+-----------------------------------------
 **GENEL ENFLASYON** : **%{enf_genel:.2f}**
 **GIDA ENFLASYONU** : **%{enf_gida:.2f}**
-**YIL SONU TAHMİNİ** : **%{tahmin:.2f}**
---------------------------------------------------
+**AY SONU TAHMİNİ** : **%{tahmin:.2f}**
+-----------------------------------------
 
-**2. 🌡️ PİYASA SICAKLIĞI (Yayılım Analizi)**
-Fiyatların ne kadarı artış yönünde?
-{yayilim_bari} **%{yayilim_orani:.1f}**
-*(Koyu alanlar zamlanan ürün oranını temsil eder)*
+**2. 🔎 PİYASA RÖNTGENİ**
+**Durum:** {piyasa_yorumu}
 
-**Durum Tespiti:** {piyasa_yorumu}
-* **Zamlanan Ürün:** {artan_sayisi} adet
-* **İndirimli Ürün:** {len(dusenler)} adet
-* **Sabit Ürün:** {len(sabitler)} adet
+**Fiyat Hareketleri:**
+   🔺 **Zamlanan Ürün:** {artan_sayisi} adet
+   🔻 **İndirimli Ürün:** {len(dusenler)} adet
+   ➖ **Fiyatı Değişmeyen:** {len(sabitler)} adet
 
-**3. 🚀 ENFLASYON MOTORLARI (Sektörel Etki)**
-Genel endeksi yukarı iten ana kategoriler:
---------------------------------------------------
-{sektor_tablosu}
---------------------------------------------------
+**Sepet Yayılımı:**
+   Her 100 üründen **{int(yayilim_orani)}** tanesinde fiyat artışı tespit edilmiştir.
 
-**4. ⚡ DİKKAT ÇEKEN HAREKETLER**
-Piyasada fiyatı en sert değişen ürünler:
+**3. ⚡ DİKKAT ÇEKEN ÜRÜNLER**
 
-**▲ CEP YAKANLAR (En Yüksek Artışlar)**
+**▲ Yüksek Artışlar (Cep Yakanlar)**
 {inc_str}
-**▼ FIRSATLAR (En Sert Düşüşler)**
+
+**▼ Fiyat Düşüşleri (Fırsatlar)**
 {dec_str}
 
-**5. 🧠 SONUÇ VE ÖNGÖRÜ**
-Piyasa verileri, fiyatlama davranışlarında henüz tam bir **konsolidasyon (durulma)** olmadığını gösteriyor. Özellikle gıda tarafındaki **%{enf_gida:.2f}**'lik seviye, manşet enflasyonu yukarı çekmeye devam ediyor.
+**4. 🏭 SEKTÖREL ETKİ**
+Enflasyonu yukarı çeken ana gruplar:
+{sektor_ozet}
 
-Mevcut trendin devamı halinde, ay sonu kapanışının **%{tahmin:.2f}** bandında gerçekleşmesi matematiksel olarak en güçlü olasılıktır. Harcama ve stok kararlarının bu volatilite dikkate alınarak verilmesi önerilir.
+**5. 💡 SONUÇ**
+Piyasa verileri, fiyat istikrarının henüz tam sağlanamadığını ve gıda grubunun ana baskı unsuru olduğunu göstermektedir. Tahmin modelimiz, ay sonu kapanışının **%{tahmin:.2f}** bandında olacağını öngörmektedir.
 
 ---
-*Rapor ID: {hash(tarih)} | Validasyon Müdürlüğü*
+*Otomatik Rapor Sistemi | Validasyon Müdürlüğü*
 """
     return text.strip()
 
@@ -988,7 +962,7 @@ def dashboard_modu():
 
     # --- BUTON KONTROL PANELİ ---
     # Butonu göstermek istediğinde bu değeri True yapabilirsin
-    SHOW_SYNC_BUTTON = False 
+    SHOW_SYNC_BUTTON = True 
 
     if SHOW_SYNC_BUTTON:
         col_btn1, col_btn2 = st.columns([3, 1])
@@ -1329,83 +1303,31 @@ def dashboard_modu():
                 ai_placeholder = st.empty()
                 stream_text(durum_mesaji, ai_placeholder, kutu_rengi, kenar_rengi, durum_emoji, durum_baslik)
                 
-                # --- YENİ GÖRSELLEŞTİRME HAZIRLIĞI ---
+                # --- NORMALE DÖNÜŞ ---
 
-                # 1. ANA TREND GRAFİĞİ (Kümülatif Enflasyon Seyri)
-                fig_trend_main = go.Figure()
-                if not df_trend.empty:
-                    # Kümülatif yüzdeye çevir (Endeks 100'den başlıyorsa)
-                    baseline_val = df_trend.iloc[0]['TÜFE'] if not df_trend.empty else 100
-                    df_trend['Kumulatif_Yuzde'] = ((df_trend['TÜFE'] / baseline_val) - 1) * 100
-
-                    fig_trend_main.add_trace(go.Scatter(
-                        x=df_trend['Tarih'],
-                        y=df_trend['Kumulatif_Yuzde'],
-                        mode='lines+markers',
-                        name='Dijital Sepet (Hesaplanan)',
-                        line=dict(color='#3b82f6', width=3),
-                        marker=dict(size=6, color='#60a5fa', line=dict(width=1, color='#fff'))
-                    ))
-
-                    # Eğer Prophet tahmini varsa ekle (Opsiyonel - Buton açıksa çalışır)
-                    if 'df_forecast' in locals() and not df_forecast.empty:
-                         forecast_filtered = df_forecast[df_forecast['ds'] > df_trend['Tarih'].max()]
-                         if not forecast_filtered.empty:
-                             # Tahmini de kümülatife çevirelim (Yaklaşık)
-                             forecast_kumulatif = ((forecast_filtered['yhat'] / baseline_val) - 1) * 100
-                             fig_trend_main.add_trace(go.Scatter(
-                                 x=forecast_filtered['ds'],
-                                 y=forecast_kumulatif,
-                                 mode='lines',
-                                 name='AI Tahmini (Trend)',
-                                 line=dict(color='#a78bfa', width=2, dash='dot')
-                             ))
-
-                fig_trend_main.update_layout(
-                    title=dict(text="📈 Kümülatif Enflasyon Seyri", font=dict(size=18, color='#fff')),
-                    xaxis_title="",
-                    yaxis_title="Kümülatif Değişim (%)",
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, bgcolor='rgba(0,0,0,0)'),
-                    hovermode="x unified",
-                    height=400
-                )
-                # Neon efekti ve stil uygula
-                fig_trend_main = make_neon_chart(style_chart(fig_trend_main))
-
-
-                # 2. RİSK GÖSTERGESİ (GAUGE CHART)
-                # Risk seviyesine göre renk belirle
-                gauge_color = "#10b981" # Yeşil (Düşük)
-                if enf_genel > 5: gauge_color = "#ef4444" # Kırmızı (Yüksek)
-                elif enf_genel > 2: gauge_color = "#f59e0b" # Sarı (Orta)
-
-                fig_gauge = go.Figure(go.Indicator(
-                    mode = "gauge+number+delta",
-                    value = enf_genel,
-                    domain = {'x': [0, 1], 'y': [0, 1]},
-                    title = {'text': "Piyasa Risk Göstergesi", 'font': {'size': 16, 'color': '#a1a1aa'}},
-                    delta = {'reference': enf_onceki, 'increasing': {'color': "#ef4444"}, 'decreasing': {'color': "#10b981"}, "valueformat": ".2f%%"},
-                    number = {'suffix': "%", 'font': {'size': 36, 'color': '#fff', 'family': 'Inter'}},
-                    gauge = {
-                        'axis': {'range': [None, max(10, enf_genel * 1.5)], 'tickwidth': 1, 'tickcolor': "rgba(255,255,255,0.1)"},
-                        'bar': {'color': gauge_color, 'thickness': 0.75}, # İbre rengi
-                        'bgcolor': "rgba(0,0,0,0)",
-                        'borderwidth': 2,
-                        'bordercolor': "rgba(255,255,255,0.1)",
-                        'steps': [
-                            {'range': [0, 2], 'color': 'rgba(16, 185, 129, 0.1)'},  # Yeşil Bölge
-                            {'range': [2, 5], 'color': 'rgba(245, 158, 11, 0.1)'},   # Sarı Bölge
-                            {'range': [5, max(10, enf_genel * 1.5)], 'color': 'rgba(239, 68, 68, 0.1)'} # Kırmızı Bölge
-                        ],
-                        'threshold': {
-                            'line': {'color': "#fff", 'width': 4},
-                            'thickness': 0.8,
-                            'value': enf_genel
-                        }
-                    }
-                ))
-                fig_gauge.update_layout(paper_bgcolor = "rgba(0,0,0,0)", font = {'color': "#a1a1aa", 'family': "Inter"}, height=280, margin=dict(t=40, b=10, l=20, r=20))
-
+                def style_chart(fig, is_pdf=False, is_sunburst=False):
+                    if is_pdf:
+                        fig.update_layout(template="plotly_white", font=dict(family="Arial", size=14, color="black"))
+                    else:
+                        layout_args = dict(
+                            template="plotly_dark",
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font=dict(family="Inter, sans-serif", color="#a1a1aa", size=12),
+                            margin=dict(l=0, r=0, t=40, b=0),
+                            hoverlabel=dict(bgcolor="#18181b", bordercolor="rgba(255,255,255,0.1)", font=dict(color="#fff")),
+                        )
+                        if not is_sunburst:
+                            layout_args.update(dict(
+                                xaxis=dict(showgrid=False, zeroline=False, showline=True, linecolor="rgba(255,255,255,0.1)",
+                                           gridcolor='rgba(255,255,255,0.05)', dtick="M1"),
+                                yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.03)", zeroline=False,
+                                           gridwidth=1)
+                            ))
+                        fig.update_layout(**layout_args)
+                        fig.update_layout(modebar=dict(bgcolor='rgba(0,0,0,0)', color='#71717a', activecolor='#fff'))
+                    return fig
+                
                 df_analiz['Fark_Yuzde'] = df_analiz['Fark'] * 100
                 
                 # Sekmeler
