@@ -627,7 +627,15 @@ def html_isleyici(log_callback):
 def generate_detailed_static_report(df_analiz, tarih, enf_genel, enf_gida, gun_farki, tahmin, ad_col, agirlik_col):
     import numpy as np
     
-    # --- 1. ARKAPLAN HESAPLAMALARI (Matematik aynı kalıyor) ---
+    # --- YARDIMCI: Metin Tabanlı Grafik Çizici (Word uyumlu) ---
+    def draw_bar(percent, length=10):
+        # Yüzdeyi 0-100 arasına sabitle
+        p = max(0, min(100, percent))
+        filled = int(length * p / 100)
+        bar = "▓" * filled + "░" * (length - filled)
+        return bar
+
+    # --- 1. HESAPLAMALAR ---
     df_clean = df_analiz.dropna(subset=['Fark'])
     toplam_urun = len(df_clean)
     
@@ -635,17 +643,14 @@ def generate_detailed_static_report(df_analiz, tarih, enf_genel, enf_gida, gun_f
     ortalama_fark = df_clean['Fark'].mean()
     medyan_fark = df_clean['Fark'].median()
     
-    # Yorum Mantığı: Fiyatlar genele mi yayıldı yoksa tek tük ürün mü arttı?
-    # Eğer ortalama, medyandan çok yüksekse: Birkaç ürün çok pahalandı, kalanı sakin.
-    # Eğer yakınlarsa: Her şeye zam gelmiş demek.
+    # Yorum Mantığı
     piyasa_yorumu = ""
     if ortalama_fark > (medyan_fark * 1.2):
-        piyasa_yorumu = ("Genel olarak çoğu üründe fiyatlar sakin seyretse de, **bazı ürünlerdeki aşırı fiyat artışları** "
-                         "ortalamayı yükseltiyor. Yani enflasyon belirli kalemlerde toplanmış durumda.")
+        piyasa_yorumu = "Bazı ürünlerdeki AŞIRI fiyat artışları ortalamayı yükseltiyor. (Lokal Şoklar)"
     elif ortalama_fark < (medyan_fark * 0.8):
-        piyasa_yorumu = ("Bazı ürünlerde yapılan indirimler ve kampanyalar, genel enflasyon artışını biraz olsun frenlemiş görünüyor.")
+        piyasa_yorumu = "Kampanyalı ürünler genel artışı frenliyor."
     else:
-        piyasa_yorumu = ("Maalesef fiyat artışları **genele yayılmış durumda**. Yani marketteki hemen hemen her ürün grubunda benzer oranlarda artış hissediliyor.")
+        piyasa_yorumu = "Fiyat artışları marketin geneline yayılmış durumda. (Genele Yayılım)"
 
     # Artan/Azalan Sayıları
     artanlar = df_clean[df_clean['Fark'] > 0]
@@ -653,71 +658,90 @@ def generate_detailed_static_report(df_analiz, tarih, enf_genel, enf_gida, gun_f
     sabitler = df_clean[df_clean['Fark'] == 0]
     
     artan_sayisi = len(artanlar)
-    dusen_sayisi = len(dusenler)
     yayilim_orani = (artan_sayisi / toplam_urun) * 100
+    yayilim_bari = draw_bar(yayilim_orani, 15)
     
-    # En Çok Artan ve Düşenleri Listeleme (Daha sade format)
+    # En Çok Artanlar (Görselleştirilmiş)
     inc = df_clean.sort_values('Fark', ascending=False).head(5)
     dec = df_clean.sort_values('Fark', ascending=True).head(5)
     
-    inc_str = "\n".join([f"   🔴 {row[ad_col]}: %{row['Fark']*100:.2f} Artış" for _, row in inc.iterrows()])
-    dec_str = "\n".join([f"   🟢 {row[ad_col]}: %{abs(row['Fark']*100):.2f} İndirim" for _, row in dec.iterrows()])
+    inc_str = ""
+    for _, row in inc.iterrows():
+        val = row['Fark'] * 100
+        bar = draw_bar(min(val*2, 100), 10) # Ölçeği biraz büyütelim
+        inc_str += f"   📈 {row[ad_col][:20]:<20} {bar} %{val:.2f}\n"
 
-    # Sektör Analizi (Hangisi bütçeyi yoruyor?)
-    sektor_text = "Veri setinde kategori bilgisi olmadığı için detay veremiyorum."
-    
+    dec_str = ""
+    for _, row in dec.iterrows():
+        val = abs(row['Fark'] * 100)
+        bar = draw_bar(min(val*2, 100), 10)
+        dec_str += f"   📉 {row[ad_col][:20]:<20} {bar} -%{val:.2f}\n"
+
+    # Sektör Analizi (Görselleştirilmiş)
+    sektor_tablosu = ""
     if 'Grup' in df_analiz.columns:
         df_clean['Agirlikli_Etki'] = df_clean['Fark'] * df_clean[agirlik_col]
         sektor_grp = df_clean.groupby('Grup').agg({
             'Agirlikli_Etki': 'sum',
             agirlik_col: 'sum'
         })
-        # Hangi sektör enflasyonu ne kadar yukarı itti?
         toplam_agirlik = df_clean[agirlik_col].sum()
         sektor_grp['Katki'] = (sektor_grp['Agirlikli_Etki'] / toplam_agirlik) * 100
-        sektor_sirali = sektor_grp.sort_values('Katki', ascending=False)
+        sektor_sirali = sektor_grp.sort_values('Katki', ascending=False).head(5) # İlk 5 sektör
         
-        en_etkili_sektor = sektor_sirali.index[0]
-        
-        # Sektör metni
-        sektor_text = (f"Bütçeyi en çok zorlayan kategori **{en_etkili_sektor}** oldu. "
-                       f"Genel enflasyondaki artışın büyük bir kısmı bu gruptan kaynaklanıyor.")
+        for sek, row in sektor_sirali.iterrows():
+            katki = row['Katki']
+            isaret = "+" if katki > 0 else ""
+            # Görsel Bar (Negatif/Pozitif ayrımı zor olduğu için mutlak büyüklük)
+            bar_len = int(abs(katki) * 20) # Hassasiyeti artır
+            bar = "▮" * min(bar_len, 10)
+            sektor_tablosu += f"   • {sek:<25} {bar:<10} {isaret}%{katki:.2f} Puan\n"
+    else:
+        sektor_tablosu = "   (Kategori verisi bulunamadı)"
 
-    # --- 2. RAPOR METNİ (SADE VE ANLAŞILIR) ---
+    # --- 2. RAPOR METNİ (GÖRSEL DESTEKLİ) ---
     text = f"""
-**PİYASA DURUM ÖZETİ VE ANALİZİ**
+**PİYASA GÖRÜNÜM RAPORU**
 **Tarih:** {tarih}
 
-**1. GENEL BAKIŞ**
-Bugün itibarıyla takip ettiğimiz piyasa sepetinin genel fiyatı **%{enf_genel:.2f}** oranında arttı. Özellikle mutfak masraflarını doğrudan etkileyen gıda grubunda durum **%{enf_gida:.2f}** seviyesinde. Yapay zeka tahminlerimize göre, ay sonuna kadar fiyatların bu seviyelerden **%{tahmin:.2f}** bandına doğru gitmesi bekleniyor.
+**1. 📊 GENEL GÖRÜNÜM PANOSU**
+--------------------------------------------------
+**GENEL ENFLASYON** : **%{enf_genel:.2f}**
+**GIDA ENFLASYONU** : **%{enf_gida:.2f}**
+**YIL SONU TAHMİNİ** : **%{tahmin:.2f}**
+--------------------------------------------------
 
-**2. PİYASANIN NABZI (Fiyatlar Nasıl Davranıyor?)**
-{piyasa_yorumu}
+**2. 🌡️ PİYASA SICAKLIĞI (Yayılım Analizi)**
+Fiyatların ne kadarı artış yönünde?
+{yayilim_bari} **%{yayilim_orani:.1f}**
+*(Koyu alanlar zamlanan ürün oranını temsil eder)*
 
-Takip ettiğimiz toplam **{toplam_urun}** adet ürünün durumu şöyle:
-* **{artan_sayisi}** ürünün fiyatı arttı (Zamlananlar).
-* **{dusen_sayisi}** ürünün fiyatı düştü (İndirime girenler).
-* **{len(sabitler)}** ürünün fiyatı değişmedi.
+**Durum Tespiti:** {piyasa_yorumu}
+* **Zamlanan Ürün:** {artan_sayisi} adet
+* **İndirimli Ürün:** {len(dusenler)} adet
+* **Sabit Ürün:** {len(sabitler)} adet
 
-Basitçe söylemek gerekirse; sepetteki her 100 üründen **{int(yayilim_orani)}** tanesinin fiyatı zamlandı. Bu oran %50'nin üzerindeyse, zamlar genele yayılmış demektir.
+**3. 🚀 ENFLASYON MOTORLARI (Sektörel Etki)**
+Genel endeksi yukarı iten ana kategoriler:
+--------------------------------------------------
+{sektor_tablosu}
+--------------------------------------------------
 
-**3. DİKKAT ÇEKENLER (Şok Hareketler)**
-Piyasada fiyatı en çok değişen, bütçeyi şaşırtabilecek ürünler şunlar:
+**4. ⚡ DİKKAT ÇEKEN HAREKETLER**
+Piyasada fiyatı en sert değişen ürünler:
 
-**▲ Fiyatı En Çok Artanlar (Cep Yakanlar):**
+**▲ CEP YAKANLAR (En Yüksek Artışlar)**
 {inc_str}
-
-**▼ Fiyatı En Çok Düşenler (Fırsat Ürünleri):**
+**▼ FIRSATLAR (En Sert Düşüşler)**
 {dec_str}
 
-**4. SEKTÖREL DURUM**
-{sektor_text}
+**5. 🧠 SONUÇ VE ÖNGÖRÜ**
+Piyasa verileri, fiyatlama davranışlarında henüz tam bir **konsolidasyon (durulma)** olmadığını gösteriyor. Özellikle gıda tarafındaki **%{enf_gida:.2f}**'lik seviye, manşet enflasyonu yukarı çekmeye devam ediyor.
 
-**SONUÇ VE TAVSİYE**
-Rakamlar gösteriyor ki piyasada fiyatlar henüz tam olarak durulmuş değil. Özellikle gıda tarafındaki hareketlilik devam ediyor. Önümüzdeki günlerde **%{tahmin:.2f}** seviyelerini görebileceğimiz için harcama planlarınızı buna göre yapmanızda fayda var.
+Mevcut trendin devamı halinde, ay sonu kapanışının **%{tahmin:.2f}** bandında gerçekleşmesi matematiksel olarak en güçlü olasılıktır. Harcama ve stok kararlarının bu volatilite dikkate alınarak verilmesi önerilir.
 
 ---
-*Bu rapor, veriler üzerinden otomatik olarak oluşturulmuştur.*
+*Rapor ID: {hash(tarih)} | Validasyon Müdürlüğü*
 """
     return text.strip()
 
@@ -1684,3 +1708,4 @@ def dashboard_modu():
         
 if __name__ == "__main__":
     dashboard_modu()
+
