@@ -1323,14 +1323,21 @@ def dashboard_modu():
                 if not anomaliler.empty:
                     st.error(f"⚠️ DİKKAT: Piyasadaki {len(anomaliler)} üründe ani fiyat artışı (Şok) tespit edildi!")
                     with st.expander("Şok Yaşanan Ürünleri İncele"):
-                        # Dataframe gösterirken 4 hane formatı uygula
+                        # 1. Gösterim için verinin bir kopyasını alıyoruz (Hata almamak için)
+                        df_show = anomaliler[[ad_col, onceki_gun, son, 'Gunluk_Degisim']].copy()
+                    
+                        # 2. Veriyi istediğiniz formata (örn: %17.25) çeviriyoruz (Metin olarak)
+                        # Sayıyı 100 ile çarpıp başına % işareti koyuyoruz.
+                        df_show['Gunluk_Degisim'] = df_show['Gunluk_Degisim'].apply(lambda x: f"%{x*100:.2f}")
+                    
+                        # 3. Tabloyu çizdiriyoruz
                         st.data_editor(
-                            anomaliler[[ad_col, onceki_gun, son, 'Gunluk_Degisim']],
+                            df_show,
                             column_config={
                                 ad_col: "Ürün",
                                 onceki_gun: st.column_config.NumberColumn(f"Dünkü Fiyat ({onceki_gun})", format="%.4f ₺"),
                                 son: st.column_config.NumberColumn(f"Bugünkü Fiyat ({son})", format="%.4f ₺"),
-                                "Gunluk_Degisim": st.column_config.NumberColumn("Şok Olan Üründeki Değişim", format="%.2f%%")
+                                "Gunluk_Degisim": st.column_config.TextColumn("Şok Olan Üründeki Değişim") 
                             },
                             hide_index=True,
                             use_container_width=True
@@ -1686,6 +1693,7 @@ def dashboard_modu():
         
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
