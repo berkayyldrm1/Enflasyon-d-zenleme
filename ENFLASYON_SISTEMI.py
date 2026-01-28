@@ -1246,7 +1246,7 @@ def dashboard_modu():
                     # Anomali Tespiti (YENİ MANTIK)
                     # "Bir önceki güne göre bugün fazla artanlar"
                     # Günlük artışı %3'ten (0.03) fazla olanları "Şok" olarak işaretliyoruz.
-                    anomaliler = df_analiz[df_analiz['Gunluk_Degisim'] > 0.03].copy()
+                    anomaliler = df_analiz[df_analiz['Gunluk_Degisim'] > 0.05].copy()
                     # En yüksek artıştan aza doğru sırala
                     anomaliler = anomaliler.sort_values('Gunluk_Degisim', ascending=False)
                 else:
@@ -1686,5 +1686,6 @@ def dashboard_modu():
         
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
