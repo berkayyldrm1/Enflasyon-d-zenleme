@@ -1305,7 +1305,11 @@ def dashboard_modu():
                 c1, c2, c3, c4 = st.columns(4)
 
                 with c1:
-                    kpi_card("Ay Sonu Enflasyon", f"%{enf_genel:.2f}", kumu_sub_text, kumu_icon_color, "#ef4444", "📈", "delay-1")
+                    # Seçili tarihin gün ve ayını al (Örn: 28.01)
+                    guncel_tarih_etiket = datetime.strptime(son, '%Y-%m-%d').strftime('%d.%m')
+                    
+                    # Başlığı "Enflasyon (GÜN.AY)" formatına çeviriyoruz
+                    kpi_card(f"Enflasyon ({guncel_tarih_etiket})", f"%{enf_genel:.2f}", kumu_sub_text, kumu_icon_color, "#ef4444", "📈", "delay-1")
                 with c2:
                     kpi_card("Gıda Enflasyonu", f"%{enf_gida:.2f}", "Mutfak Sepeti", "#fca5a5", "#10b981", "🛒", "delay-2")
                 with c3:
@@ -1682,4 +1686,5 @@ def dashboard_modu():
         
 if __name__ == "__main__":
     dashboard_modu()
+
 
