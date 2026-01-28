@@ -1323,24 +1323,38 @@ def dashboard_modu():
                 if not anomaliler.empty:
                     st.error(f"⚠️ DİKKAT: Piyasadaki {len(anomaliler)} üründe ani fiyat artışı (Şok) tespit edildi!")
                     with st.expander("Şok Yaşanan Ürünleri İncele"):
-                        # 1. Gösterim için verinin bir kopyasını alıyoruz (Hata almamak için)
+                        # 1. Veriyi hazırlıyoruz
                         df_show = anomaliler[[ad_col, onceki_gun, son, 'Gunluk_Degisim']].copy()
                     
-                        # 2. Veriyi istediğiniz formata (örn: %17.25) çeviriyoruz (Metin olarak)
-                        # Sayıyı 100 ile çarpıp başına % işareti koyuyoruz.
-                        df_show['Gunluk_Degisim'] = df_show['Gunluk_Degisim'].apply(lambda x: f"%{x*100:.2f}")
+                        # 2. Sütun İsimlerini Düzeltiyoruz (Tabloda güzel görünmesi için)
+                        # Değişken olan sütun isimlerini burada map ediyoruz
+                        new_columns = {
+                            ad_col: "Ürün",
+                            onceki_gun: f"Dünkü Fiyat ({onceki_gun})",
+                            son: f"Bugünkü Fiyat ({son})",
+                            'Gunluk_Degisim': "Şok Olan Üründeki Değişim"
+                        }
+                        df_show = df_show.rename(columns=new_columns)
                     
-                        # 3. Tabloyu çizdiriyoruz
-                        st.data_editor(
-                            df_show,
-                            column_config={
-                                ad_col: "Ürün",
-                                onceki_gun: st.column_config.NumberColumn(f"Dünkü Fiyat ({onceki_gun})", format="%.4f ₺"),
-                                son: st.column_config.NumberColumn(f"Bugünkü Fiyat ({son})", format="%.4f ₺"),
-                                "Gunluk_Degisim": st.column_config.TextColumn("Şok Olan Üründeki Değişim") 
-                            },
+                        # 3. Pandas Styler ile Format ve Hizalama Ayarı
+                        # Bu yöntem CSS injection yaparak hem formatı hem hizalamayı zorlar
+                        styled_df = (
+                            df_show.style
+                            .format({
+                                f"Dünkü Fiyat ({onceki_gun})": "{:.4f} ₺", # Fiyatlar için format
+                                f"Bugünkü Fiyat ({son})": "{:.4f} ₺",
+                                "Şok Olan Üründeki Değişim": lambda x: f"%{x*100:.2f}" # YÜZDE BAŞTA FORMATI
+                            })
+                            # SAĞA DAYAMA İŞLEMİ BURADA YAPILIYOR:
+                            .set_properties(subset=["Şok Olan Üründeki Değişim"], **{'text-align': 'right'})
+                        )
+                    
+                        # 4. Ekrana Basma (st.dataframe stili destekler)
+                        st.dataframe(
+                            styled_df,
                             hide_index=True,
-                            use_container_width=True
+                            use_container_width=True,
+                            height=len(df_show) * 35 + 38 # Yüksekliği satır sayısına göre otomatik ayarla
                         )
 
                 # --- AI ANALİST KARTI (TYPEWRITER EFEKTLİ) ---
@@ -1693,6 +1707,7 @@ def dashboard_modu():
         
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
 
