@@ -48,10 +48,10 @@ st.set_page_config(
     page_title="Piyasa Monitörü | Pro Analytics",
     layout="wide",
     page_icon="💎",
-    initial_sidebar_state="expanded" # Masaüstünde varsayılan açık gelir
+    initial_sidebar_state="expanded"
 )
 
-# --- CSS MOTORU (MOBİLDE SIDEBAR GİZLEME EKLENDİ) ---
+# --- CSS MOTORU (GÜÇLENDİRİLMİŞ ESTETİK) ---
 def apply_theme():
     st.session_state.plotly_template = "plotly_dark"
 
@@ -61,215 +61,207 @@ def apply_theme():
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
 
         :root {{
-            --bg-deep: #02040a;
-            --glass-bg: rgba(255, 255, 255, 0.02);
+            --bg-deep: #000000;
+            --bg-panel: #09090b;
+            --glass-bg: rgba(20, 20, 25, 0.6);
             --glass-border: rgba(255, 255, 255, 0.08);
             --glass-highlight: rgba(255, 255, 255, 0.15);
             --text-main: #f4f4f5;
             --text-dim: #a1a1aa;
             --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
             --accent-glow: rgba(59, 130, 246, 0.5);
             --card-radius: 16px;
         }}
 
-        /* --- MOBİL UYUMLULUK VE SIDEBAR GİZLEME --- */
+        /* --- MOBİL GİZLEME --- */
         @media only screen and (max-width: 768px) {{
-            /* 1. SIDEBAR'I MOBİLDE TAMAMEN GİZLE */
-            section[data-testid="stSidebar"] {{
-                display: none !important;
-                width: 0px !important;
-            }}
-            /* Sidebar Açma/Kapama Okunu (Button) da Gizle */
-            div[data-testid="stSidebarCollapsedControl"] {{
-                display: none !important;
-            }}
-            
-            /* 2. KONTEYNER AYARLARI */
-            .block-container {{
-                padding-top: 1rem !important;
-                padding-left: 0.5rem !important;
-                padding-right: 0.5rem !important;
-                max-width: 100% !important;
-            }}
-            
-            /* 3. HEADER AYARLARI */
-            .header-wrapper {{
-                flex-direction: column !important;
-                align-items: flex-start !important;
-                padding: 15px 20px !important;
-                height: auto !important;
-                gap: 15px !important;
-            }}
-            .app-title {{ 
-                font-size: 24px !important; 
-                flex-direction: column !important; 
-                align-items: flex-start !important; 
-                gap: 5px !important;
-            }}
-            .clock-container {{ 
-                text-align: left !important; 
-                width: 100% !important; 
-                margin-top: 10px !important;
-                padding-top: 10px !important;
-                border-top: 1px solid rgba(255,255,255,0.1);
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }}
-            
-            /* 4. KART DÜZENLEMELERİ */
-            .kpi-card {{
-                margin-bottom: 10px !important;
-                padding: 16px !important;
-                height: auto !important;
-            }}
-            .kpi-value {{ font-size: 28px !important; margin-bottom: 4px !important; }}
-            .kpi-title {{ font-size: 10px !important; margin-bottom: 8px !important; }}
-
-            /* 5. ÜRÜN KARTLARI (YATAY LİSTE) */
-            .pg-card {{
-                width: 100% !important;
-                height: auto !important;
-                min-height: 70px !important;
-                margin-bottom: 10px !important;
-                flex-direction: row !important;
-                justify-content: space-between !important;
-                align-items: center !important;
-                text-align: left !important;
-                padding: 12px 16px !important;
-                gap: 10px;
-            }}
-            .pg-name {{ 
-                font-size: 13px !important; 
-                -webkit-line-clamp: 1 !important; 
-                margin-bottom: 0 !important;
-                flex: 1; 
-                text-align: left !important;
-            }}
-            .pg-price {{ font-size: 15px !important; margin: 0 !important; white-space: nowrap; }}
-            .pg-badge {{ font-size: 9px !important; padding: 2px 6px !important; }}
-
-            /* 6. TABLO VE GRAFİK */
-            .stTabs [data-baseweb="tab-list"] {{
-                flex-wrap: nowrap !important;
-                overflow-x: auto !important;
-                justify-content: flex-start !important;
-                padding-bottom: 5px !important;
-            }}
-            .stTabs [data-baseweb="tab"] {{
-                flex: 0 0 auto !important;
-                padding: 0 15px !important;
-            }}
-            .stPlotlyChart {{ width: 100% !important; }}
-            .ticker-wrap {{ font-size: 10px !important; padding: 8px 0 !important; }}
+            section[data-testid="stSidebar"] {{ display: none !important; width: 0px !important; }}
+            div[data-testid="stSidebarCollapsedControl"] {{ display: none !important; }}
+            .block-container {{ padding-top: 1rem !important; padding-left: 0.5rem !important; padding-right: 0.5rem !important; }}
+            .header-wrapper {{ flex-direction: column !important; align-items: flex-start !important; height: auto !important; }}
+            .kpi-value {{ font-size: 24px !important; }}
+            .pg-card {{ flex-direction: row !important; height: auto !important; min-height: 70px !important; }}
+            .stTabs [data-baseweb="tab-list"] {{ overflow-x: auto !important; }}
         }}
 
-        /* --- GENEL STİLLER (DEĞİŞMEDİ) --- */
+        /* --- ANA YAPISAL --- */
+        [data-testid="stAppViewContainer"] {{
+            background-color: var(--bg-deep);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08), transparent 40%), 
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08), transparent 40%);
+            background-attachment: fixed;
+            font-family: 'Inter', sans-serif !important;
+            color: var(--text-main) !important;
+        }}
+        
+        /* Yıldız Animasyonu */
         [data-testid="stAppViewContainer"]::before {{
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: 
                 radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
-                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
-                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
-            background-size: 550px 550px, 350px 350px, 250px 250px;
-            background-position: 0 0, 40 60, 130 270;
-            opacity: 0.07; z-index: 0; animation: star-move 200s linear infinite; pointer-events: none;
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px);
+            background-size: 550px 550px, 350px 350px;
+            background-position: 0 0, 40 60;
+            opacity: 0.1; z-index: 0; animation: star-move 150s linear infinite; pointer-events: none;
         }}
-        @keyframes star-move {{ from {{ transform: translateY(0); }} to {{ transform: translateY(-2000px); }} }}
-        @keyframes fadeInUp {{ from {{ opacity: 0; transform: translate3d(0, 20px, 0); }} to {{ opacity: 1; transform: translate3d(0, 0, 0); }} }}
-        @keyframes border-flow {{ 0% {{ background-position: 0% 50%; }} 50% {{ background-position: 100% 50%; }} 100% {{ background-position: 0% 50%; }} }}
-        .animate-enter {{ animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }}
-        .delay-1 {{ animation-delay: 0.1s; }} .delay-2 {{ animation-delay: 0.2s; }} .delay-3 {{ animation-delay: 0.3s; }}
-        .blink {{ animation: blinker 1s linear infinite; }} @keyframes blinker {{ 50% {{ opacity: 0; }} }}
+        @keyframes star-move {{ from {{ transform: translateY(0); }} to {{ transform: translateY(-1000px); }} }}
 
-        [data-testid="stAppViewContainer"] {{
-            background-color: var(--bg-deep);
-            background-image: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.06), transparent 25%), radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.06), transparent 25%);
-            background-attachment: fixed; font-family: 'Inter', sans-serif !important; color: var(--text-main) !important;
-        }}
-        ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
-        ::-webkit-scrollbar-track {{ background: #02040a; }}
-        ::-webkit-scrollbar-thumb {{ background: #3b82f6; border-radius: 4px; }}
+        /* --- SAKLAMA --- */
         [data-testid="stHeader"] {{ visibility: hidden; height: 0px; }}
         [data-testid="stToolbar"] {{ display: none; }}
-        
-        /* Side bar masaüstü için genel stil */
-        section[data-testid="stSidebar"] {{
-            background: linear-gradient(180deg, rgba(5, 5, 10, 0.95) 0%, rgba(0, 0, 0, 0.98) 100%) !important;
-            border-right: 1px solid var(--glass-border); backdrop-filter: blur(20px); z-index: 99;
-        }}
-        
+
+        /* --- INPUT VE SELECTBOX --- */
         .stSelectbox > div > div, .stTextInput > div > div {{
-            background-color: rgba(255, 255, 255, 0.03) !important; border: 1px solid var(--glass-border) !important;
-            color: var(--text-main) !important; border-radius: 10px !important; transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.03) !important; 
+            border: 1px solid var(--glass-border) !important;
+            color: var(--text-main) !important; 
+            border-radius: 12px !important; 
+            transition: all 0.3s ease;
         }}
         .stSelectbox > div > div:hover, .stTextInput > div > div:focus-within {{
-            border-color: var(--accent-blue) !important; background-color: rgba(255, 255, 255, 0.06) !important;
+            border-color: var(--accent-blue) !important; 
+            background-color: rgba(255, 255, 255, 0.07) !important;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
         }}
+
+        /* --- TABLOLAR --- */
         [data-testid="stDataEditor"], [data-testid="stDataFrame"] {{
-            border: 1px solid var(--glass-border); border-radius: 12px; background: rgba(10, 10, 15, 0.4) !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3); animation: fadeInUp 0.8s ease-out;
+            border: 1px solid var(--glass-border); 
+            border-radius: 12px; 
+            background: rgba(10, 10, 15, 0.6) !important;
+            backdrop-filter: blur(10px);
         }}
+        
+        /* --- TABS --- */
         .stTabs [data-baseweb="tab-list"] {{
-            gap: 8px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--glass-border);
+            gap: 10px; 
+            background: rgba(255,255,255,0.02); 
+            padding: 6px; 
+            border-radius: 16px; 
+            border: 1px solid var(--glass-border);
+            margin-bottom: 20px;
         }}
         .stTabs [data-baseweb="tab"] {{
-            height: 40px; border-radius: 8px; padding: 0 20px; color: var(--text-dim) !important; font-weight: 500; border: none !important; transition: all 0.2s ease;
+            height: 40px; 
+            border-radius: 10px; 
+            color: var(--text-dim) !important; 
+            border: none !important;
+            font-size: 13px;
         }}
         .stTabs [aria-selected="true"] {{
-            background-color: rgba(255,255,255,0.1) !important; color: #fff !important; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)) !important; 
+            color: #fff !important; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1) !important;
         }}
+
+        /* --- BUTONLAR --- */
         div.stButton > button {{
-            background: linear-gradient(145deg, rgba(40,40,45,0.8), rgba(20,20,25,0.9)); border: 1px solid var(--glass-border);
-            color: #fff; border-radius: 10px; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(180deg, #27272a, #18181b);
+            border: 1px solid var(--glass-border);
+            color: #fff; border-radius: 10px; font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }}
-        div.stButton > button:hover {{ border-color: var(--accent-blue); box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); transform: translateY(-1px); }}
+        div.stButton > button:hover {{
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2);
+        }}
+        div.stButton > button[kind="primary"] {{
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+        }}
 
+        /* --- KPI KARTLARI (GLOW EFEKTLİ) --- */
         .kpi-card {{
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-            border: 1px solid var(--glass-border); border-radius: var(--card-radius);
-            padding: 24px; position: relative; overflow: hidden; backdrop-filter: blur(10px); transition: all 0.3s ease;
-            animation: fadeInUp 0.6s ease-out both; z-index: 1;
+            background: rgba(20, 20, 25, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: fadeInUp 0.6s ease-out both;
         }}
-        .kpi-card::before, .pg-card::before, .smart-card::before {{
-            content: ""; position: absolute; inset: -1px; z-index: -1;
-            background: linear-gradient(45deg, #3b82f6, #8b5cf6, #ec4899, #3b82f6);
-            background-size: 400% 400%; animation: border-flow 10s ease infinite; border-radius: inherit; opacity: 0; transition: opacity 0.3s ease;
+        .kpi-card::after {{
+            content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
         }}
-        .kpi-card:hover::before, .pg-card:hover::before, .smart-card:hover::before {{ opacity: 0.6; filter: blur(10px); }}
         .kpi-card:hover {{
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-            border-color: var(--glass-highlight); transform: translateY(-4px);
+            transform: translateY(-5px) scale(1.02);
+            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+            background: rgba(30, 30, 40, 0.6);
         }}
-        .kpi-bg-icon {{ position: absolute; right: -15px; bottom: -25px; font-size: 100px; opacity: 0.04; transform: rotate(-15deg); filter: blur(1px); pointer-events: none; }}
-        .kpi-title {{ font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-dim); letter-spacing: 1.5px; margin-bottom: 12px; }}
-        .kpi-value {{ font-size: 36px; font-weight: 700; color: #fff; margin-bottom: 8px; letter-spacing: -1.5px; text-shadow: 0 4px 20px rgba(0,0,0,0.5); }}
-        .kpi-sub {{ font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 8px; color: var(--text-dim); background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 6px; width: fit-content; }}
+        .kpi-bg-icon {{ position: absolute; right: -20px; bottom: -30px; font-size: 120px; opacity: 0.03; transform: rotate(-15deg); filter: blur(2px); pointer-events: none; transition: all 0.5s; }}
+        .kpi-card:hover .kpi-bg-icon {{ opacity: 0.1; transform: rotate(0deg) scale(1.1); }}
+        
+        .kpi-title {{ font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 1.5px; margin-bottom: 12px; }}
+        .kpi-value {{ font-family: 'Inter', sans-serif; font-size: 38px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -1px; text-shadow: 0 10px 30px rgba(0,0,0,0.5); }}
+        .kpi-sub {{ font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05); }}
 
+        /* --- ÜRÜN KARTLARI --- */
         .pg-card {{
-            background: rgba(20, 20, 25, 0.4); border: 1px solid var(--glass-border); border-radius: 12px;
-            padding: 16px; height: 150px; display: flex; flex-direction: column; justify-content: space-between; align-items: center;
-            text-align: center; transition: all 0.2s ease; animation: fadeInUp 0.5s ease-out both; position: relative; z-index: 1;
+            background: rgba(15, 15, 20, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px;
+            height: 160px;
+            display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+            text-align: center;
+            position: relative; overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }}
-        .pg-card:hover {{ background: rgba(40, 40, 45, 0.6); border-color: rgba(255,255,255,0.2); transform: scale(1.03); }}
-        .pg-name {{ font-size: 12px; font-weight: 500; color: #d4d4d8; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 32px; }}
-        .pg-price {{ font-size: 18px; font-weight: 700; color: #fff; margin: 8px 0; }}
-        .pg-badge {{ padding: 3px 10px; border-radius: 99px; font-size: 10px; font-weight: 700; border: 1px solid transparent; }}
-        .pg-red {{ background: rgba(239, 68, 68, 0.1); color: #fca5a5; border-color: rgba(239, 68, 68, 0.2); }}
-        .pg-green {{ background: rgba(16, 185, 129, 0.1); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.2); }}
-        .pg-yellow {{ background: rgba(255, 255, 255, 0.05); color: #ffd966; }}
+        .pg-card:hover {{
+            border-color: var(--accent-blue);
+            background: rgba(25, 25, 35, 0.8);
+            transform: translateY(-5px);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+        }}
+        .pg-name {{ font-size: 13px; font-weight: 500; color: #e4e4e7; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }}
+        .pg-price {{ font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: #fff; margin: 10px 0; }}
+        .pg-badge {{ padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }}
+        .pg-red {{ background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }}
+        .pg-green {{ background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }}
 
-        .ticker-wrap {{ width: 100%; overflow: hidden; background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(20,20,30,0.5) 15%, rgba(20,20,30,0.5) 85%, rgba(0,0,0,0) 100%); border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); padding: 12px 0; margin-bottom: 30px; white-space: nowrap; }}
-        .ticker-move {{ display: inline-block; padding-left: 100%; animation: marquee 45s linear infinite; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.5px; }}
+        /* --- TICKER --- */
+        .ticker-wrap {{
+            width: 100%; overflow: hidden;
+            background: linear-gradient(90deg, transparent, rgba(20,20,30,0.5) 20%, rgba(20,20,30,0.5) 80%, transparent);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 10px 0; margin-bottom: 30px;
+        }}
+        .ticker-move {{ display: inline-block; padding-left: 100%; animation: marquee 60s linear infinite; font-family: 'JetBrains Mono', monospace; font-size: 12px; }}
         @keyframes marquee {{ 0% {{ transform: translate(0, 0); }} 100% {{ transform: translate(-100%, 0); }} }}
 
-        .smart-card {{ background: rgba(30, 30, 35, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 5px; transition: all 0.2s; animation: fadeInUp 0.7s ease-out both; position: relative; z-index: 1; }}
-        .smart-card:hover {{ border-color: var(--accent-blue); transform: translateY(-2px); }}
-        .sc-title {{ font-size: 11px; color: #a1a1aa; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }}
-        .sc-val {{ font-size: 20px; color: #fff; font-weight:700; display:flex; align-items:center; gap:8px; }}
-        
-        .skeleton {{ background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 8px; }}
-        @keyframes loading {{ 0% {{ background-position: 200% 0; }} 100% {{ background-position: -200% 0; }} }}
+        /* --- SIDEBAR --- */
+        section[data-testid="stSidebar"] {{
+            background: #020203 !important;
+            border-right: 1px solid var(--glass-border);
+        }}
+
+        /* --- SMART CARDS --- */
+        .smart-card {{
+            background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+            border: 1px solid var(--glass-border);
+            border-radius: 16px; padding: 18px;
+            transition: 0.3s;
+        }}
+        .smart-card:hover {{ background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); }}
+        .sc-title {{ font-size: 10px; color: #71717a; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; }}
+        .sc-val {{ font-size: 22px; color: #fff; font-weight:700; display:flex; align-items:center; gap:8px; font-family: 'Inter', sans-serif; }}
+
+        @keyframes fadeInUp {{ from {{ opacity: 0; transform: translateY(20px); }} to {{ opacity: 1; transform: translateY(0); }} }}
+        .animate-enter {{ animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }}
+        .delay-1 {{ animation-delay: 0.1s; }} .delay-2 {{ animation-delay: 0.2s; }} .delay-3 {{ animation-delay: 0.3s; }}
     </style>
     """
     st.markdown(final_css, unsafe_allow_html=True)
@@ -719,7 +711,7 @@ def make_neon_chart(fig):
                 x=trace.x, y=trace.y,
                 mode='lines',
                 line=dict(width=10, color=trace.line.color), 
-                opacity=0.2, 
+                opacity=0.15, 
                 hoverinfo='skip', 
                 showlegend=False
             )
@@ -731,7 +723,7 @@ def make_neon_chart(fig):
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         xaxis=dict(showgrid=False, zeroline=False),
-        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', zeroline=False)
+        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.08)', zeroline=False)
     )
     return fig
 
@@ -778,13 +770,13 @@ def style_chart(fig, is_pdf=False, is_sunburst=False):
             plot_bgcolor="rgba(0,0,0,0)",
             font=dict(family="Inter, sans-serif", color="#a1a1aa", size=12),
             margin=dict(l=0, r=0, t=40, b=0),
-            hoverlabel=dict(bgcolor="#18181b", bordercolor="rgba(255,255,255,0.1)", font=dict(color="#fff")),
+            hoverlabel=dict(bgcolor="#09090b", bordercolor="rgba(255,255,255,0.2)", font=dict(color="#fff", family="Inter, sans-serif")),
         )
         if not is_sunburst:
             layout_args.update(dict(
                 xaxis=dict(showgrid=False, zeroline=False, showline=True, linecolor="rgba(255,255,255,0.1)",
                            gridcolor='rgba(255,255,255,0.05)', dtick="M1"),
-                yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.03)", zeroline=False,
+                yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.05)", zeroline=False,
                            gridwidth=1)
             ))
         fig.update_layout(**layout_args)
@@ -900,20 +892,20 @@ def dashboard_modu():
                 margin: 0; padding: 0; 
                 background: transparent; 
                 font-family: 'Inter', sans-serif; 
-                overflow: hidden; /* Scrollbar oluşmasını engelle */
+                overflow: hidden; 
             }}
             .header-wrapper {{
-                background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+                background: linear-gradient(90deg, rgba(20,20,25,0.6) 0%, rgba(20,20,25,0.3) 100%);
                 backdrop-filter: blur(16px);
                 border: 1px solid rgba(255,255,255,0.08); 
                 border-radius: 20px;
-                padding: 20px 40px; 
+                padding: 24px 40px; 
                 display: flex; 
                 justify-content: space-between; 
                 align-items: center;
-                box-shadow: 0 20px 50px -20px rgba(0,0,0,0.5);
+                box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
                 animation: fadeInUp 0.8s ease-out;
-                height: 90px;
+                height: 100px;
                 box-sizing: border-box;
             }}
             
@@ -923,31 +915,31 @@ def dashboard_modu():
                 font-size: 32px; 
                 font-weight: 800; 
                 color: #fff; 
-                letter-spacing: -1.5px; 
+                letter-spacing: -1px; 
                 display: flex; 
                 align-items: center; 
                 gap: 15px; 
                 text-shadow: 0 4px 10px rgba(0,0,0,0.5); 
-                line-height: 1.1;
+                line-height: 1;
             }}
             
-            .app-subtitle {{ font-size: 13px; color: #a1a1aa; font-weight: 500; margin-top: 6px; letter-spacing: 0.5px; }}
+            .app-subtitle {{ font-size: 13px; color: #a1a1aa; font-weight: 500; margin-top: 8px; letter-spacing: 0.5px; }}
             
             .live-badge {{ 
-                display: inline-flex; align-items: center; background: rgba(59, 130, 246, 0.15); color: #60a5fa; 
-                padding: 6px 12px; border-radius: 99px; font-size: 10px; font-weight: 700; 
-                border: 1px solid rgba(59, 130, 246, 0.3); letter-spacing: 1px; box-shadow: 0 0 20px rgba(59,130,246,0.15);
-                position: relative; overflow: hidden; vertical-align: middle; white-space: nowrap;
+                display: inline-flex; align-items: center; background: rgba(59, 130, 246, 0.1); color: #60a5fa; 
+                padding: 4px 12px; border-radius: 99px; font-size: 10px; font-weight: 700; 
+                border: 1px solid rgba(59, 130, 246, 0.3); letter-spacing: 1px; box-shadow: 0 0 15px rgba(59,130,246,0.1);
+                position: relative; overflow: hidden; vertical-align: middle; white-space: nowrap; margin-top: 4px;
             }}
             .live-badge::after {{
                 content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
-                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
                 animation: shine 3s infinite;
             }}
             @keyframes shine {{ 0% {{ transform: translateX(-100%); }} 100% {{ transform: translateX(100%); }} }}
-            .clock-container {{ text-align: right; min-width: 120px; }}
-            .location-tag {{ font-size: 10px; color: #71717a; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }}
-            #report_date {{ font-family: 'Inter', sans-serif; font-size: 28px; font-weight: 800; color: #e4e4e7; letter-spacing: -1px; line-height: 1; }}
+            .clock-container {{ text-align: right; min-width: 140px; }}
+            .location-tag {{ font-size: 10px; color: #52525b; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 2px; }}
+            #report_date {{ font-family: 'Inter', sans-serif; font-size: 30px; font-weight: 800; color: #e4e4e7; letter-spacing: -1.5px; line-height: 1; }}
 
             /* --- MOBİL UYUMLULUK --- */
             @media only screen and (max-width: 600px) {{
@@ -1076,9 +1068,6 @@ def dashboard_modu():
                 simdi_yil = dt_son.year
 
                 # --- GÜNCELLEME: DİNAMİK REFERANS MANTIĞI ---
-                # Eğer içinde bulunduğumuz ay Şubat veya sonrasıysa (Yeni Veriler) -> Baz: OCAK 2026
-                # Eğer içinde bulunduğumuz ay Ocak ise (Geçmiş Veriler) -> Baz: ARALIK 2025
-                
                 target_cols = []
                 baz_tanimi_text = ""
 
@@ -1200,9 +1189,8 @@ def dashboard_modu():
                 df_analiz['Max_Fiyat'] = df_analiz[gunler].max(axis=1)
                 df_analiz['Min_Fiyat'] = df_analiz[gunler].min(axis=1)
 
-                # --- AY SONU TAHMİNİ (SABİT TARİH: 24.01.2026) ---
                 # --- AY SONU TAHMİNİ (SABİT TARİH: 31.01.2026) ---
-                target_fixed_date = "2026-01-31"  # <-- TARİH GÜNCELLENDİ
+                target_fixed_date = "2026-01-31" 
                 month_end_forecast = 0.0
 
                 # Pivot tablodaki tüm tarihleri kullanarak 31 Ocak'a kadar olan sütunları bulalım
@@ -1352,29 +1340,6 @@ def dashboard_modu():
                 ai_placeholder = st.empty()
                 stream_text(durum_mesaji, ai_placeholder, kutu_rengi, kenar_rengi, durum_emoji, durum_baslik)
                 
-                def style_chart(fig, is_pdf=False, is_sunburst=False):
-                    if is_pdf:
-                        fig.update_layout(template="plotly_white", font=dict(family="Arial", size=14, color="black"))
-                    else:
-                        layout_args = dict(
-                            template="plotly_dark",
-                            paper_bgcolor="rgba(0,0,0,0)",
-                            plot_bgcolor="rgba(0,0,0,0)",
-                            font=dict(family="Inter, sans-serif", color="#a1a1aa", size=12),
-                            margin=dict(l=0, r=0, t=40, b=0),
-                            hoverlabel=dict(bgcolor="#18181b", bordercolor="rgba(255,255,255,0.1)", font=dict(color="#fff")),
-                        )
-                        if not is_sunburst:
-                            layout_args.update(dict(
-                                xaxis=dict(showgrid=False, zeroline=False, showline=True, linecolor="rgba(255,255,255,0.1)",
-                                           gridcolor='rgba(255,255,255,0.05)', dtick="M1"),
-                                yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.03)", zeroline=False,
-                                           gridwidth=1)
-                            ))
-                        fig.update_layout(**layout_args)
-                        fig.update_layout(modebar=dict(bgcolor='rgba(0,0,0,0)', color='#71717a', activecolor='#fff'))
-                    return fig
-                
                 df_analiz['Fark_Yuzde'] = df_analiz['Fark'] * 100
                 
                 t_sektor, t_ozet, t_veri, t_rapor = st.tabs(
@@ -1473,7 +1438,7 @@ def dashboard_modu():
                         fig_hist.update_xaxes(
                             type="linear",        
                             tickmode="auto",        
-                            nticks=5,                
+                            nticks=5,                 
                             tickformat=".4f",        
                             title_font=dict(size=11),
                             tickfont=dict(size=10, color="#a1a1aa")
@@ -1571,7 +1536,7 @@ def dashboard_modu():
                                 "Fiyat Grafiği", 
                                 width="medium", 
                                 help="Seçilen dönem içindeki fiyat hareketi",
-                                y_min=0  # <--- BURAYA BU SATIRI EKLEDİK (Grafiği 0'dan başlatır)
+                                y_min=0 
                             ),
                             ad_col: "Ürün", 
                             "Grup": "Kategori",
@@ -1672,10 +1637,3 @@ def dashboard_modu():
         
 if __name__ == "__main__":
     dashboard_modu()
-
-
-
-
-
-
-
