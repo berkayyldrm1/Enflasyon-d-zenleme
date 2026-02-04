@@ -1009,38 +1009,45 @@ def dashboard_modu():
         st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
 
     # 4. HESAPLAMA MOTORU
+    # 4. HESAPLAMA MOTORU (ZİNCİRLEME ENDEKS - GÜNCELLENMİŞ)
     if not df_f.empty and not df_s.empty:
         try:
+            # --- CONFIG VE SÜTUN AYARLARI ---
             df_s.columns = df_s.columns.str.strip()
             kod_col = next((c for c in df_s.columns if c.lower() == 'kod'), 'Kod')
-            ad_col = next((c for c in df_s.columns if 'ad' in c.lower()), 'Madde adı')
-            agirlik_col = next((c for c in df_s.columns if 'agirlik' in c.lower().replace('ğ', 'g').replace('ı', 'i')),
-                               'Agirlik_2025')
+            ad_col = next((c for c in df_s.columns if 'ad' in c.lower()), 'Madde_Adi')
             
+            # 2025 ve 2026 Ağırlık Sütunlarını Tanımla (Excel'deki İsimler)
+            col_w25 = 'Agirlik_2025'
+            col_w26 = 'Agirlik_2026'
+
+            # Veri Temizliği ve Hazırlık
             df_f['Kod'] = df_f['Kod'].astype(str).apply(kod_standartlastir)
             df_s['Kod'] = df_s[kod_col].astype(str).apply(kod_standartlastir)
             df_f['Fiyat'] = pd.to_numeric(df_f['Fiyat'], errors='coerce')
             df_f = df_f[df_f['Fiyat'] > 0]
             
-            pivot = df_f.pivot_table(index='Kod', columns='Tarih_Str', values='Fiyat', aggfunc='last').ffill(
-                axis=1).bfill(axis=1).reset_index()
+            # Pivot Tablo (Kod x Tarih)
+            pivot = df_f.pivot_table(index='Kod', columns='Tarih_Str', values='Fiyat', aggfunc='last')
+            pivot = pivot.ffill(axis=1).bfill(axis=1).reset_index()
 
             if not pivot.empty:
+                # Grup Bilgisi Yoksa Koddan Üret
                 if 'Grup' not in df_s.columns:
-                    grup_map = {"01": "Gıda", "02": "Alkol ve Tütünlü İçecekler", "03": "Giyim", "04": "Konut",
-                                "05": "Ev Eşyası", "06": "Sağlık", "07": "Ulaşım", "08": "Haberleşme", "09": "Eğlence",
-                                "10": "Eğitim", "11": "Lokanta", "12": "Çeşitli"}
-                    df_s['Grup'] = df_s['Kod'].str[:2].map(grup_map).fillna("Diğer")
+                     grup_map = {"01": "Gıda", "02": "Alkol-Tütün", "03": "Giyim", "04": "Konut",
+                                "05": "Ev Eşyası", "06": "Sağlık", "07": "Ulaşım", "08": "Haberleşme", 
+                                "09": "Eğlence", "10": "Eğitim", "11": "Lokanta", "12": "Çeşitli"}
+                     # Ana Grup Kodu varsa onu kullan, yoksa Kod'un başını kullan
+                     if 'Ana_Grup_Kodu' in df_s.columns:
+                         df_s['Grup'] = df_s['Ana_Grup_Kodu'].astype(str).str.replace('.0','').map(lambda x: grup_map.get(x.zfill(2), "Diğer"))
+                     else:
+                         df_s['Grup'] = df_s['Kod'].str[:2].map(grup_map).fillna("Diğer")
+
+                # Ana DataFrame Birleştirme
                 df_analiz = pd.merge(df_s, pivot, on='Kod', how='left')
-
-                if agirlik_col in df_analiz.columns:
-                    df_analiz[agirlik_col] = pd.to_numeric(df_analiz[agirlik_col], errors='coerce').fillna(1)
-                else:
-                    df_analiz['Agirlik_2025'] = 1;
-                    agirlik_col = 'Agirlik_2025'
-
                 tum_gunler_sirali = sorted([c for c in pivot.columns if c != 'Kod'])
                 
+                # --- TARİH SEÇİMİ VE FİLTRELEME ---
                 if secilen_tarih and secilen_tarih in tum_gunler_sirali:
                     idx = tum_gunler_sirali.index(secilen_tarih)
                     gunler = tum_gunler_sirali[:idx+1]
@@ -1056,195 +1063,173 @@ def dashboard_modu():
                         gunler = tum_gunler_sirali 
 
                 if not gunler:
-                    st.error("Seçilen tarih için veri oluşturulamadı.")
+                    st.error("Seçilen tarih için veri seti oluşturulamadı.")
                     return
 
-                son = gunler[-1];
+                son = gunler[-1]
                 dt_son = datetime.strptime(son, '%Y-%m-%d')
-                simdi_yil = dt_son.year
-
-                # --- DİNAMİK REFERANS MANTIĞI ---
-                # Şubat 2026 ve sonrası için mantık (Yeni dönem) -> Baz: OCAK 2026
-                # Ocak 2026 ve öncesi için mantık (Eski dönem) -> Baz: ARALIK 2025
                 
-                target_cols = []
-                baz_tanimi_text = ""
-
-                if dt_son.year == 2026 and dt_son.month >= 2:
-                    ocak_prefix = f"{simdi_yil}-01"
-                    target_cols = [c for c in gunler if c.startswith(ocak_prefix)]
-                    baz_tanimi_text = f"Ocak {simdi_yil}"
+                # ============================================================
+                # 🧠 ZİNCİRLEME ENDEKS MANTIĞI (Chain Linking)
+                # ============================================================
                 
-                else:
-                    onceki_yil_aralik_prefix = f"{simdi_yil - 1}-12"
-                    target_cols = [c for c in gunler if c.startswith(onceki_yil_aralik_prefix)]
-                    baz_tanimi_text = f"Aralık {simdi_yil - 1}"
+                # Kural: 1 Şubat 2026 ve sonrası için Yeni Sepet, öncesi için Eski Sepet.
+                ZINCIR_TARIHI = datetime(2026, 2, 1)
+                
+                aktif_agirlik_col = ""
+                baz_col = ""
+                baz_tanimi = ""
 
-                # Sütunu Seçme İşlemi
-                if target_cols:
-                    baz_col = target_cols[-1] # İlgili ayın en son verisini al
-                    baz_tanimi = baz_tanimi_text
+                if dt_son >= ZINCIR_TARIHI:
+                    # --- YENİ DÖNEM (2026 SEPETİ) ---
+                    aktif_agirlik_col = col_w26
+                    
+                    # Baz Ayı: Ocak 2026'nın SON Fiyatı
+                    ocak_2026_cols = [c for c in tum_gunler_sirali if c.startswith("2026-01")]
+                    if ocak_2026_cols:
+                        baz_col = ocak_2026_cols[-1]
+                        baz_tanimi = "Ocak 2026"
+                    else:
+                        baz_col = gunler[0] # Veri yoksa başa dön
+                        baz_tanimi = "Başlangıç (Ocak 2026 Yok)"
                 else:
-                    # Eğer istenen baz ayı verisi yoksa listenin en başını al
-                    baz_col = gunler[0]
-                    baz_tanimi = f"Başlangıç ({baz_col})"
-                # ---------------------------------------------
+                    # --- ESKİ DÖNEM (2025 SEPETİ) ---
+                    aktif_agirlik_col = col_w25
+                    
+                    # Baz Ayı: Aralık 2025 (veya eldeki ilk veri)
+                    aralik_2025_cols = [c for c in tum_gunler_sirali if c.startswith("2025-12")]
+                    if aralik_2025_cols:
+                        baz_col = aralik_2025_cols[-1]
+                        baz_tanimi = "Aralık 2025"
+                    else:
+                        baz_col = gunler[0]
+                        baz_tanimi = "Başlangıç"
 
+                # 1. Ağırlıkları Sayılsala Çevir (Hata önleme)
+                df_analiz[aktif_agirlik_col] = pd.to_numeric(df_analiz[aktif_agirlik_col], errors='coerce').fillna(0)
+                
+                # 2. SADECE O DÖNEMİN SEPETİNDE OLANLARI AL (Ağırlık > 0)
+                # Bu sayede eski sepette olup yeni sepette olmayanlar hesabı bozmaz.
+                gecerli_veri_ham = df_analiz[df_analiz[aktif_agirlik_col] > 0].copy()
+                
+                # Geometrik Ortalama Fonksiyonu
                 def geometrik_ortalama_hesapla(row):
                     valid_vals = [x for x in row if isinstance(x, (int, float)) and x > 0]
-                    if not valid_vals:
-                        return np.nan
+                    if not valid_vals: return np.nan
                     return np.exp(np.mean(np.log(valid_vals)))
 
+                # Ayın Ortalamasını Hesapla (Ayın 1'inden bugüne kadar)
                 bu_ay_str = f"{dt_son.year}-{dt_son.month:02d}"
                 bu_ay_cols = [c for c in gunler if c.startswith(bu_ay_str)]
-
                 if not bu_ay_cols: bu_ay_cols = [son]
 
-                df_analiz['Aylik_Ortalama'] = df_analiz[bu_ay_cols].apply(geometrik_ortalama_hesapla, axis=1)
+                gecerli_veri_ham['Aylik_Ortalama'] = gecerli_veri_ham[bu_ay_cols].apply(geometrik_ortalama_hesapla, axis=1)
                 
-                ma3_baslik = "Son 3 Gün Ort."
-                if len(gunler) >= 3:
-                      last_3_dates = gunler[-3:]
-                      start_d = datetime.strptime(last_3_dates[0], '%Y-%m-%d').strftime('%d.%m')
-                      end_d = datetime.strptime(last_3_dates[-1], '%Y-%m-%d').strftime('%d.%m')
-                      ma3_baslik = f"Ortalama ({start_d} - {end_d})"
-                      
-                      df_analiz[ma3_baslik] = df_analiz[gunler[-3:]].mean(axis=1)
+                # Analiz için final veri seti (Hem ortalaması hem baz fiyatı olanlar)
+                gecerli_veri = gecerli_veri_ham.dropna(subset=['Aylik_Ortalama', baz_col])
 
-                gecerli_veri = df_analiz.dropna(subset=['Aylik_Ortalama', baz_col]).copy()
                 enf_genel = 0.0
                 enf_gida = 0.0
-
+                
+                # --- ANA ENFLASYON HESABI ---
                 if not gecerli_veri.empty:
-                    w = gecerli_veri[agirlik_col]
+                    # Formül: Ağırlık * (Cari Fiyat / Baz Fiyat)
+                    w = gecerli_veri[aktif_agirlik_col]
                     p_relative = gecerli_veri['Aylik_Ortalama'] / gecerli_veri[baz_col]
+                    
+                    # Genel Endeks
                     genel_endeks = (w * p_relative).sum() / w.sum() * 100
                     enf_genel = genel_endeks - 100
 
+                    # Gıda Endeksi (01 kodlu grup)
                     gida_df = gecerli_veri[gecerli_veri['Kod'].astype(str).str.startswith("01")]
                     if not gida_df.empty:
-                        w_g = gida_df[agirlik_col]
+                        w_g = gida_df[aktif_agirlik_col]
                         p_rel_g = gida_df['Aylik_Ortalama'] / gida_df[baz_col]
                         enf_gida = ((w_g * p_rel_g).sum() / w_g.sum() * 100) - 100
-
-                    df_analiz['Fark'] = (df_analiz['Aylik_Ortalama'] / df_analiz[baz_col]) - 1
+                    
+                    # Ürün Bazlı Farkları Ana Tabloya İşle
+                    df_analiz['Fark'] = 0.0
+                    # Sadece geçerli sepette olanlara fark yaz, diğerleri 0 kalsın
+                    df_analiz.loc[gecerli_veri.index, 'Fark'] = (gecerli_veri['Aylik_Ortalama'] / gecerli_veri[baz_col]) - 1
                 else:
                     df_analiz['Fark'] = 0.0
+                
+                # Görselleştirme için kullanılacak ağırlık sütununu globale ata
+                agirlik_col = aktif_agirlik_col
 
-                enf_onceki = 0.0
+                # --- KPI İÇİN ÖNCEKİ DEĞER HESABI ---
+                enf_onceki = enf_genel # Varsayılan: Değişim yok
                 if len(bu_ay_cols) > 1:
-                    onceki_cols = bu_ay_cols[:-1] 
-                    df_analiz['Onceki_Ortalama'] = df_analiz[onceki_cols].apply(geometrik_ortalama_hesapla, axis=1)
-                    gecerli_veri_prev = df_analiz.dropna(subset=['Onceki_Ortalama', baz_col])
-
-                    if not gecerli_veri_prev.empty:
-                        w_p = gecerli_veri_prev[agirlik_col]
-                        p_rel_p = gecerli_veri_prev['Onceki_Ortalama'] / gecerli_veri_prev[baz_col]
-                        genel_endeks_prev = (w_p * p_rel_p).sum() / w_p.sum() * 100
-                        enf_onceki = genel_endeks_prev - 100
-                    else:
-                        enf_onceki = enf_genel 
-                else:
-                    enf_onceki = enf_genel
-
-                trend_data = []
-                analiz_gunleri = bu_ay_cols
-
-                def get_geo_mean_vectorized(df_in, cols):
-                    data = df_in[cols].values.astype(float)
-                    data[data <= 0] = np.nan
-                    with np.errstate(divide='ignore', invalid='ignore'):
-                        log_data = np.log(data)
-                    mean_log = np.nanmean(log_data, axis=1)
-                    return np.exp(mean_log)
-
-                for i in range(1, len(analiz_gunleri) + 1):
-                    aktif_gunler = analiz_gunleri[:i]
-                    su_anki_tarih = aktif_gunler[-1]
-
-                    df_analiz[f'Geo_Temp_{i}'] = get_geo_mean_vectorized(df_analiz, aktif_gunler)
-                    gecerli = df_analiz.dropna(subset=[f'Geo_Temp_{i}', baz_col])
-                    
-                    if not gecerli.empty:
-                        w = gecerli[agirlik_col]
-                        p_rel = gecerli[f'Geo_Temp_{i}'] / gecerli[baz_col]
-                        idx_val = (w * p_rel).sum() / w.sum() * 100
-                        trend_data.append({"Tarih": su_anki_tarih, "TÜFE": idx_val})
-                    else:
-                        prev_val = trend_data[-1]["TÜFE"] if trend_data else 100.0
-                        trend_data.append({"Tarih": su_anki_tarih, "TÜFE": prev_val})
-
-                df_trend = pd.DataFrame(trend_data)
-                if not df_trend.empty:
-                    df_trend['Tarih'] = pd.to_datetime(df_trend['Tarih'])
+                    # Bir gün öncesinin verisiyle endeks hesapla
+                    onceki_cols = bu_ay_cols[:-1]
+                    gecerli_veri['Onceki_Ort'] = gecerli_veri[onceki_cols].apply(geometrik_ortalama_hesapla, axis=1)
+                    # NaN temizliği
+                    gecerli_prev = gecerli_veri.dropna(subset=['Onceki_Ort'])
+                    if not gecerli_prev.empty:
+                        w_p = gecerli_prev[aktif_agirlik_col]
+                        p_rel_p = gecerli_prev['Onceki_Ort'] / gecerli_prev[baz_col]
+                        enf_onceki = ((w_p * p_rel_p).sum() / w_p.sum() * 100) - 100
 
                 kumu_fark = enf_genel - enf_onceki
                 kumu_icon_color = "#ef4444" if kumu_fark > 0 else "#10b981"
                 kumu_sub_text = f"Önceki: %{enf_onceki:.2f} ({'+' if kumu_fark > 0 else ''}{kumu_fark:.2f})"
 
-                df_analiz['Max_Fiyat'] = df_analiz[gunler].max(axis=1)
-                df_analiz['Min_Fiyat'] = df_analiz[gunler].min(axis=1)
-
-                # --- AY SONU TAHMİNİ (SABİT TARİH: 31.01.2026) ---
-                target_fixed_date = "2026-01-31" 
-                month_end_forecast = 0.0
-
-                # Pivot tablodaki tüm tarihleri kullanarak 31 Ocak'a kadar olan sütunları bulalım
-                fixed_cols = [c for c in tum_gunler_sirali if c.startswith("2026-01") and c <= target_fixed_date]
-
-                if fixed_cols:
-                    # 31 Ocak (veya öncesi) için aylık geometrik ortalamayı hesapla
-                    df_analiz['Fixed_Ortalama_Target'] = df_analiz[fixed_cols].apply(geometrik_ortalama_hesapla, axis=1)
-                    
-                    # Enflasyon hesabı
-                    gecerli_fixed = df_analiz.dropna(subset=['Fixed_Ortalama_Target', baz_col])
-                    
-                    if not gecerli_fixed.empty:
-                        w_f = gecerli_fixed[agirlik_col]
-                        p_rel_f = gecerli_fixed['Fixed_Ortalama_Target'] / gecerli_fixed[baz_col]
-                        fixed_endeks = (w_f * p_rel_f).sum() / w_f.sum() * 100
-                        month_end_forecast = fixed_endeks - 100
-                    else:
-                        month_end_forecast = 0.0
-                else:
-                    month_end_forecast = 0.0
-
+                # --- DİĞER METRİKLER (GÜNLÜK DEĞİŞİM & TAHMİN) ---
                 if len(gunler) >= 2:
                     onceki_gun = gunler[-2]
+                    # Günlük değişim sepete bakmaksızın hesaplanır (Fiyatı olan her şey için)
                     df_analiz['Gunluk_Degisim'] = (df_analiz[son] / df_analiz[onceki_gun]) - 1
                     gun_farki = (dt_son - datetime.strptime(baz_col, '%Y-%m-%d')).days
                     
-                    anomaliler = df_analiz[df_analiz['Gunluk_Degisim'] > 0.05].copy()
-                    anomaliler = anomaliler.sort_values('Gunluk_Degisim', ascending=False)
+                    # Anomaliler (Sepette olan ve %5 üzeri oynayanlar)
+                    anomaliler = df_analiz[
+                        (df_analiz['Gunluk_Degisim'].abs() > 0.05) & 
+                        (df_analiz[aktif_agirlik_col] > 0) &
+                        (df_analiz[son] > 0)
+                    ].sort_values('Gunluk_Degisim', ascending=False)
                 else:
                     df_analiz['Gunluk_Degisim'] = 0
                     gun_farki = 0
                     anomaliler = pd.DataFrame()
 
-                inc = df_analiz.sort_values('Gunluk_Degisim', ascending=False).head(5)
-                dec = df_analiz.sort_values('Gunluk_Degisim', ascending=True).head(5)
+                # Ay Sonu Tahmini
+                month_end_forecast = 0.0
+                # Ayın son gününe kadar olan sütunları bul
+                target_fixed_date = f"{dt_son.year}-{dt_son.month:02d}-31"
+                fixed_cols = [c for c in tum_gunler_sirali if c.startswith(bu_ay_str) and c <= target_fixed_date]
+                
+                if fixed_cols and not gecerli_veri.empty:
+                     # Tahmin için mevcut verileri kullanarak ortalama al
+                     gecerli_veri['Fixed_Ort'] = gecerli_veri[fixed_cols].apply(geometrik_ortalama_hesapla, axis=1)
+                     gecerli_tahmin = gecerli_veri.dropna(subset=['Fixed_Ort'])
+                     if not gecerli_tahmin.empty:
+                         w_f = gecerli_tahmin[aktif_agirlik_col]
+                         p_rel_f = gecerli_tahmin['Fixed_Ort'] / gecerli_tahmin[baz_col]
+                         month_end_forecast = ((w_f * p_rel_f).sum() / w_f.sum() * 100) - 100
+
+                # --- EKRAN GÖSTERGELERİ (TICKER) ---
+                # Artan/Azalan Ürünleri Listele
+                # Sadece aktif sepetteki ürünleri dikkate al
+                df_ticker = df_analiz[df_analiz[aktif_agirlik_col] > 0]
+                inc = df_ticker.sort_values('Gunluk_Degisim', ascending=False).head(5)
+                dec = df_ticker.sort_values('Gunluk_Degisim', ascending=True).head(5)
                 items = []
 
                 for _, r in inc.iterrows():
                     if r['Gunluk_Degisim'] > 0:
-                        items.append(
-                            f"<span style='color:#f87171; font-weight:700;'>▲ {r[ad_col]} %{r['Gunluk_Degisim'] * 100:.1f}</span>")
+                        items.append(f"<span style='color:#f87171; font-weight:700;'>▲ {r[ad_col]} %{r['Gunluk_Degisim'] * 100:.1f}</span>")
                 for _, r in dec.iterrows():
                     if r['Gunluk_Degisim'] < 0:
-                        items.append(
-                            f"<span style='color:#34d399; font-weight:700;'>▼ {r[ad_col]} %{r['Gunluk_Degisim'] * 100:.1f}</span>")
+                        items.append(f"<span style='color:#34d399; font-weight:700;'>▼ {r[ad_col]} %{r['Gunluk_Degisim'] * 100:.1f}</span>")
 
-                ticker_html_content = " &nbsp;&nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp;&nbsp; ".join(
-                    items) if items else "<span style='color:#71717a'>Piyasada yatay seyir izlenmektedir.</span>"
-                st.markdown(f"""<div class="ticker-wrap animate-enter"><div class="ticker-move">{ticker_html_content}</div></div>""",
-                            unsafe_allow_html=True)
+                ticker_html_content = " &nbsp;&nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp;&nbsp; ".join(items) if items else "<span style='color:#71717a'>Piyasada yatay seyir izlenmektedir.</span>"
                 
-                st.markdown(f"""
-                <script>
-                    document.title = "🔴 %{enf_genel:.2f} | Piyasa Monitörü";
-                </script>
-                """, unsafe_allow_html=True)
+                # Ticker'ı Ekrana Bas
+                st.markdown(f"""<div class="ticker-wrap animate-enter"><div class="ticker-move">{ticker_html_content}</div></div>""", unsafe_allow_html=True)
+                
+                # Sayfa Başlığı
+                st.markdown(f"""<script>document.title = "🔴 %{enf_genel:.2f} | Piyasa Monitörü";</script>""", unsafe_allow_html=True)
 
                 df_resmi, msg = get_official_inflation()
                 resmi_aylik_enf = 0.0;
@@ -1656,3 +1641,4 @@ def dashboard_modu():
         
 if __name__ == "__main__":
     dashboard_modu()
+
