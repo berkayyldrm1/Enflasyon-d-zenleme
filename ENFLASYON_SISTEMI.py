@@ -31,7 +31,7 @@ import unicodedata
 try:
     import xlsxwriter
 except ImportError:
-    st.error("Lütfen 'pip install xlsxwriter' komutunu çalıştırın. Excel raporlama modülü için gereklidir.")
+    st.error("Lütfen 'pip install xlsxwriter' komutunu çalıştırın.")
     
 try:
     from streamlit_lottie import st_lottie
@@ -780,7 +780,6 @@ def style_chart(fig, is_pdf=False, is_sunburst=False):
         fig.update_layout(modebar=dict(bgcolor='rgba(0,0,0,0)', color='#71717a', activecolor='#fff'))
     return fig
 
-# --- 8. DASHBOARD MODU (SHOW EDITION) ---
 # --- 9. YENİ MODÜLER SİTE MİMARİSİ ---
 
 # 1. ADIM: VERİ VE HESAPLAMA MOTORU (Arayüzden Bağımsız)
@@ -1046,7 +1045,7 @@ def sayfa_piyasa_ozeti(ctx):
             tickformat=".1f",       
             dtick=2.5,              
         )
-        # BURAYA 'key="ozet_histogram"' EKLEDİK
+        # BURAYA 'key="ozet_histogram"' EKLEDİK - HATAYI ÇÖZER
         st.plotly_chart(style_chart(fig_hist), use_container_width=True, key="ozet_histogram")
 
     with col_g2:
@@ -1069,7 +1068,7 @@ def sayfa_piyasa_ozeti(ctx):
     fig_tree = px.treemap(df, path=[px.Constant("Piyasa"), 'Grup', ctx['ad_col']], 
                          values=ctx['agirlik_col'], color='Fark', color_continuous_scale='RdYlGn_r')
     
-    # BURAYA 'key="ozet_treemap"' EKLEDİK - HATAYI VEREN YER BURASIYDI
+    # BURAYA 'key="ozet_treemap"' EKLEDİK - HATAYI ÇÖZER
     st.plotly_chart(style_chart(fig_tree, is_sunburst=True), use_container_width=True, key="ozet_treemap")
 
 def sayfa_kategori_detay(ctx):
@@ -1155,20 +1154,6 @@ def sayfa_raporlama(ctx):
     word_buffer = create_word_report(rap_text, ctx["son"], ctx["df_analiz"])
     st.download_button("📥 Word Raporu İndir", data=word_buffer, file_name="Rapor.docx", type="primary")
 
-def sayfa_hakkimizda():
-    st.markdown("## 👥 Proje Ekibi")
-    cols = st.columns(3)
-    titles = ["Veri Mühendisi", "Makroekonomist", "Yazılım Mimarı"]
-    for i in range(3):
-        with cols[i]:
-            st.markdown(f"""
-            <div style="text-align:center; background:rgba(255,255,255,0.03); padding:20px; border-radius:12px;">
-                <div style="width:80px; height:80px; background:#3b82f6; border-radius:50%; margin:0 auto 10px auto; display:flex; align-items:center; justify-content:center; font-size:30px;">👤</div>
-                <div style="font-weight:bold;">Üye {i+1}</div>
-                <div style="font-size:12px; color:#a1a1aa;">{titles[i]}</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
 def sayfa_metodoloji():
     st.markdown("""
     <style>
@@ -1337,8 +1322,6 @@ def sayfa_metodoloji():
     </div>
     """, unsafe_allow_html=True)
 
-# --- 3. ADIM: ANA YÖNLENDİRİCİ ---
-
 # --- ANA YÖNLENDİRİCİ ---
 
 def main():
@@ -1459,13 +1442,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
