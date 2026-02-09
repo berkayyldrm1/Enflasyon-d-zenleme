@@ -1541,70 +1541,28 @@ ul.styled-list li::before { content: "➤"; position: absolute; left: 0; top: 2p
 # --- ANA YÖNLENDİRİCİ ---
 
 def main():
-    # --- YENİ HEADER TASARIMI (COMPACT) ---
+    # --- HEADER VE SENKRONİZASYON (Aynı kalacak) ---
     st.markdown("""
         <style>
             .monitor-header {
                 display: flex;
-                align-items: center;
+                align_items: center;
                 justify-content: space-between;
-                padding: 15px 25px; /* Daha az boşluk */
+                padding: 15px 25px;
                 background: linear-gradient(90deg, #0f172a 0%, #1e1b4b 100%);
                 border-bottom: 1px solid rgba(255,255,255,0.1);
                 border-radius: 12px;
                 box-shadow: 0 4px 20px rgba(0,0,0,0.3);
                 margin-bottom: 20px;
-                margin-top: -30px; /* Yukarıya daha da yaklaştır */
+                margin-top: -30px;
             }
-            .mh-left {
-                display: flex;
-                flex-direction: column;
-            }
-            .mh-title {
-                font-family: 'Inter', sans-serif;
-                font-weight: 800;
-                font-size: 24px; /* Font küçüldü */
-                color: #fff;
-                letter-spacing: -0.5px;
-                line-height: 1.1;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-            .mh-badge {
-                background: rgba(16, 185, 129, 0.15);
-                color: #34d399;
-                font-size: 10px;
-                padding: 3px 8px;
-                border-radius: 4px;
-                border: 1px solid rgba(16, 185, 129, 0.2);
-                letter-spacing: 0.5px;
-                font-weight: 700;
-                vertical-align: middle;
-            }
-            .mh-subtitle {
-                font-size: 12px;
-                color: #94a3b8;
-                margin-top: 2px;
-                font-weight: 400;
-            }
-            .mh-right {
-                text-align: right;
-            }
-            .mh-location {
-                font-size: 10px;
-                color: #64748b;
-                font-weight: 700;
-                letter-spacing: 1.5px;
-                text-transform: uppercase;
-                margin-bottom: 2px;
-            }
-            .mh-date {
-                font-size: 20px; /* Font küçüldü */
-                font-weight: 700;
-                color: #e2e8f0;
-                font-family: 'JetBrains Mono', monospace;
-            }
+            .mh-left { display: flex; flex-direction: column; }
+            .mh-title { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 24px; color: #fff; display: flex; align-items: center; gap: 10px; }
+            .mh-badge { background: rgba(16, 185, 129, 0.15); color: #34d399; font-size: 10px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.2); font-weight: 700; }
+            .mh-subtitle { font-size: 12px; color: #94a3b8; margin-top: 2px; font-weight: 400; }
+            .mh-right { text-align: right; }
+            .mh-location { font-size: 10px; color: #64748b; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 2px; }
+            .mh-date { font-size: 20px; font-weight: 700; color: #e2e8f0; font-family: 'JetBrains Mono', monospace; }
         </style>
 
         <div class="monitor-header">
@@ -1622,21 +1580,16 @@ def main():
         </div>
     """, unsafe_allow_html=True)
     
-    # --- SENKRONİZASYON BUTONU (EKLENDİ) ---
     col_btn1, col_btn2 = st.columns([3, 1])
     with col_btn2:
         if st.button("SİSTEMİ SENKRONİZE ET ⚡", type="primary", use_container_width=True):
             progress_bar = st.progress(0, text="Veri akışı sağlanıyor...")
-            
             def progress_updater(percentage):
                 progress_bar.progress(min(1.0, max(0.0, percentage)), text="Senkronizasyon sürüyor...")
-
             res = html_isleyici(progress_updater)
-            
             progress_bar.progress(1.0, text="Tamamlandı!")
             time.sleep(0.5)
             progress_bar.empty()
-            
             if "OK" in res:
                 st.cache_data.clear()
                 st.toast('Sistem Senkronize Edildi!', icon='🚀') 
@@ -1647,13 +1600,12 @@ def main():
                 st.warning("⚠️ Yeni veri akışı yok.")
             else:
                 st.error(res)
-    # ---------------------------------------
 
-    # 1. Önce Veriyi Yükle (Ana Sayfa İstatistikleri İçin Gerekli)
+    # 1. Veriyi Yükle
     with st.spinner("Piyasa verileri analiz ediliyor..."):
         ctx = veri_motoru_calistir()
 
-    # 2. Menü (Sadeleştirildi)
+    # --- 2. MENÜ YAPISI (DÜZELTİLDİ) ---
     sayfalar = [
         "🏠 ANA SAYFA", 
         "📊 PİYASA ÖZETİ", 
@@ -1665,24 +1617,22 @@ def main():
         "📐 METODOLOJİ"
     ]
 
-    # Session State kontrolü (Sayfa yenilense bile seçimi hatırlar)
-    if "secilen_sayfa" not in st.session_state:
-        st.session_state.secilen_sayfa = sayfalar[0]
+    # Eğer session state'de navigasyon yoksa varsayılanı ata
+    # Bu kısım sadece uygulama ilk açıldığında çalışır.
+    if "navigasyon_radio" not in st.session_state:
+        st.session_state.navigasyon_radio = sayfalar[0]
 
-    # Navigasyon Çubuğu (Radio Button ama Tab görünümlü)
+    # Navigasyon Çubuğu
+    # ÖNEMLİ: index parametresini kaldırdık. 'key' parametresi state'i yönetmek için yeterlidir.
     secim = st.radio(
         "", 
         options=sayfalar, 
-        index=sayfalar.index(st.session_state.secilen_sayfa) if st.session_state.secilen_sayfa in sayfalar else 0,
         horizontal=True, 
         label_visibility="collapsed",
         key="navigasyon_radio" 
     )
 
-    # Seçimi state'e kaydet (Garanti olsun diye)
-    st.session_state.secilen_sayfa = secim
-
-    st.markdown("---") # Menü ile içerik arasına çizgi
+    st.markdown("---")
 
     # --- 3. İÇERİĞİ YÜKLE ---
     if ctx:
@@ -1703,7 +1653,6 @@ def main():
         elif secim == "📐 METODOLOJİ":
             sayfa_metodoloji()
     else:
-        # Veri yoksa bile Metodoloji çalışsın
         if secim == "📐 METODOLOJİ":
             sayfa_metodoloji()
         else:
@@ -1715,5 +1664,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
