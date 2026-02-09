@@ -811,7 +811,8 @@ def veri_motoru_calistir():
           </script>
         </div>
         """
-        st.sidebar.components.v1.html(widget_code, height=110)
+        with st.sidebar:
+            components.html(widget_code, height=110)
     # ---------------------------------------------
     
     # --- İŞLEME ---
