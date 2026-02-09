@@ -1234,58 +1234,23 @@ def sayfa_metodoloji():
 </article>
 
 <article class="step-box step-purple">
-    <div class="step-title">
-        <span>2.</span> Veri Temizleme ve Kalite Kontrol
-    </div>
-
-    <div class="list-item">
-        <span class="bullet">➤</span>
-        <div>
-            <span class="highlight">Anomali Tespiti:</span>
-            Bir önceki güne göre %50’den fazla fiyat değişimi gösteren ürünler
-            otomatik olarak şüpheli işaretlenir.
-        </div>
-    </div>
-
-    <div class="list-item">
-        <span class="bullet">➤</span>
-        <div>
-            <span class="highlight">Birim Dönüşümü:</span>
-            Kg, litre ve adet gibi ölçüler standartlaştırılır (750g → 0.75kg).
-        </div>
-    </div>
-
-    <div class="list-item">
-        <span class="bullet">➤</span>
-        <div>
-            <span class="highlight">Stok Kontrolü:</span>
-            Stokta olmayan ürünlerin fiyatları, endeks hesaplamasında
-            <em>carry-forward</em> yöntemiyle taşınır.
-        </div>
-    </div>
+    <div class="step-title"><span>2.</span> Veri Temizleme ve Kalite Kontrol</div>
+    <p class="step-text">
+        Ham veriler analiz öncesinde kalite kontrol sürecinden geçirilir.
+        Bir önceki güne göre %50’den fazla fiyat değişimi gösteren ürünler
+        anomali olarak işaretlenir. Ölçü birimleri (kg, litre, adet)
+        standartlaştırılır ve stokta olmayan ürünlerde
+        <em>carry-forward</em> yöntemi uygulanır.
+    </p>
 </article>
 
 <article class="step-box step-yellow">
-    <div class="step-title">
-        <span>3.</span> Endeks Hesaplama
-    </div>
-
+    <div class="step-title"><span>3.</span> Endeks Hesaplama</div>
     <p class="step-text">
         Sistem, <strong>Zincirleme Laspeyres Fiyat Endeksi</strong> yaklaşımını kullanır.
-    </p>
-
-    <div class="formula-box">
-        I = Σ (Pn / P0) × W
-    </div>
-
-    <div class="formula-note">
-        I: Endeks · Pn: Güncel Fiyat · P0: Baz Fiyat · W: Ağırlık
-    </div>
-
-    <p class="step-text">
         Ürün ağırlıkları TÜİK hanehalkı tüketim anketlerine dayanır.
-        Aylık fiyatlar <span class="highlight">geometrik ortalama</span> ile hesaplanarak
-        uç değerlerin etkisi sınırlandırılır.
+        Aylık fiyatlar geometrik ortalama ile hesaplanarak
+        uç değerlerin endeks üzerindeki etkisi sınırlandırılır.
     </p>
 </article>
 
@@ -1293,11 +1258,11 @@ def sayfa_metodoloji():
     <div class="step-title"><span>4.</span> Ürün Eşleştirme ve İkame</div>
     <p class="step-text">
         Takip edilen bir ürün piyasadan kalktığında, sistem otomatik olarak
-        aynı marka, gramaj ve kategoriye sahip
-        <strong>en yakın ikame ürünü</strong> belirler.
+        aynı marka, gramaj ve kategoriye sahip en yakın ikame ürünü belirler.
         Fiyat serisi, düzeltme katsayısı ile süreklilik sağlayacak şekilde bağlanır.
     </p>
 </article>
+
 
 
 </section>
@@ -1427,6 +1392,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
