@@ -1216,56 +1216,158 @@ def sayfa_metodoloji():
 }
 </style>
 
-<section class="method-card">
+<section id="metodoloji" class="methodology-container">
 
-<header class="method-header">
-    <span>📐</span> Metodoloji ve Akademik Çerçeve
-</header>
+  <h1>Metodoloji ve Akademik Çerçeve</h1>
 
-<article class="step-box step-blue">
-    <div class="step-title"><span>1.</span> Veri Toplama (Web Scraping)</div>
-    <p class="step-text">
-        Piyasa Monitörü, Türkiye'nin önde gelen zincir marketleri ve e-ticaret platformlarından
-        <span class="highlight">Python tabanlı web scraping botları</span>
-        (Selenium, BeautifulSoup, Playwright) aracılığıyla günlük fiyat verisi toplar.
-        Botlar, <em>User-Agent Rotation</em> ve <em>Rate Limiting</em> prensiplerine uygun şekilde çalışır.
-        Her ürün barkod (EAN/SKU) ve URL bazlı benzersiz olarak eşleştirilir.
-    </p>
-</article>
+  <p>
+    Piyasa Monitörü, Türkiye’de faaliyet gösteren zincir marketler ve e-ticaret platformları üzerinden
+    yüksek frekanslı fiyat verisi toplayarak tüketici fiyatlarındaki değişimi gerçek zamanlıya yakın
+    bir yaklaşımla izlemeyi amaçlayan alternatif bir fiyat endeksidir.
+    Bu metodoloji, uluslararası istatistik standartları ve TÜİK fiyat endeksi prensipleri ile uyumlu
+    olacak şekilde tasarlanmıştır.
+  </p>
 
-<article class="step-box step-purple">
-    <div class="step-title"><span>2.</span> Veri Temizleme ve Kalite Kontrol</div>
-    <p class="step-text">
-        Ham veriler analiz öncesinde kalite kontrol sürecinden geçirilir.
-        Bir önceki güne göre %50’den fazla fiyat değişimi gösteren ürünler
-        anomali olarak işaretlenir. Ölçü birimleri (kg, litre, adet)
-        standartlaştırılır ve stokta olmayan ürünlerde
-        <em>carry-forward</em> yöntemi uygulanır.
-    </p>
-</article>
+  <h2>1. Veri Toplama (Web Scraping)</h2>
 
-<article class="step-box step-yellow">
-    <div class="step-title"><span>3.</span> Endeks Hesaplama</div>
-    <p class="step-text">
-        Sistem, <strong>Zincirleme Laspeyres Fiyat Endeksi</strong> yaklaşımını kullanır.
-        Ürün ağırlıkları TÜİK hanehalkı tüketim anketlerine dayanır.
-        Aylık fiyatlar geometrik ortalama ile hesaplanarak
-        uç değerlerin endeks üzerindeki etkisi sınırlandırılır.
-    </p>
-</article>
+  <p>
+    Fiyat verileri, Python tabanlı web scraping altyapısı aracılığıyla günlük bazda otomatik olarak
+    toplanmaktadır. Sistem; Selenium, BeautifulSoup ve Playwright kütüphanelerini içeren hibrit
+    bir mimariye sahiptir.
+  </p>
 
-<article class="step-box step-green">
-    <div class="step-title"><span>4.</span> Ürün Eşleştirme ve İkame</div>
-    <p class="step-text">
-        Takip edilen bir ürün piyasadan kalktığında, sistem otomatik olarak
-        aynı marka, gramaj ve kategoriye sahip en yakın ikame ürünü belirler.
-        Fiyat serisi, düzeltme katsayısı ile süreklilik sağlayacak şekilde bağlanır.
-    </p>
-</article>
+  <p>
+    Veri toplama süreci, hedef platformların teknik ve etik kullanım sınırlarına uygun şekilde
+    yapılandırılmıştır. Bu kapsamda:
+  </p>
 
+  <ul>
+    <li>User-Agent rotasyonu uygulanarak farklı tarayıcı profilleri simüle edilir.</li>
+    <li>Rate limiting mekanizması ile istek sıklığı sınırlandırılır.</li>
+    <li>Platform altyapılarına aşırı yük bindirilmesi engellenir.</li>
+  </ul>
 
+  <p>
+    Her ürün, barkod (EAN/SKU) ve ürün URL’si üzerinden benzersiz olarak tanımlanır.
+    Bu yaklaşım, ürün isimlerindeki varyasyonlardan kaynaklanan eşleştirme hatalarını minimize eder
+    ve zaman serilerinin tutarlılığını sağlar.
+  </p>
+
+  <h2>2. Veri Temizleme ve Kalite Kontrol</h2>
+
+  <p>
+    Ham fiyat verileri, endeks hesaplamasına dahil edilmeden önce çok aşamalı bir kalite kontrol
+    sürecinden geçirilir. Bu süreç, fiyat serilerindeki gürültüyü azaltmayı ve metodolojik
+    tutarlılığı sağlamayı amaçlar.
+  </p>
+
+  <h3>2.1 Anomali Tespiti</h3>
+
+  <p>
+    Bir ürünün fiyatında bir önceki güne kıyasla %50’den fazla artış veya azalış tespit edilmesi
+    durumunda ilgili gözlem şüpheli olarak işaretlenir. Bu eşik değeri, kampanya etkileri ile
+    veri kaynaklı hataları ayırt edebilecek şekilde belirlenmiştir.
+  </p>
+
+  <h3>2.2 Birim ve Miktar Standartlaştırma</h3>
+
+  <p>
+    Farklı platformlarda aynı ürünün farklı gramaj veya hacim bilgileriyle sunulması nedeniyle
+    tüm ürün fiyatları standart birimlere dönüştürülür:
+  </p>
+
+  <ul>
+    <li>Gram → kilogram</li>
+    <li>Mililitre → litre</li>
+    <li>Çoklu paketler → birim başına fiyat</li>
+  </ul>
+
+  <p>
+    Bu sayede fiyatlar birim fiyat bazında karşılaştırılabilir hale getirilir.
+  </p>
+
+  <h3>2.3 Stok Durumu ve Eksik Gözlemler</h3>
+
+  <p>
+    Stokta bulunmayan ürünler nedeniyle oluşan geçici fiyat boşluklarında,
+    zaman serisi sürekliliğini korumak amacıyla son gözlemi taşıma
+    (carry-forward) yöntemi uygulanır.
+  </p>
+
+  <h2>3. Endeks Hesaplama Metodolojisi</h2>
+
+  <p>
+    Piyasa Monitörü fiyat endeksi, Zincirleme Laspeyres Fiyat Endeksi yaklaşımı kullanılarak
+    hesaplanmaktadır. Bu yöntem, kısa dönemli fiyat hareketlerini doğru şekilde yansıtması ve
+    resmi istatistik metodolojileriyle uyumlu olması nedeniyle tercih edilmiştir.
+  </p>
+
+  <h3>3.1 Endeks Formülü</h3>
+
+  <p>
+    Endeks hesaplamasında kullanılan temel formül aşağıdaki gibidir:
+  </p>
+
+  <pre>
+I<sub>t</sub> = Σ ( P<sub>i,t</sub> / P<sub>i,0</sub> ) × W<sub>i</sub>
+  </pre>
+
+  <p>
+    Burada; I<sub>t</sub> ilgili dönemdeki endeks değerini, P<sub>i,t</sub> ürünün cari fiyatını,
+    P<sub>i,0</sub> baz dönem fiyatını ve W<sub>i</sub> ürün ağırlığını ifade eder.
+  </p>
+
+  <h3>3.2 Ağırlıklandırma Yapısı</h3>
+
+  <p>
+    Ürün ağırlıkları, TÜİK Hanehalkı Bütçe Anketleri ve tüketim kalıpları esas alınarak
+    belirlenmektedir. Böylece endeks, hanehalkı tüketim davranışlarını temsil etme
+    kabiliyetine sahip olur.
+  </p>
+
+  <h3>3.3 Ortalama Yöntemi</h3>
+
+  <p>
+    Aylık fiyat seviyeleri hesaplanırken aritmetik ortalama yerine geometrik ortalama
+    kullanılmaktadır. Bu yaklaşım, uç fiyat hareketlerinin endeks üzerindeki etkisini azaltır
+    ve fiyat dağılımını daha sağlıklı yansıtır.
+  </p>
+
+  <h2>4. Ürün Eşleştirme ve İkame Mekanizması</h2>
+
+  <p>
+    Takip edilen bir ürünün kalıcı olarak piyasadan çekilmesi durumunda,
+    endeks sepetinde boşluk oluşmaması için otomatik ikame mekanizması devreye girer.
+  </p>
+
+  <p>
+    İkame sürecinde aşağıdaki kriterler sırasıyla dikkate alınır:
+  </p>
+
+  <ul>
+    <li>Aynı marka (öncelikli)</li>
+    <li>Aynı veya en yakın gramaj</li>
+    <li>Aynı alt kategori</li>
+    <li>Benzer fiyat aralığı</li>
+  </ul>
+
+  <p>
+    İkame edilen ürün, mevcut fiyat serisine zincirleme yöntemle bağlanarak
+    metodolojik süreklilik korunur ve endeks seviyesinde yapısal kırılmaların
+    önüne geçilir.
+  </p>
+
+  <h2>5. Metodolojik Güçlü Yönler</h2>
+
+  <ul>
+    <li>Günlük ve yüksek frekanslı veri yapısı</li>
+    <li>Şeffaf ve tekrarlanabilir hesaplama süreci</li>
+    <li>Resmi istatistik metodolojileriyle uyum</li>
+    <li>Kısa vadeli fiyat hareketlerini yakalama kabiliyeti</li>
+  </ul>
 
 </section>
+
 """
     st.markdown(html_content, unsafe_allow_html=True)
 
@@ -1392,6 +1494,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
