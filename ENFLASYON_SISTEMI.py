@@ -779,6 +779,41 @@ def veri_motoru_calistir():
 
     secilen_tarih = st.sidebar.selectbox("Rapor Tarihi:", options=tum_tarihler, index=0)
     
+    # --- YENİ EKLENEN KISIM: TRADINGVIEW SIDEBAR ---
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🌍 Piyasalar")
+    
+    symbols = [
+        {"s": "FX_IDC:USDTRY", "d": "Dolar / TL"},
+        {"s": "FX_IDC:EURTRY", "d": "Euro / TL"},
+        {"s": "FX_IDC:XAUTRYG", "d": "Gram Altın"},
+        {"s": "TVC:UKOIL", "d": "Brent Petrol"},
+        {"s": "BINANCE:BTCUSDT", "d": "Bitcoin ($)"}
+    ]
+    
+    # Dikey yığınlama
+    for sym in symbols:
+        widget_code = f"""
+        <div class="tradingview-widget-container" style="border-radius:12px; overflow:hidden; margin-bottom:10px;">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+          {{
+          "symbol": "{sym['s']}",
+          "width": "100%",
+          "height": 100,
+          "locale": "tr",
+          "dateRange": "1D",
+          "colorTheme": "dark",
+          "isTransparent": true,
+          "autosize": true,
+          "largeChartUrl": ""
+        }}
+          </script>
+        </div>
+        """
+        st.sidebar.components.v1.html(widget_code, height=110)
+    # ---------------------------------------------
+    
     # --- İŞLEME ---
     df_s.columns = df_s.columns.str.strip()
     kod_col = next((c for c in df_s.columns if c.lower() == 'kod'), 'Kod')
@@ -1412,43 +1447,7 @@ def main():
         </div>
     """, unsafe_allow_html=True)
     
-    # --- TRADINGVIEW WIDGETLARI ---
-    # Widgetları yan yana dizeceğiz (5 sütun)
-    symbols = [
-        {"s": "FX_IDC:USDTRY", "d": "Dolar / TL"},
-        {"s": "FX_IDC:EURTRY", "d": "Euro / TL"},
-        {"s": "FX_IDC:XAUTRYG", "d": "Gram Altın"},
-        {"s": "TVC:UKOIL", "d": "Brent Petrol"},
-        {"s": "BINANCE:BTCUSDT", "d": "Bitcoin ($)"}
-    ]
-    
-    tv_cols = st.columns(5)
-    for idx, sym in enumerate(symbols):
-        with tv_cols[idx]:
-            # TradingView Mini Symbol Overview Widget HTML
-            widget_code = f"""
-            <div class="tradingview-widget-container" style="border-radius:12px; overflow:hidden;">
-              <div class="tradingview-widget-container__widget"></div>
-              <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-              {{
-              "symbol": "{sym['s']}",
-              "width": "100%",
-              "height": 110,
-              "locale": "tr",
-              "dateRange": "1D",
-              "colorTheme": "dark",
-              "isTransparent": false,
-              "autosize": true,
-              "largeChartUrl": ""
-            }}
-              </script>
-            </div>
-            """
-            components.html(widget_code, height=120)
-    
-    # ---------------------------------------
-
-    # --- SENKRONİZASYON BUTONU ---
+    # --- SENKRONİZASYON BUTONU (EKLENDİ) ---
     col_btn1, col_btn2 = st.columns([3, 1])
     with col_btn2:
         if st.button("SİSTEMİ SENKRONİZE ET ⚡", type="primary", use_container_width=True):
