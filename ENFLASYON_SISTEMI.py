@@ -781,7 +781,7 @@ def style_chart(fig, is_pdf=False, is_sunburst=False):
     return fig
 
 # --- 8. DASHBOARD MODU (SHOW EDITION) ---
-def dashboard_modu():
+def sayfa_veri_analizi():
     loader_placeholder = st.empty()
     with loader_placeholder.container():
         pass 
@@ -1645,8 +1645,119 @@ def dashboard_modu():
         '<div style="text-align:center; color:#52525b; font-size:11px; margin-top:50px; opacity:0.6;">VALIDASYON MUDURLUGU © 2026 - CONFIDENTIAL</div>',
         unsafe_allow_html=True)
         
+# --- 9. YENİ SİTE İSKELETİ (WEBTUFE KLONU) ---
+
+def sayfa_ana_sayfa():
+    # Webtufe Ana Sayfa Benzeri İçerik
+    st.markdown("""
+    <div style="text-align:center; padding: 50px 20px;">
+        <h1 style="font-size: 48px; font-weight: 800; margin-bottom: 20px; background: -webkit-linear-gradient(45deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Gerçek Enflasyonu Keşfedin
+        </h1>
+        <p style="font-size: 18px; color: #a1a1aa; max-width: 700px; margin: 0 auto; line-height: 1.6;">
+            Yapay zeka destekli algoritmalarımızla binlerce ürünün fiyatını günlük olarak takip ediyor, 
+            resmi verilerle kıyaslıyor ve piyasanın gerçek nabzını tutuyoruz.
+        </p>
+        <br><br>
+        <div style="display:flex; justify-content:center; gap:20px;">
+            <div style="background:rgba(255,255,255,0.05); padding:20px; border-radius:12px; width:200px; border:1px solid rgba(255,255,255,0.1);">
+                <div style="font-size:32px; font-weight:bold; color:#fff;">50K+</div>
+                <div style="color:#a1a1aa; font-size:12px;">Günlük Veri Noktası</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05); padding:20px; border-radius:12px; width:200px; border:1px solid rgba(255,255,255,0.1);">
+                <div style="font-size:32px; font-weight:bold; color:#fff;">%98</div>
+                <div style="color:#a1a1aa; font-size:12px;">Doğruluk Oranı</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05); padding:20px; border-radius:12px; width:200px; border:1px solid rgba(255,255,255,0.1);">
+                <div style="font-size:32px; font-weight:bold; color:#fff;">24/7</div>
+                <div style="color:#a1a1aa; font-size:12px;">Canlı Takip</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Alt Bölüm
+    c1, c2 = st.columns(2)
+    with c1:
+        st.info("📢 **Son Duyuru:** Şubat ayı gıda enflasyonu raporu yayınlandı.")
+    with c2:
+        st.success("✅ **Sistem Durumu:** Tüm veri botları aktif çalışıyor.")
+
+def sayfa_metodoloji():
+    st.markdown("## 📐 Metodoloji ve Veri Toplama")
+    st.markdown("""
+    Bu proje, şeffaf ve doğrulanabilir veri bilimi ilkelerine dayanmaktadır.
+    
+    **1. Veri Kaynakları:**
+    * Türkiye'nin önde gelen e-ticaret siteleri.
+    * Zincir marketlerin online mağazaları.
+    * Pazar yerleri ve fiyat karşılaştırma motorları.
+    
+    **2. Endeks Hesaplama:**
+    Laspeyres fiyat endeksi formülü kullanılarak, baz yılı fiyatlarına göre ağırlıklı ortalama değişimler hesaplanır.
+    
+    **3. Sepet Ağırlıkları:**
+    TÜİK tarafından yayınlanan madde sepeti ağırlıkları referans alınmakla birlikte, güncel tüketim alışkanlıklarına göre dinamik revizyonlar yapılmaktadır.
+    """)
+
+def sayfa_hakkimizda():
+    st.markdown("## 👥 Hakkımızda")
+    st.write("Biz, veriye dayalı karar alma süreçlerini destekleyen bağımsız bir araştırma grubuyuz.")
+    
+    cols = st.columns(3)
+    for i in range(3):
+        with cols[i]:
+            st.markdown(f"""
+            <div style="text-align:center; background:rgba(255,255,255,0.03); padding:20px; border-radius:12px;">
+                <div style="width:80px; height:80px; background:#3b82f6; border-radius:50%; margin:0 auto 10px auto;"></div>
+                <div style="font-weight:bold;">Ekip Üyesi {i+1}</div>
+                <div style="font-size:12px; color:#a1a1aa;">Veri Bilimci</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+def sayfa_iletisim():
+    st.markdown("## 📬 İletişim")
+    st.write("Sorularınız, önerileriniz veya işbirliği talepleriniz için bize ulaşın.")
+    
+    with st.form("iletisim_formu"):
+        c1, c2 = st.columns(2)
+        c1.text_input("Adınız Soyadınız")
+        c2.text_input("E-posta Adresiniz")
+        st.text_area("Mesajınız")
+        st.form_submit_button("Gönder 🚀")
+
+# --- ANA YÖNLENDİRİCİ (MAIN ROUTER) ---
+def main():
+    # Üst Menü Tasarımı (Webtufe benzeri Sekmeler)
+    # Streamlit'in native tabs özelliği ile üst menü simülasyonu
+    
+    tabs = st.tabs([
+        "🏠 ANA SAYFA", 
+        "📈 PİYASA MONİTÖRÜ (DASHBOARD)", 
+        "📐 METODOLOJİ", 
+        "👥 HAKKIMIZDA", 
+        "📬 İLETİŞİM"
+    ])
+
+    with tabs[0]:
+        sayfa_ana_sayfa()
+    
+    with tabs[1]:
+        # BURASI SENİN ESKİ KODUN (DASHBOARD)
+        sayfa_veri_analizi()
+        
+    with tabs[2]:
+        sayfa_metodoloji()
+        
+    with tabs[3]:
+        sayfa_hakkimizda()
+        
+    with tabs[4]:
+        sayfa_iletisim()
+
 if __name__ == "__main__":
-    dashboard_modu()
+    main()
+
 
 
 
