@@ -200,6 +200,43 @@ def apply_theme():
             color: #fff; border-radius: 10px; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }}
         div.stButton > button:hover {{ border-color: var(--accent-blue); box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); transform: translateY(-1px); }}
+
+        /* --- RADIO BUTONU TAB GİBİ GÖSTERME (Navigasyon Düzeltmesi) --- */
+        [data-testid="stRadio"] > div {
+            display: flex;
+            flex-wrap: wrap; /* Mobilde alt satıra geçsin */
+            gap: 10px;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+        
+        [data-testid="stRadio"] label {
+            background: transparent !important;
+            border: 1px solid transparent;
+            padding: 8px 16px !important;
+            border-radius: 8px !important;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            color: #a1a1aa !important;
+            font-weight: 600 !important;
+        }
+
+        /* Seçili olan sekmenin stili */
+        [data-testid="stRadio"] label[data-checked="true"] {
+            background: rgba(59, 130, 246, 0.2) !important; /* Mavi arka plan */
+            border: 1px solid rgba(59, 130, 246, 0.5) !important;
+            color: #fff !important;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Radio yuvarlaklarını gizle */
+        [data-testid="stRadio"] div[role="radiogroup"] > label > div:first-child {
+            display: none !important;
+        }
+        
     </style>
     """
     st.markdown(final_css, unsafe_allow_html=True)
@@ -1617,39 +1654,66 @@ def main():
         ctx = veri_motoru_calistir()
 
     # 2. Menü (Sadeleştirildi)
-    tabs = st.tabs([
+    sayfalar = [
         "🏠 ANA SAYFA", 
         "📊 PİYASA ÖZETİ", 
-        "📈 TRENDLER",  # YENİ
-        "📦 MADDELER",  # YENİ
+        "📈 TRENDLER", 
+        "📦 MADDELER", 
         "📂 KATEGORİ DETAY", 
         "📋 TAM LİSTE", 
         "📝 RAPORLAMA", 
         "📐 METODOLOJİ"
-    ])
+    ]
 
-    # 3. Sayfaları Yükle
-    with tabs[0]:
-        sayfa_ana_sayfa(ctx) 
+    # Session State kontrolü (Sayfa yenilense bile seçimi hatırlar)
+    if "secilen_sayfa" not in st.session_state:
+        st.session_state.secilen_sayfa = sayfalar[0]
 
+    # Navigasyon Çubuğu (Radio Button ama Tab görünümlü)
+    secim = st.radio(
+        "", 
+        options=sayfalar, 
+        index=sayfalar.index(st.session_state.secilen_sayfa) if st.session_state.secilen_sayfa in sayfalar else 0,
+        horizontal=True, 
+        label_visibility="collapsed",
+        key="navigasyon_radio" 
+    )
+
+    # Seçimi state'e kaydet (Garanti olsun diye)
+    st.session_state.secilen_sayfa = secim
+
+    st.markdown("---") # Menü ile içerik arasına çizgi
+
+    # --- 3. İÇERİĞİ YÜKLE ---
     if ctx:
-        with tabs[1]: sayfa_piyasa_ozeti(ctx)
-        with tabs[2]: sayfa_trend_analizi(ctx) # YENİ FONKSİYON ÇAĞRISI
-        with tabs[3]: sayfa_maddeler(ctx)      # YENİ FONKSİYON ÇAĞRISI
-        with tabs[4]: sayfa_kategori_detay(ctx)
-        with tabs[5]: sayfa_tam_liste(ctx)
-        with tabs[6]: sayfa_raporlama(ctx)
+        if secim == "🏠 ANA SAYFA":
+            sayfa_ana_sayfa(ctx)
+        elif secim == "📊 PİYASA ÖZETİ":
+            sayfa_piyasa_ozeti(ctx)
+        elif secim == "📈 TRENDLER":
+            sayfa_trend_analizi(ctx)
+        elif secim == "📦 MADDELER":
+            sayfa_maddeler(ctx)
+        elif secim == "📂 KATEGORİ DETAY":
+            sayfa_kategori_detay(ctx)
+        elif secim == "📋 TAM LİSTE":
+            sayfa_tam_liste(ctx)
+        elif secim == "📝 RAPORLAMA":
+            sayfa_raporlama(ctx)
+        elif secim == "📐 METODOLOJİ":
+            sayfa_metodoloji()
     else:
-        err_msg = "<br><div style='text-align:center; padding:20px; background:rgba(255,0,0,0.1); border-radius:10px; color:#fff;'>⚠️ Veri seti yüklenemedi.</div>"
-        for i in range(1, 7): # Hata mesajını tüm sekmelere yay
-            with tabs[i]: st.markdown(err_msg, unsafe_allow_html=True)
-
-    with tabs[7]:
-        sayfa_metodoloji()
+        # Veri yoksa bile Metodoloji çalışsın
+        if secim == "📐 METODOLOJİ":
+            sayfa_metodoloji()
+        else:
+            err_msg = "<br><div style='text-align:center; padding:20px; background:rgba(255,0,0,0.1); border-radius:10px; color:#fff;'>⚠️ Veri seti yüklenemedi. Lütfen internet bağlantınızı kontrol edin.</div>"
+            st.markdown(err_msg, unsafe_allow_html=True)
 
     # Footer
     st.markdown('<div style="text-align:center; color:#52525b; font-size:11px; margin-top:50px; opacity:0.6;">VALIDASYON MUDURLUGU © 2026 - GİZLİ ANALİZ BELGESİ</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
+
 
