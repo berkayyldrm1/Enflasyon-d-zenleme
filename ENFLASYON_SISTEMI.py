@@ -54,6 +54,7 @@ st.set_page_config(
 )
 
 # --- CSS MOTORU ---
+# --- CSS MOTORU ---
 def apply_theme():
     st.session_state.plotly_template = "plotly_dark"
 
@@ -202,7 +203,7 @@ def apply_theme():
         div.stButton > button:hover {{ border-color: var(--accent-blue); box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); transform: translateY(-1px); }}
 
         /* --- RADIO BUTONU TAB GİBİ GÖSTERME (Navigasyon Düzeltmesi) --- */
-        [data-testid="stRadio"] > div {
+        [data-testid="stRadio"] > div {{
             display: flex;
             flex-wrap: wrap; /* Mobilde alt satıra geçsin */
             gap: 10px;
@@ -211,9 +212,9 @@ def apply_theme():
             padding: 10px;
             border-radius: 12px;
             border: 1px solid var(--glass-border);
-        }
+        }}
         
-        [data-testid="stRadio"] label {
+        [data-testid="stRadio"] label {{
             background: transparent !important;
             border: 1px solid transparent;
             padding: 8px 16px !important;
@@ -222,21 +223,20 @@ def apply_theme():
             cursor: pointer;
             color: #a1a1aa !important;
             font-weight: 600 !important;
-        }
+        }}
 
         /* Seçili olan sekmenin stili */
-        [data-testid="stRadio"] label[data-checked="true"] {
+        [data-testid="stRadio"] label[data-checked="true"] {{
             background: rgba(59, 130, 246, 0.2) !important; /* Mavi arka plan */
             border: 1px solid rgba(59, 130, 246, 0.5) !important;
             color: #fff !important;
             box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
-        }
+        }}
         
         /* Radio yuvarlaklarını gizle */
-        [data-testid="stRadio"] div[role="radiogroup"] > label > div:first-child {
+        [data-testid="stRadio"] div[role="radiogroup"] > label > div:first-child {{
             display: none !important;
-        }
-        
+        }}
     </style>
     """
     st.markdown(final_css, unsafe_allow_html=True)
@@ -1679,6 +1679,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
