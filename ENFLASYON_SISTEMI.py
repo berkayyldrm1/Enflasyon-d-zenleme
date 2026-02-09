@@ -1037,17 +1037,17 @@ def sayfa_piyasa_ozeti(ctx):
     col_g1, col_g2 = st.columns([2, 1])
     with col_g1:
         # --- HISTOGRAM DÜZELTMESİ ---
-        # X Eksenini temizlemek için tick format ve açı ayarları
         fig_hist = px.histogram(df, x="Fark_Yuzde", nbins=40, title="Fiyat Değişim Dağılımı", color_discrete_sequence=["#3b82f6"])
         fig_hist.update_layout(bargap=0.1)
-        # X Ekseni Ayarları: Açılı Yazı ve Format
+        # X Ekseni Ayarları
         fig_hist.update_xaxes(
             title_text="Değişim Oranı (%)",
-            tickangle=-45,          # Yazıları 45 derece eğ
-            tickformat=".1f",       # Virgülden sonra 1 hane
-            dtick=2.5,              # 2.5'er artış (sıklığı azaltmak için)
+            tickangle=-45,          
+            tickformat=".1f",       
+            dtick=2.5,              
         )
-        st.plotly_chart(style_chart(fig_hist), use_container_width=True)
+        # BURAYA 'key="ozet_histogram"' EKLEDİK
+        st.plotly_chart(style_chart(fig_hist), use_container_width=True, key="ozet_histogram")
 
     with col_g2:
         rising = len(df[df['Fark'] > 0])
@@ -1068,46 +1068,9 @@ def sayfa_piyasa_ozeti(ctx):
     st.subheader("Sektörel Isı Haritası")
     fig_tree = px.treemap(df, path=[px.Constant("Piyasa"), 'Grup', ctx['ad_col']], 
                          values=ctx['agirlik_col'], color='Fark', color_continuous_scale='RdYlGn_r')
-    st.plotly_chart(style_chart(fig_tree, is_sunburst=True), use_container_width=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
     
-    # Haber Bandı (Ticker)
-    df = ctx["df_analiz"]
-    inc = df.sort_values('Gunluk_Degisim', ascending=False).head(5)
-    dec = df.sort_values('Gunluk_Degisim', ascending=True).head(5)
-    items = []
-    for _, r in inc.iterrows():
-        if r['Gunluk_Degisim'] > 0: items.append(f"<span style='color:#f87171'>▲ {r[ctx['ad_col']]} %{r['Gunluk_Degisim']*100:.1f}</span>")
-    for _, r in dec.iterrows():
-        if r['Gunluk_Degisim'] < 0: items.append(f"<span style='color:#34d399'>▼ {r[ctx['ad_col']]} %{r['Gunluk_Degisim']*100:.1f}</span>")
-    ticker_html = " &nbsp;&nbsp; • &nbsp;&nbsp; ".join(items)
-    st.markdown(f"""<div class="ticker-wrap"><div class="ticker-move">{ticker_html}</div></div>""", unsafe_allow_html=True)
-    
-    # Grafikler
-    col_g1, col_g2 = st.columns([2, 1])
-    with col_g1:
-        fig_hist = px.histogram(df, x="Fark_Yuzde", nbins=30, title="Fiyat Değişim Dağılımı", color_discrete_sequence=["#3b82f6"])
-        st.plotly_chart(style_chart(fig_hist), use_container_width=True)
-    with col_g2:
-        rising = len(df[df['Fark'] > 0])
-        falling = len(df[df['Fark'] < 0])
-        st.markdown(f"""
-        <div class="smart-card">
-            <div class="sc-title">YÜKSELENLER</div>
-            <div class="sc-val" style="color:#ef4444">{rising} Ürün</div>
-        </div>
-        <div class="smart-card" style="margin-top:10px;">
-            <div class="sc-title">DÜŞENLER</div>
-            <div class="sc-val" style="color:#10b981">{falling} Ürün</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    # Sunburst / Treemap
-    st.subheader("Sektörel Isı Haritası")
-    fig_tree = px.treemap(df, path=[px.Constant("Piyasa"), 'Grup', ctx['ad_col']], 
-                         values=ctx['agirlik_col'], color='Fark', color_continuous_scale='RdYlGn_r')
-    st.plotly_chart(style_chart(fig_tree, is_sunburst=True), use_container_width=True)
+    # BURAYA 'key="ozet_treemap"' EKLEDİK - HATAYI VEREN YER BURASIYDI
+    st.plotly_chart(style_chart(fig_tree, is_sunburst=True), use_container_width=True, key="ozet_treemap")
 
 def sayfa_kategori_detay(ctx):
     df = ctx["df_analiz"]
@@ -1375,6 +1338,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
