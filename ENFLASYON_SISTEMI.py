@@ -1605,7 +1605,8 @@ def main():
     with st.spinner("Piyasa verileri analiz ediliyor..."):
         ctx = veri_motoru_calistir()
 
-    # --- 2. MENÜ YAPISI (DÜZELTİLDİ) ---
+    # --- 2. GARANTİLİ NAVİGASYON YAPISI ---
+    
     sayfalar = [
         "🏠 ANA SAYFA", 
         "📊 PİYASA ÖZETİ", 
@@ -1617,24 +1618,38 @@ def main():
         "📐 METODOLOJİ"
     ]
 
-    # Eğer session state'de navigasyon yoksa varsayılanı ata
-    # Bu kısım sadece uygulama ilk açıldığında çalışır.
-    if "navigasyon_radio" not in st.session_state:
-        st.session_state.navigasyon_radio = sayfalar[0]
+    # A. State Başlatma: Eğer hafızada aktif sayfa yoksa, ilkini ata
+    if 'aktif_sayfa' not in st.session_state:
+        st.session_state.aktif_sayfa = sayfalar[0]
 
-    # Navigasyon Çubuğu
-    # ÖNEMLİ: index parametresini kaldırdık. 'key' parametresi state'i yönetmek için yeterlidir.
-    secim = st.radio(
+    # B. Callback Fonksiyonu: Kullanıcı tıkladığında state'i güncelle
+    def menu_guncelle():
+        st.session_state.aktif_sayfa = st.session_state.nav_widget
+
+    # C. İndex Bulma: Şu anki aktif sayfanın listedeki sırasını bul
+    try:
+        # State'deki sayfa isminin listedeki sırasını (index) buluyoruz (0, 1, 2...)
+        aktif_index = sayfalar.index(st.session_state.aktif_sayfa)
+    except ValueError:
+        aktif_index = 0
+        st.session_state.aktif_sayfa = sayfalar[0]
+
+    # D. Widget Çizimi
+    st.radio(
         "", 
         options=sayfalar, 
+        index=aktif_index,       # <--- İŞTE ÇÖZÜM: Buraya elle hesapladığımız indexi veriyoruz.
+        key="nav_widget",        # Widget'ın kendi anahtarı
+        on_change=menu_guncelle, # Değiştiği anda state'i güncelleyen fonksiyon çalışsın
         horizontal=True, 
-        label_visibility="collapsed",
-        key="navigasyon_radio" 
+        label_visibility="collapsed"
     )
 
     st.markdown("---")
 
-    # --- 3. İÇERİĞİ YÜKLE ---
+    # E. İçeriği Yükle (State'deki değere göre)
+    secim = st.session_state.aktif_sayfa
+
     if ctx:
         if secim == "🏠 ANA SAYFA":
             sayfa_ana_sayfa(ctx)
@@ -1664,6 +1679,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
