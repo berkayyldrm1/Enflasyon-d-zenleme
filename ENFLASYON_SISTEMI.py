@@ -686,6 +686,7 @@ def style_chart(fig, is_pdf=False, is_sunburst=False):
 
 # --- 8. DASHBOARD MODU (SAYFALI YAPI) ---
 # --- 8. DASHBOARD MODU (DÜZELTİLMİŞ) ---
+# --- 8. DASHBOARD MODU (DÜZELTİLMİŞ & HATASIZ) ---
 def dashboard_modu():
     loader_placeholder = st.empty()
     with loader_placeholder.container():
@@ -706,7 +707,7 @@ def dashboard_modu():
 
     # --- VERİ İŞLEME VE TARİH FİLTRESİ ---
     if not df_f.empty:
-        # HATA DÜZELTME: Fiyat sütununu hemen sayıya çeviriyoruz
+        # Fiyat sütununu sayıya çevir (Önceki düzeltme)
         df_f['Fiyat'] = pd.to_numeric(df_f['Fiyat'], errors='coerce')
         
         df_f['Tarih_DT'] = pd.to_datetime(df_f['Tarih'], errors='coerce')
@@ -754,7 +755,7 @@ def dashboard_modu():
         df_s['Kod'] = df_s[kod_col].astype(str).apply(kod_standartlastir)
         df_s = df_s.drop_duplicates(subset=['Kod'], keep='first')
         
-        # Fiyat Pivot (HATA BURADAYDI, ARTIK FİYAT NUMERIC OLDUĞU İÇİN ÇALIŞIR)
+        # Fiyat Pivot
         df_f_filt = df_f[df_f['Fiyat'] > 0]
         
         df_f_grp = df_f_filt.groupby(['Kod', 'Tarih_Str'])['Fiyat'].mean().reset_index()
@@ -776,7 +777,6 @@ def dashboard_modu():
         # Tarih Filtresi
         gunler = sorted([c for c in pivot.columns if c != 'Kod' and c >= BASLANGIC_LIMITI])
         
-        # Eğer veri yoksa hata vermemesi için kontrol
         if not gunler:
             st.warning("Seçilen tarih aralığında gösterilecek veri bulunamadı.")
             return
@@ -838,6 +838,10 @@ def dashboard_modu():
 
         # Yıllık Simülasyon
         yillik_enf_genel = enf_genel + 32.72 
+        
+        # --- KRİTİK DÜZELTME: Bu sütunu GLOBAL olarak burada hesaplıyoruz ---
+        # "MADDELER" sekmesi dahil her yerde erişilebilir olması için.
+        df_analiz['Aylik_Degisim_Yuzde'] = df_analiz['Fark'] * 100
 
     # ==============================================================================
     # 1. ANA SAYFA
@@ -893,6 +897,7 @@ def dashboard_modu():
             trend_days = gunler[-14:]
             trend_vals = []
             for d in trend_days:
+                # Basit ortalama trendi
                 val = df_analiz[d].mean()
                 trend_vals.append(val)
             
@@ -907,6 +912,7 @@ def dashboard_modu():
         # ANA GRUP TABLOSU
         st.markdown("### 📊 Piyasa Monitörü Şubat Ayı Ana Grup Artış Oranları")
         
+        # Grup İstatistikleri
         df_analiz['Grup_Agirlikli_Fark'] = df_analiz['Fark'] * df_analiz[aktif_agirlik_col]
         grp_stats = df_analiz.groupby("Grup").agg({
             aktif_agirlik_col: 'sum',
@@ -925,7 +931,7 @@ def dashboard_modu():
 
         # ARTANLAR / AZALANLAR
         c_inc, c_dec = st.columns(2)
-        df_analiz['Aylik_Degisim_Yuzde'] = df_analiz['Fark'] * 100
+        # NOT: 'Aylik_Degisim_Yuzde' artık global olarak yukarıda hesaplandığı için burada tekrar hesaplamaya gerek yok
         
         with c_inc:
             st.subheader("🔥 En Çok Artanlar (Aylık)")
@@ -1034,7 +1040,10 @@ def dashboard_modu():
         
         sel_grp = st.selectbox("Ana Grup Seçiniz:", sorted(df_analiz['Grup'].unique()))
         
+        # Filtreleme
         df_sub = df_analiz[df_analiz['Grup'] == sel_grp].copy()
+        
+        # Sıralama (Artık sütun garanti var)
         df_sub = df_sub.sort_values('Aylik_Degisim_Yuzde', ascending=False)
         
         st.subheader(f"{sel_grp} İçindeki Ürünlerin Aylık Değişimi (%)")
@@ -1118,5 +1127,6 @@ def dashboard_modu():
 
 if __name__ == "__main__":
     dashboard_modu()
+
 
 
