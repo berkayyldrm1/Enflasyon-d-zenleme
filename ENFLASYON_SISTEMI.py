@@ -1176,70 +1176,86 @@ def sayfa_metodoloji():
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 16px;
-            padding: 30px;
+            padding: 40px;
             font-family: 'Inter', sans-serif;
             color: #e4e4e7;
             line-height: 1.7;
         }
         .method-header {
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 26px;
+            font-weight: 800;
             color: #fff;
             border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 15px;
-            margin-bottom: 25px;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            background: -webkit-linear-gradient(0deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         .step-box {
-            margin-bottom: 30px;
-            padding-left: 20px;
-            border-left: 3px solid #3b82f6;
+            margin-bottom: 35px;
+            padding-left: 25px;
+            border-left: 4px solid #3b82f6;
+            position: relative;
+        }
+        .step-box::before {
+            content: '';
+            position: absolute;
+            left: -4px;
+            top: 0;
+            width: 4px;
+            height: 40px;
+            background: inherit; /* Border rengini alır */
+            filter: blur(8px);
+            opacity: 0.7;
         }
         .step-title {
             color: #60a5fa;
             font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 10px;
+            font-weight: 700;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-        .tech-tag {
-            background: rgba(59, 130, 246, 0.15);
-            color: #93c5fd;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-family: 'JetBrains Mono', monospace;
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            gap: 10px;
+            letter-spacing: 0.5px;
         }
         .formula-box {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(20,20,25,0.6) 100%);
+            border: 1px solid rgba(251, 191, 36, 0.2);
             border-radius: 12px;
-            padding: 20px;
+            padding: 25px;
             text-align: center;
-            margin: 20px 0;
+            margin: 25px 0;
             font-family: 'Times New Roman', serif;
-            font-size: 20px;
+            font-size: 22px;
             font-style: italic;
             color: #fbbf24;
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
         }
         .list-item {
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             display: flex;
             align-items: start;
-            gap: 10px;
-            font-size: 14px;
+            gap: 12px;
+            font-size: 15px;
             color: #d1d5db;
+            background: rgba(255,255,255,0.02);
+            padding: 10px;
+            border-radius: 8px;
         }
         .bullet {
             color: #10b981;
             font-weight: bold;
-            margin-top: 5px;
+            font-size: 18px;
+            line-height: 1;
+            margin-top: 2px;
+        }
+        .highlight {
+            color: #fff;
+            font-weight: 600;
         }
     </style>
 
@@ -1248,86 +1264,75 @@ def sayfa_metodoloji():
             <span>📐</span> Metodoloji ve Akademik Çerçeve
         </div>
 
-        <div class="step-box">
-            <div class="step-title">
+        <div class="step-box" style="border-left-color: #3b82f6;">
+            <div class="step-title" style="color: #60a5fa;">
                 <span>1.</span> Veri Toplama (Web Scraping)
             </div>
-            <p style="color:#a1a1aa; margin-bottom:10px;">
-                Piyasa Monitörü, Türkiye'nin en büyük zincir marketleri ve e-ticaret platformlarından özelleştirilmiş botlar aracılığıyla günlük veri toplar. 
-                Bu süreçte sunucu yükünü minimize eden etik tarama protokolleri uygulanır.
+            <p style="color:#cbd5e1;">
+                Piyasa Monitörü, Türkiye'nin en büyük zincir marketleri ve e-ticaret platformlarından 
+                <span class="highlight">Python tabanlı botlar</span> (Selenium, BeautifulSoup, Playwright) aracılığıyla günlük veri toplar. 
+                Botlarımız, "User-Agent Rotation" ve "Rate Limiting" prensiplerine uygun olarak, hedef sunucuları yormadan çalışır. 
+                Her ürün için benzersiz bir ürün kodu (Barkod/SKU) ve URL eşleştirmesi kullanılır.
             </p>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <span class="tech-tag">Python 3.12</span>
-                <span class="tech-tag">Selenium WebDriver</span>
-                <span class="tech-tag">Playwright</span>
-                <span class="tech-tag">User-Agent Rotation</span>
-            </div>
         </div>
 
         <div class="step-box" style="border-left-color: #8b5cf6;">
             <div class="step-title" style="color: #a78bfa;">
                 <span>2.</span> Veri Temizleme ve Kalite Kontrol
             </div>
-            <p style="color:#a1a1aa;">Ham veriler işlenmeden önce aşağıdaki algoritmik filtrelerden geçer:</p>
-            <div style="margin-top:10px;">
-                <div class="list-item">
-                    <span class="bullet">➤</span>
-                    <div>
-                        <strong style="color:#fff;">Anomali Tespiti (Outlier Detection):</strong> 
-                        Bir önceki güne göre <span style="color:#f87171">%50</span>'den fazla fiyat değişimi olan ürünler (Z-Score > 3) otomatik olarak karantinaya alınır.
-                    </div>
+            <p style="color:#cbd5e1; margin-bottom:15px;">Ham veriler işlenmeden önce aşağıdaki filtrelerden geçer:</p>
+            
+            <div class="list-item">
+                <span class="bullet">➤</span>
+                <div>
+                    <span class="highlight">Anomali Tespiti:</span> Bir önceki güne göre %50'den fazla fiyat değişimi olan ürünler "Şüpheli" olarak işaretlenir ve manuel kontrole düşer.
                 </div>
-                <div class="list-item">
-                    <span class="bullet">➤</span>
-                    <div>
-                        <strong style="color:#fff;">Birim Standardizasyonu:</strong> 
-                        Farklı marketlerdeki "750ml", "0.75L", "750 GR" gibi tanımlar RegEx motoru ile standart birime dönüştürülür.
-                    </div>
+            </div>
+            <div class="list-item">
+                <span class="bullet">➤</span>
+                <div>
+                    <span class="highlight">Birim Dönüşümü:</span> Kg, Litre, Adet gibi birimler standartlaştırılır (Örn: 750gr -> 0.75kg).
                 </div>
-                <div class="list-item">
-                    <span class="bullet">➤</span>
-                    <div>
-                        <strong style="color:#fff;">Stok Kontrolü:</strong> 
-                        Stokta olmayan ürünler için "Carry-Forward" yöntemi uygulanarak son geçerli fiyat endekste sabit tutulur.
-                    </div>
+            </div>
+            <div class="list-item">
+                <span class="bullet">➤</span>
+                <div>
+                    <span class="highlight">Stok Kontrolü:</span> Stokta olmayan ürünlerin fiyatları, endeks hesaplamasında "sabit fiyat" (carry-forward) yöntemiyle taşınır.
                 </div>
             </div>
         </div>
 
         <div class="step-box" style="border-left-color: #f59e0b;">
             <div class="step-title" style="color: #fbbf24;">
-                <span>3.</span> Endeks Hesaplama Modeli
+                <span>3.</span> Endeks Hesaplama Formülü
             </div>
-            <p style="color:#a1a1aa;">
-                Sistemimiz, uluslararası standartlara uygun olarak <strong>Zincirleme Laspeyres Fiyat Endeksi</strong> yöntemini kullanır. 
-                Alt kalemlerde (Elementary Aggregates) Jevons Endeksi (Geometrik Ortalama) tercih edilir.
+            <p style="color:#cbd5e1;">
+                Sistemimiz, <strong>Zincirleme Laspeyres Fiyat Endeksi</strong> yöntemini kullanır. Formül şu şekildedir:
             </p>
             
             <div class="formula-box">
-                I<sub>t</sub> = Σ ( P<sub>t</sub> / P<sub>0</sub> ) × W
+                I = Σ (Pn / P0) * W
             </div>
             
-            <div style="display:flex; justify-content:center; gap:20px; font-size:12px; color:#71717a; font-family:'JetBrains Mono';">
-                <div>I : Endeks Değeri</div>
-                <div>P(t) : Güncel Fiyat</div>
-                <div>P(0) : Baz Fiyat</div>
-                <div>W : Sepet Ağırlığı</div>
-            </div>
-        </div>
-
-        <div class="step-box" style="border-left-color: #10b981; border-left:none; padding-left:0;">
-             <div class="step-title" style="color: #34d399; padding-left:20px; border-left: 3px solid #10b981;">
-                <span>4.</span> Dinamik Eşleştirme (Substitution)
-            </div>
-            <p style="color:#a1a1aa; padding-left:20px;">
-                Takip edilen bir ürün piyasadan kalktığında veya barkod değiştirdiğinde, NLP (Doğal Dil İşleme) tabanlı "En Yakın Benzer Ürün" algoritması devreye girer. 
-                Aynı marka, gramaj ve özelliklere sahip en yakın ikame ürün (Substitute) sepete dahil edilir ve 
-                fiyat serisi bir düzeltme katsayısı ile bağlanır (Quality Adjustment).
+            <p style="font-size:13px; color:#9ca3af; text-align:center; margin-top:-10px; margin-bottom:20px;">
+                (I: Endeks, Pn: Güncel Fiyat, P0: Baz Fiyat, W: Ağırlık)
+            </p>
+            
+            <p style="color:#cbd5e1;">
+                Bu yöntemde, her bir ürünün sepetteki ağırlığı (W), hanehalkı tüketim anketlerine ve TÜİK ağırlıklarına göre belirlenir. 
+                Aylık fiyat ortalaması alınırken <span class="highlight">Geometrik Ortalama</span> tercih edilerek uç değerlerin etkisi azaltılır.
             </p>
         </div>
-        
-        <div style="font-size:12px; color:#52525b; text-align:right; margin-top:20px;">
-            *Bu metodoloji TÜİK ve Eurostat standartları referans alınarak geliştirilmiştir.
+
+        <div class="step-box" style="border-left-color: #10b981;">
+             <div class="step-title" style="color: #34d399;">
+                <span>4.</span> Eşleştirme ve İkame (Substitution)
+            </div>
+            <p style="color:#cbd5e1;">
+                Takip edilen bir ürün piyasadan kalktığında, sistem otomatik olarak "En Yakın Benzer Ürün" algoritmasını çalıştırır. 
+                Aynı marka, aynı gramaj ve aynı kategorideki en yakın ikame ürün (Substitute) sepete dahil edilir ve 
+                fiyat serisi düzeltme katsayısı ile bağlanır.
+            </p>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1454,6 +1459,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
