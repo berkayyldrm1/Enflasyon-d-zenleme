@@ -1215,16 +1215,40 @@ ul.styled-list li::before { content: "➤"; position: absolute; left: 0; top: 2p
 
   <p>
     Fiyat verileri, Python tabanlı web scraping altyapısı aracılığıyla günlük bazda otomatik olarak
-    toplanmaktadır.
+    toplanmaktadır. Süreçte hem veri sürekliliği hem de kaynak platformların operasyonel
+    sürdürülebilirliği gözetilmektedir.
   </p>
 
   <ul class="styled-list">
     <li>User-Agent rotasyonu uygulanır.</li>
     <li>Rate limiting mekanizması kullanılır.</li>
     <li>Platformlara aşırı yük bindirilmez.</li>
+    <li>IP bazlı anomali tespiti yapılır.</li>
+    <li>Eksik günler için veri boşlukları işaretlenir.</li>
+  </ul>
+
+  <h2 class="section-title">2. Veri Temizleme ve Ön İşleme</h2>
+
+  <p>
+    Toplanan ham fiyat verileri, endeks hesaplamasına dahil edilmeden önce çok aşamalı bir
+    veri temizleme ve ön işleme sürecinden geçirilir. Amaç, ölçüm hatalarını ve geçici fiyat
+    bozulmalarını minimize etmektir.
+  </p>
+
+  <ul class="styled-list">
+    <li>Aykırı fiyat gözlemleri istatistiksel eşiklerle filtrelenir.</li>
+    <li>Ürün gramaj ve ambalaj değişimleri normalize edilir.</li>
+    <li>Stok dışı ürünler geçici olarak endeks dışı bırakılır.</li>
+    <li>Yanlış eşleşen ürün tanımları otomatik olarak elenir.</li>
   </ul>
 
   <h2 class="section-title">3. Endeks Hesaplama Metodolojisi</h2>
+
+  <p>
+    Fiyat endeksi hesaplamasında zincirleme Laspeyres yaklaşımı benimsenmiştir.
+    Bu yöntem, tüketim sepetinin zaman içerisinde güncellenmesine olanak tanırken,
+    fiyat değişimlerinin karşılaştırılabilirliğini korur.
+  </p>
 
   <div class="formula-box">
     I<sub>t</sub> = Σ ( P<sub>i,t</sub> / P<sub>i,0</sub> ) × W<sub>i</sub>
@@ -1234,9 +1258,45 @@ ul.styled-list li::before { content: "➤"; position: absolute; left: 0; top: 2p
     Zincirleme Laspeyres Fiyat Endeksi formülü
   </div>
 
+  <h2 class="section-title">4. Ağırlıklandırma Yapısı</h2>
+
+  <p>
+    Ürün ağırlıkları, TÜİK Hanehalkı Bütçe Anketi (HBA) harcama payları temel alınarak
+    belirlenmektedir. Bu sayede endeks, ortalama tüketici davranışını temsil etme
+    kabiliyetine sahip olur.
+  </p>
+
+  <ul class="styled-list">
+    <li>Alt ürün grupları için sabit ağırlıklar kullanılır.</li>
+    <li>Yıllık periyotlarla ağırlık güncellemesi yapılır.</li>
+    <li>Aşırı oynak kalemler için yumuşatma katsayıları uygulanır.</li>
+  </ul>
+
+  <h2 class="section-title">5. Kalite Kontrol ve Tutarlılık Analizi</h2>
+
+  <p>
+    Endeks çıktıları, hem zaman serisi tutarlılığı hem de resmi istatistiklerle
+    karşılaştırmalı analizler yoluyla sürekli olarak izlenir.
+  </p>
+
+  <ul class="styled-list">
+    <li>Günlük ve haftalık volatilite analizleri yapılır.</li>
+    <li>TÜFE alt grupları ile korelasyonlar takip edilir.</li>
+    <li>Metodoloji değişiklikleri geriye dönük olarak test edilir.</li>
+  </ul>
+
+  <h2 class="section-title">6. Akademik ve Politik Kullanım Alanları</h2>
+
+  <p>
+    Piyasa Monitörü Endeksi, akademik araştırmalar, para politikası analizleri ve
+    erken enflasyon sinyali üretimi gibi alanlarda tamamlayıcı bir gösterge
+    olarak kullanılabilecek şekilde tasarlanmıştır.
+  </p>
+
 </section>
 """
     st.markdown(html_content, unsafe_allow_html=True)
+
 
 # --- ANA YÖNLENDİRİCİ ---
 
@@ -1360,6 +1420,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
