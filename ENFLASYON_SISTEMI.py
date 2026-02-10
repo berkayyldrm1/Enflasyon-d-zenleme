@@ -26,6 +26,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import unicodedata
+from streamlit_option_menu import option_menu
 
 # --- İMPORT KONTROLLERİ ---
 try:
@@ -1614,71 +1615,109 @@ def main():
 
     # --- 2. NAVİGASYON ---
     
-    sayfalar = [
-        "🏠 ANA SAYFA", 
-        "📊 PİYASA ÖZETİ", 
-        "📈 TRENDLER", 
-        "📦 MADDELER", 
-        "📂 KATEGORİ DETAY", 
-        "📋 TAM LİSTE", 
-        "📝 RAPORLAMA", 
-        "📐 METODOLOJİ"
+    # --- 2. NAVİGASYON (GÜNCELLENMİŞ MODERN MENÜ) ---
+    
+    # Menü seçenekleri ve ikon tanımları (Bootstrap Icons kullanır)
+    secenekler = [
+        "Ana Sayfa", 
+        "Piyasa Özeti", 
+        "Trendler", 
+        "Maddeler", 
+        "Kategori Detay", 
+        "Tam Liste", 
+        "Raporlama", 
+        "Metodoloji"
+    ]
+    
+    ikonlar = [
+        "house-fill",      # Ana Sayfa
+        "activity",        # Piyasa Özeti
+        "graph-up-arrow",  # Trendler
+        "box-seam-fill",   # Maddeler
+        "tags-fill",       # Kategori Detay
+        "table",           # Tam Liste
+        "file-earmark-pdf-fill", # Raporlama
+        "info-circle-fill" # Metodoloji
     ]
 
-    # Session State Başlatma (Callback için)
-    if 'aktif_sayfa' not in st.session_state:
-        st.session_state.aktif_sayfa = sayfalar[0]
+    # Session State Kontrolü (Sayfa yenilendiğinde sekme kaybolmasın diye)
+    if 'secilen_sekme' not in st.session_state:
+        st.session_state.secilen_sekme = secenekler[0]
 
-    def menu_guncelle():
-        st.session_state.aktif_sayfa = st.session_state.nav_widget
-
-    try:
-        aktif_index = sayfalar.index(st.session_state.aktif_sayfa)
-    except ValueError:
-        aktif_index = 0
-        st.session_state.aktif_sayfa = sayfalar[0]
-
-    st.radio(
-        "", 
-        options=sayfalar, 
-        index=aktif_index,       
-        key="nav_widget",        
-        on_change=menu_guncelle, 
-        horizontal=True, 
-        label_visibility="collapsed"
+    # Menüyü Oluştur
+    secim = option_menu(
+        menu_title=None,  # Başlığı gizle
+        options=secenekler,
+        icons=ikonlar,
+        default_index=secenekler.index(st.session_state.secilen_sekme) if st.session_state.secilen_sekme in secenekler else 0,
+        orientation="horizontal",
+        styles={
+            "container": {
+                "padding": "0!important", 
+                "background-color": "rgba(255,255,255,0.02)", # Hafif şeffaf arka plan
+                "border": "1px solid rgba(255,255,255,0.05)",
+                "border-radius": "12px",
+                "margin-bottom": "25px"
+            },
+            "icon": {
+                "color": "#a1a1aa", # Pasif ikon rengi
+                "font-size": "14px"
+            }, 
+            "nav-link": {
+                "font-size": "13px",
+                "text-align": "center",
+                "margin": "0px",
+                "padding": "10px",
+                "color": "#d4d4d8", # Pasif yazı rengi
+                "--hover-color": "rgba(59, 130, 246, 0.1)", # Üzerine gelince hafif mavi
+                "font-family": "'Inter', sans-serif",
+                "font-weight": "500"
+            },
+            "nav-link-selected": {
+                "background-color": "rgba(59, 130, 246, 0.2)", # Seçili arka plan (Neon Mavi)
+                "color": "#3b82f6", # Seçili yazı rengi (Parlak Mavi)
+                "border": "1px solid rgba(59, 130, 246, 0.4)",
+                "border-radius": "8px",
+                "font-weight": "700",
+                "box-shadow": "0 0 15px rgba(59, 130, 246, 0.2)" # Hafif neon parlaması
+            },
+        }
     )
+
+    # Seçimi Session State'e kaydet (Senkronizasyon butonu basılırsa hatırlasın)
+    st.session_state.secilen_sekme = secim
 
     st.markdown("---")
 
-    # --- 3. İÇERİĞİ YÜKLE ---
-    secim = st.session_state.aktif_sayfa
+    # --- 3. İÇERİĞİ YÜKLE (GÜNCELLENMİŞ EŞLEŞTİRME) ---
+    # Not: Seçenek isimlerini yukarıda biraz kısalttık (Örn: "🏠 ANA SAYFA" -> "Ana Sayfa")
+    # Bu yüzden if bloklarını da yeni isimlere göre düzeltiyoruz:
 
     if ctx:
-        if secim == "🏠 ANA SAYFA":
+        if secim == "Ana Sayfa":
             sayfa_ana_sayfa(ctx)
-        elif secim == "📊 PİYASA ÖZETİ":
+        elif secim == "Piyasa Özeti":
             sayfa_piyasa_ozeti(ctx)
-        elif secim == "📈 TRENDLER":
+        elif secim == "Trendler":
             sayfa_trend_analizi(ctx)
-        elif secim == "📦 MADDELER":
+        elif secim == "Maddeler":
             sayfa_maddeler(ctx)
-        elif secim == "📂 KATEGORİ DETAY":
+        elif secim == "Kategori Detay":
             sayfa_kategori_detay(ctx)
-        elif secim == "📋 TAM LİSTE":
+        elif secim == "Tam Liste":
             sayfa_tam_liste(ctx)
-        elif secim == "📝 RAPORLAMA":
+        elif secim == "Raporlama":
             sayfa_raporlama(ctx)
-        elif secim == "📐 METODOLOJİ":
+        elif secim == "Metodoloji":
             sayfa_metodoloji()
     else:
-        if secim == "📐 METODOLOJİ":
+        if secim == "Metodoloji":
             sayfa_metodoloji()
         else:
             err_msg = "<br><div style='text-align:center; padding:20px; background:rgba(255,0,0,0.1); border-radius:10px; color:#fff;'>⚠️ Veri seti yüklenemedi. Lütfen internet bağlantınızı kontrol edin.</div>"
             st.markdown(err_msg, unsafe_allow_html=True)
 
-    st.markdown('<div style="text-align:center; color:#52525b; font-size:11px; margin-top:50px; opacity:0.6;">VALIDASYON MUDURLUGU © 2026 - GİZLİ ANALİZ BELGESİ</div>', unsafe_allow_html=True)
-
 if __name__ == "__main__":
     main()
+
 
