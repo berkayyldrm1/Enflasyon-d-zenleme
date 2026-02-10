@@ -238,6 +238,32 @@ def apply_theme():
         [data-testid="stRadio"] div[role="radiogroup"] > label > div:first-child {{
             display: none !important;
         }}
+        /* --- "YÜKLENİYOR" EFEKTİNİ VE ŞEFFAFLIĞI YOK ETME --- */
+        
+        /* Tüm sayfa kapsayıcılarının geçiş animasyonlarını ve opaklık değişimini kapat */
+        .stApp, [data-testid="stAppViewContainer"], .main, .block-container {
+            transition: none !important;
+            opacity: 1 !important;
+            filter: none !important; /* Bulanıklaşmayı engelle */
+            transform: none !important;
+        }
+
+        /* Sağ üstteki 'Running/Çalışıyor' animasyonunu ve Stop butonunu gizle */
+        [data-testid="stStatusWidget"] {
+            visibility: hidden !important;
+            display: none !important;
+        }
+        
+        /* Sayfa yüklenirken çıkan mavi ilerleme çubuğunu gizle (İsteğe bağlı) */
+        .stProgress > div > div > div > div {
+             background-color: transparent !important;
+        }
+
+        /* Elementler güncellenirken oluşan grileşme efektini kapat */
+        div[data-stale="true"] {
+            opacity: 1 !important;
+            transition: none !important;
+        }
     </style>
     """
     st.markdown(final_css, unsafe_allow_html=True)
@@ -1719,5 +1745,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
