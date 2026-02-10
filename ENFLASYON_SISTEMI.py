@@ -32,7 +32,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS MOTORU (YAZI RENKLERİ DÜZELTİLDİ) ---
+# --- CSS MOTORU (DÜZELTİLDİ: DROPDOWN VE RENKLER) ---
 def apply_theme():
     if 'plotly_template' not in st.session_state:
         st.session_state.plotly_template = "plotly_dark"
@@ -48,32 +48,52 @@ def apply_theme():
         [data-testid="stToolbar"] { display: none; }
         .main .block-container { padding-top: 1rem; }
 
-        /* --- GLOBAL YAZI RENGİ AYARI (HER ŞEY BEYAZ) --- */
-        /* Başlıklar, metinler, etiketler, divler, spanlar */
-        .stApp, h1, h2, h3, h4, h5, h6, p, div, span, label, li, a, .stMarkdown {
+        /* --- GLOBAL YAZI RENGİ (BEYAZ) --- */
+        /* Ama renkli olması gereken span ve class'ları ezmemesi için :not kullanıyoruz */
+        .stApp, p, h1, h2, h3, h4, h5, h6, label, .stMarkdown {
+            color: #ffffff;
+        }
+        
+        /* Tablo ve veri alanları */
+        .stDataFrame div, .stDataFrame span {
             color: #ffffff !important;
         }
 
-        /* --- SELECT-BOX İSTİSNASI --- */
-        /* 1. Kapalı kutunun içindeki seçili metin BEYAZ olsun (Çünkü zemin koyu) */
+        /* --- DROPDOWN (SELECT-BOX) DÜZELTMESİ --- */
+        
+        /* 1. Kapalı Kutu (Seçili Olan): Beyaz Yazı */
         div[data-baseweb="select"] > div {
             color: #ffffff !important;
-        }
-        /* İkonlar beyaz olsun */
-        div[data-baseweb="select"] svg {
-            fill: #ffffff !important;
+            background-color: rgba(255, 255, 255, 0.05); /* Hafif belli olsun */
         }
         
-        /* 2. AÇILAN LİSTE (DROPDOWN) İÇİNDEKİ YAZILAR SİYAH OLSUN */
-        /* Açılan kutunun arka planı genelde beyazdır, bu yüzden yazılar siyah olmalı */
+        /* 2. AÇILAN LİSTE (POPOVER): SİYAH YAZI */
+        /* Bu kısım açılır menünün içindeki seçeneklerdir */
         div[data-baseweb="popover"] div, 
-        div[data-baseweb="popover"] span,
-        div[data-baseweb="popover"] li {
-            color: #000000 !important; 
+        div[data-baseweb="popover"] li,
+        div[data-baseweb="popover"] span {
+            color: #000000 !important;  /* Yazılar Siyah */
         }
-        /* Liste elemanlarının üzerine gelince (hover) arka plan değişirse yazı rengi */
+        
+        /* Açılır menü arka planını beyaz/gri yapalım ki siyah yazı okunsun */
+        div[data-baseweb="menu"] {
+            background-color: #f0f2f6 !important;
+        }
+        
+        /* Hover (Üzerine gelince) durumu */
         div[data-baseweb="menu"] li:hover {
-            color: #000000 !important;
+            background-color: #e2e8f0 !important;
+        }
+
+        /* --- RENKLENDİRME İÇİN ÖZEL SINIFLAR --- */
+        /* Bu sınıflar global beyaz kuralını ezer */
+        .pg-red { color: #fca5a5 !important; }
+        .pg-green { color: #6ee7b7 !important; }
+        .pg-yellow { color: #fde047 !important; }
+        
+        /* Inline style ile renk verilmiş span'ları koru (Ticker vb. için) */
+        span[style*="color"] {
+            color: inherit !important;
         }
 
         /* --- ANİMASYON TANIMLARI --- */
@@ -98,7 +118,6 @@ def apply_theme():
             --card-bg: rgba(30, 33, 40, 0.7);
             --border: rgba(255, 255, 255, 0.08);
             --accent: #3b82f6;
-            --text-main: #ffffff; /* Ana metin rengi güncellendi */
         }
 
         .stApp {
@@ -111,12 +130,8 @@ def apply_theme():
             background-color: #090a0c;
             border-right: 1px solid var(--border);
         }
-        /* Sidebar içindeki yazıları da garantiye alalım */
-        section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span {
-            color: #ffffff !important;
-        }
 
-        /* --- YATAY MENÜ (MENÜ TUŞLARI BEYAZ) --- */
+        /* --- YATAY MENÜ --- */
         [data-testid="stRadio"] > div {
             display: flex;
             flex-direction: row;
@@ -139,7 +154,7 @@ def apply_theme():
             font-family: 'Inter', sans-serif;
             font-weight: 500;
             font-size: 14px;
-            color: #ffffff !important; /* Menü yazı rengi zorla beyaz */
+            color: #ffffff !important; /* Menü yazıları BEYAZ */
             min-width: 100px;
             text-align: center;
             display: flex;
@@ -147,9 +162,8 @@ def apply_theme():
             align-items: center;
         }
         
-        /* Menü içindeki p etiketlerini de beyaz yap */
         [data-testid="stRadio"] label p {
-            color: #ffffff !important;
+             color: #ffffff !important;
         }
 
         [data-testid="stRadio"] label:hover {
@@ -159,7 +173,6 @@ def apply_theme():
             box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
         }
 
-        /* Seçili Olan Tab */
         [data-testid="stRadio"] label[data-checked="true"] {
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             border-color: #60a5fa;
@@ -200,15 +213,13 @@ def apply_theme():
             border-color: rgba(59, 130, 246, 0.4);
         }
         
-        .kpi-card:hover::before {
-            opacity: 1;
-        }
+        .kpi-card:hover::before { opacity: 1; }
 
         .kpi-title {
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 1.2px;
-            color: #94a3b8 !important; /* Alt başlıklar hafif gri kalsın ki hiyerarşi olsun, ama okunur */
+            color: #94a3b8 !important; /* Alt başlıklar hafif gri kalsın */
             font-weight: 600;
             margin-bottom: 8px;
         }
@@ -245,7 +256,7 @@ def apply_theme():
             padding: 0 2rem;
             font-family: 'JetBrains Mono', monospace;
             font-size: 13px;
-            color: #ffffff !important;
+            /* Ticker içindeki renklerin çalışması için buraya color:white VERMİYORUZ */
         }
 
         /* --- ÜRÜN KARTLARI --- */
@@ -267,10 +278,12 @@ def apply_theme():
         
         .pg-name { font-size: 13px; font-weight: 500; color: #ffffff !important; margin-bottom: 8px; height: 32px; overflow: hidden; }
         .pg-price { font-family: 'JetBrains Mono'; font-size: 18px; font-weight: 700; color: #ffffff !important; }
+        
         .pg-badge { 
             font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; 
             margin-top: 8px; display: inline-block;
         }
+        /* Renklendirme sınıfları !important ile beyazı ezer */
         .pg-red { background: rgba(239, 68, 68, 0.2); color: #fca5a5 !important; border: 1px solid rgba(239, 68, 68, 0.3); }
         .pg-green { background: rgba(16, 185, 129, 0.2); color: #6ee7b7 !important; border: 1px solid rgba(16, 185, 129, 0.3); }
         .pg-yellow { background: rgba(234, 179, 8, 0.2); color: #fde047 !important; border: 1px solid rgba(234, 179, 8, 0.3); }
