@@ -771,10 +771,9 @@ def sayfa_ana_sayfa(ctx):
         </h1>
         <p style="font-size: 20px; color: #a1a1aa; max-width: 800px; margin: 0 auto; line-height: 1.6;">
             Türkiye'nin en kapsamlı yapay zeka destekli fiyat takip sistemi. <br>
-            <strong>{kategori_sayisi}</strong> farklı kategorideki <strong>{urun_sayisi}</strong> ürünü anlık izliyor.
+            <strong>{kategori_sayisi}</strong> farklı kategorideki <strong>{urun_sayisi}</strong> ürünü anlık izliyor, resmi verilerle kıyaslıyoruz.
         </p>
         <br><br>
-
         <div style="display:flex; justify-content:center; gap:30px; flex-wrap:wrap;">
             <div class="kpi-card" style="width:250px; text-align:center; padding:30px;">
                 <div style="font-size:42px; margin-bottom:10px;">📦</div>
@@ -793,26 +792,29 @@ def sayfa_ana_sayfa(ctx):
             </div>
         </div>
         <br><br>
-
         <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); 
              padding: 15px; border-radius: 99px; display: inline-block; animation: pulseGlow 3s infinite;">
             <span style="color: #60a5fa; font-weight: bold;">🚀 SİSTEM DURUMU:</span> 
-            <span style="color: #d1d5db;">Veri botları aktif. Saat: <strong id="live_clock" style="color:#fff; font-family:'JetBrains Mono';">--:--:--</strong></span>
+            <span style="color: #d1d5db;">Veri botları aktif. Fiyatlar <strong id="live_clock" style="color:#fff;">--:--:--</strong> itibarıyla güncel.</span>
+            <p style="color: #94a3b8; font-size: 12px; font-style: italic;">
+                Bu platformda sunulan veriler deneysel ve akademik çalışma amaçlıdır. 
+                Resmi enflasyon verilerinin yerine geçmez ve yatırım tavsiyesi niteliği taşımaz.
+            </p>
         </div>
 
         <script>
             function updateClock() {{
                 var now = new Date();
                 var timeString = now.toLocaleTimeString('tr-TR', {{hour: '2-digit', minute: '2-digit', second: '2-digit'}});
-                var element = document.getElementById('live_clock');
-                if (element) {{
-                    element.innerHTML = timeString;
+                var clockElement = document.getElementById('live_clock');
+                if (clockElement) {{
+                    clockElement.innerText = timeString;
                 }}
             }}
             setInterval(updateClock, 1000);
             updateClock();
         </script>
-
+        
     </div>""", unsafe_allow_html=True)
     
 def sayfa_piyasa_ozeti(ctx):
@@ -1105,6 +1107,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
