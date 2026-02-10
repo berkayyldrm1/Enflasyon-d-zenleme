@@ -795,12 +795,27 @@ def sayfa_ana_sayfa(ctx):
         <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); 
              padding: 15px; border-radius: 99px; display: inline-block; animation: pulseGlow 3s infinite;">
             <span style="color: #60a5fa; font-weight: bold;">🚀 SİSTEM DURUMU:</span> 
-            <span style="color: #d1d5db;">Veri botları aktif. Fiyatlar <strong>{datetime.now().strftime('%H:%M')}</strong> itibarıyla güncel.</span>
+            <span style="color: #d1d5db;">Veri botları aktif. Fiyatlar <strong id="live_clock" style="color:#fff;">--:--</strong> itibarıyla güncel.</span>
             <p style="color: #94a3b8; font-size: 12px; font-style: italic;">
                 Bu platformda sunulan veriler deneysel ve akademik çalışma amaçlıdır. 
                 Resmi enflasyon verilerinin yerine geçmez ve yatırım tavsiyesi niteliği taşımaz.
             </p>
         </div>
+
+        <script>
+            function updateClock() {{
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('tr-TR', {{hour: '2-digit', minute: '2-digit'}});
+                const clockElement = document.getElementById('live_clock');
+                if (clockElement) {{
+                    clockElement.innerText = timeString;
+                }}
+            }}
+            // İlk açılışta çalıştır
+            updateClock();
+            // Her 1 saniyede bir güncelle (1000ms)
+            setInterval(updateClock, 1000);
+        </script>
         
 
     </div>""", unsafe_allow_html=True)
@@ -1081,6 +1096,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
