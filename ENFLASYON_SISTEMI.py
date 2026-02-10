@@ -758,10 +758,12 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
 
 # --- SAYFA FONKSİYONLARI (ESTETİK GÜNCELLEMELER) ---
 def sayfa_ana_sayfa(ctx):
+    # Veri yoksa "..." göster, varsa değerleri al
     urun_sayisi = ctx["stats_urun"] if ctx else "..."
     kategori_sayisi = ctx["stats_kategori"] if ctx else "..."
     veri_noktasi = ctx["stats_veri_noktasi"] if ctx else "..."
     
+    # HTML İçeriği
     st.markdown(f"""
     <div style="text-align:center; padding: 40px 20px; animation: fadeInUp 0.8s ease;">
         <h1 style="font-size: 56px; font-weight: 800; margin-bottom: 20px; 
@@ -774,29 +776,32 @@ def sayfa_ana_sayfa(ctx):
             <strong>{kategori_sayisi}</strong> farklı kategorideki <strong>{urun_sayisi}</strong> ürünü anlık izliyor, resmi verilerle kıyaslıyoruz.
         </p>
         <br><br>
+        
         <div style="display:flex; justify-content:center; gap:30px; flex-wrap:wrap;">
-            <div class="kpi-card" style="width:250px; text-align:center; padding:30px;">
+            <div class="kpi-card" style="flex: 1; min-width: 200px; max-width: 250px; text-align:center; padding:30px;">
                 <div style="font-size:42px; margin-bottom:10px;">📦</div>
                 <div class="kpi-value">{urun_sayisi}</div>
                 <div style="color:#a1a1aa; font-size:14px; font-weight:600;">TAKİP EDİLEN ÜRÜN</div>
             </div>
-            <div class="kpi-card" style="width:250px; text-align:center; padding:30px;">
+            <div class="kpi-card" style="flex: 1; min-width: 200px; max-width: 250px; text-align:center; padding:30px;">
                 <div style="font-size:42px; margin-bottom:10px;">📊</div>
                 <div class="kpi-value">{kategori_sayisi}</div>
                 <div style="color:#a1a1aa; font-size:14px; font-weight:600;">ANA KATEGORİ</div>
             </div>
-            <div class="kpi-card" style="width:250px; text-align:center; padding:30px;">
+            <div class="kpi-card" style="flex: 1; min-width: 200px; max-width: 250px; text-align:center; padding:30px;">
                 <div style="font-size:42px; margin-bottom:10px;">⚡</div>
                 <div class="kpi-value">{veri_noktasi}+</div>
                 <div style="color:#a1a1aa; font-size:14px; font-weight:600;">İŞLENEN VERİ NOKTASI</div>
             </div>
         </div>
+        
         <br><br>
+        
         <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); 
              padding: 15px; border-radius: 99px; display: inline-block; animation: pulseGlow 3s infinite;">
             <span style="color: #60a5fa; font-weight: bold;">🚀 SİSTEM DURUMU:</span> 
             <span style="color: #d1d5db;">Veri botları aktif. Fiyatlar <strong id="live_clock" style="color:#fff;">--:--</strong> itibarıyla güncel.</span>
-            <p style="color: #94a3b8; font-size: 12px; font-style: italic;">
+            <p style="color: #94a3b8; font-size: 12px; font-style: italic; margin-top: 5px;">
                 Bu platformda sunulan veriler deneysel ve akademik çalışma amaçlıdır. 
                 Resmi enflasyon verilerinin yerine geçmez ve yatırım tavsiyesi niteliği taşımaz.
             </p>
@@ -813,11 +818,10 @@ def sayfa_ana_sayfa(ctx):
             }}
             // İlk açılışta çalıştır
             updateClock();
-            // Her 1 saniyede bir güncelle (1000ms)
+            // Her 1 saniyede bir güncelle
             setInterval(updateClock, 1000);
         </script>
         
-
     </div>""", unsafe_allow_html=True)
 
 def sayfa_piyasa_ozeti(ctx):
@@ -1025,12 +1029,14 @@ def sayfa_trend_analizi(ctx):
 
 # --- ANA MAIN ---
 def main():
+    # --- Üst Bilgi Barı (Sticky Header) ---
     st.markdown(f"""
-        <div style="display:flex; justify-content:space-between; padding:15px 25px; background:linear-gradient(90deg, #0f172a 0%, #1e1b4b 100%); border-radius:12px; margin-bottom:20px; margin-top:-30px; animation: fadeInUp 0.5s;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 25px; 
+            background:linear-gradient(90deg, #0f172a 0%, #1e1b4b 100%); border-radius:12px; margin-bottom:20px; margin-top:-30px; animation: fadeInUp 0.5s;">
             <div>
                 <div style="font-weight:800; font-size:24px; color:#fff;">
                     Piyasa Monitörü 
-                    <span style="background:rgba(16,185,129,0.15); color:#34d399; font-size:10px; padding:3px 8px; border-radius:4px; border:1px solid rgba(16,185,129,0.2);">SİMÜLASYON</span>
+                    <span style="background:rgba(16,185,129,0.15); color:#34d399; font-size:10px; padding:3px 8px; border-radius:4px; border:1px solid rgba(16,185,129,0.2); vertical-align: middle;">SİMÜLASYON</span>
                 </div>
                 <div style="font-size:12px; color:#94a3b8;">Yapay Zeka Destekli Enflasyon Analiz Platformu</div>
             </div>
@@ -1041,7 +1047,7 @@ def main():
         </div>
     """, unsafe_allow_html=True)
 
-    # --- MENÜ DÜZENLEMESİ: METODOLOJİ KALDIRILDI ---
+    # --- Menü Tanımları ---
     menu_items = {
         "🏠 Ana Sayfa": "Ana Sayfa", 
         "📊 Piyasa Özeti": "Piyasa Özeti",
@@ -1052,6 +1058,7 @@ def main():
         "📝 Raporlama": "Raporlama"
     }
     
+    # Menü Radyo Butonu
     secilen_etiket = st.radio(
         "Navigasyon", 
         options=list(menu_items.keys()), 
@@ -1061,35 +1068,46 @@ def main():
     )
     secim = menu_items[secilen_etiket]
 
-    col_btn1, col_btn2 = st.columns([4, 1])
-    with col_btn2:
+    # --- Senkronizasyon Butonu ---
+    col_empty, col_btn = st.columns([4, 1])
+    with col_btn:
         if st.button("SİSTEMİ SENKRONİZE ET ⚡", type="primary", use_container_width=True):
             progress_bar = st.progress(0, text="Veri akışı sağlanıyor...")
             res = html_isleyici(lambda p: progress_bar.progress(min(1.0, max(0.0, p)), text="Senkronizasyon sürüyor..."))
             progress_bar.progress(1.0, text="Tamamlandı!"); time.sleep(0.5); progress_bar.empty()
+            
             if "OK" in res:
-                st.cache_data.clear(); st.toast('Sistem Senkronize Edildi!', icon='🚀'); time.sleep(1); st.rerun()
-            elif "Veri bulunamadı" in res: st.warning("⚠️ Yeni veri akışı yok.")
-            else: st.error(res)
+                st.cache_data.clear()
+                st.toast('Sistem Senkronize Edildi!', icon='🚀')
+                time.sleep(1)
+                st.rerun()
+            elif "Veri bulunamadı" in res: 
+                st.warning("⚠️ Yeni veri akışı yok.")
+            else: 
+                st.error(res)
 
+    # --- Veri Yükleme ---
     with st.spinner("Veri tabanına bağlanılıyor..."):
         df_base, r_dates, col_name = verileri_getir_cache()
     
+    ctx = None
     if df_base is not None:
         ctx = ui_sidebar_ve_veri_hazirlama(df_base, r_dates, col_name)
-    else:
-        ctx = None
 
-    if ctx:
-        if secim == "Ana Sayfa": sayfa_ana_sayfa(ctx)
-        elif secim == "Piyasa Özeti": sayfa_piyasa_ozeti(ctx)
+    # --- Sayfa Yönlendirme (ROUTER) ---
+    # Not: Ana Sayfa, ctx yüklü olmasa bile açılabilmeli (boş dashboard göstermek için)
+    if secim == "Ana Sayfa":
+        sayfa_ana_sayfa(ctx)
+    elif ctx: # Diğer sayfalar veri (ctx) gerektirir
+        if secim == "Piyasa Özeti": sayfa_piyasa_ozeti(ctx)
         elif secim == "Trendler": sayfa_trend_analizi(ctx)
         elif secim == "Maddeler": sayfa_maddeler(ctx)
         elif secim == "Kategori Detay": sayfa_kategori_detay(ctx)
         elif secim == "Tam Liste": sayfa_tam_liste(ctx)
         elif secim == "Raporlama": sayfa_raporlama(ctx)
     else:
-        err_msg = "<br><div style='text-align:center; padding:20px; background:rgba(255,0,0,0.1); border-radius:10px; color:#fff;'>⚠️ Veri seti yüklenemedi. Lütfen internet bağlantınızı kontrol edin.</div>"
+        # Veri yüklenemediyse ve ana sayfa değilse uyarı ver
+        err_msg = "<br><div style='text-align:center; padding:20px; background:rgba(255,0,0,0.1); border-radius:10px; color:#fff;'>⚠️ Veri seti yüklenemedi veya internet bağlantısı yok. Lütfen 'Ana Sayfa'ya dönün veya sayfayı yenileyin.</div>"
         st.markdown(err_msg, unsafe_allow_html=True)
 
     st.markdown('<div style="text-align:center; color:#52525b; font-size:11px; margin-top:50px; opacity:0.6;">VALIDASYON MUDURLUGU © 2026 - GİZLİ ANALİZ BELGESİ</div>', unsafe_allow_html=True)
