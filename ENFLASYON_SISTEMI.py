@@ -728,6 +728,7 @@ def sayfa_ana_sayfa(ctx):
     kategori_sayisi = ctx["stats_kategori"] if ctx else "..."
     veri_noktasi = ctx["stats_veri_noktasi"] if ctx else "..."
     
+    # HTML kodunun düzgün çalışması için unsafe_allow_html=True parametresi önemlidir.
     st.markdown(f"""
     <div style="text-align:center; padding: 40px 20px; animation: fadeInUp 0.8s ease;">
         <h1 style="font-size: 56px; font-weight: 800; margin-bottom: 20px; 
@@ -997,4 +998,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
