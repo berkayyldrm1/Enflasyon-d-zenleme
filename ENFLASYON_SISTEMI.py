@@ -112,6 +112,7 @@ def apply_theme():
         }
 
         /* --- YATAY MENÜ --- */
+        /* Label başlığını gizle */
         [data-testid="stRadio"] > label {
             display: none !important;
         }
@@ -162,8 +163,6 @@ def apply_theme():
             font-weight: 700;
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
         }
-
-        [data-testid="stRadio"] div[role="radiogroup"] > :first-child { display: none; }
 
         /* --- KART TASARIMLARI --- */
         .kpi-card {
@@ -723,7 +722,7 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
     ctx = hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, ad_col, agirlik_col=None, baz_col=baz_col, aktif_agirlik_col=aktif_agirlik_col, son=son)
     return ctx
 
-# --- SAYFA FONKSİYONLARI ---
+# --- SAYFA FONKSİYONLARI (ESTETİK GÜNCELLEMELER) ---
 def sayfa_ana_sayfa(ctx):
     urun_sayisi = ctx["stats_urun"] if ctx else "..."
     kategori_sayisi = ctx["stats_kategori"] if ctx else "..."
@@ -942,6 +941,7 @@ def main():
         </div>
     """, unsafe_allow_html=True)
 
+    # --- MENÜ DÜZENLEMESİ: METODOLOJİ KALDIRILDI ---
     menu_items = {
         "🏠 Ana Sayfa": "Ana Sayfa", 
         "📊 Piyasa Özeti": "Piyasa Özeti",
