@@ -778,10 +778,65 @@ def style_chart(fig, is_pdf=False, is_sunburst=False):
 # --- 9. YENİ MODÜLER SİTE MİMARİSİ ---
 
 # 1. ADIM: VERİ VE HESAPLAMA MOTORU (Arayüzden Bağımsız)
-def veri_motoru_calistir():
+# --- 1. ADIM: AĞIR VERİ İŞLEME (ÖNBELLEKLİ) ---
+@st.cache_data(ttl=300, show_spinner=False) # 5 Dakika Cache
+def verileri_getir_cache():
     """
-    Veriyi çeker, işler ve Arayüz için gerekli istatistikleri hazırlar.
+    GitHub'dan veriyi çeker, temizler, merge ve pivot işlemlerini yapar.
+    Bu fonksiyon UI (st.sidebar vb.) İÇERMEZ. Sadece veri döner.
     """
+    # Veri Çekme
+    df_f = github_excel_oku(FIYAT_DOSYASI)
+    df_s = github_excel_oku(EXCEL_DOSYASI, SAYFA_ADI)
+    
+    if df_f.empty or df_s.empty:
+        return None, None, None
+
+    # Tarih İşlemleri
+    df_f['Tarih_DT'] = pd.to_datetime(df_f['Tarih'], errors='coerce')
+    df_f = df_f.dropna(subset=['Tarih_DT']).sort_values('Tarih_DT')
+    df_f['Tarih_Str'] = df_f['Tarih_DT'].dt.strftime('%Y-%m-%d')
+    
+    # Tarih listesini al (Sidebar için lazım olacak)
+    raw_dates = df_f['Tarih_Str'].unique().tolist()
+
+    # --- İŞLEME ---
+    df_s.columns = df_s.columns.str.strip()
+    kod_col = next((c for c in df_s.columns if c.lower() == 'kod'), 'Kod')
+    ad_col = next((c for c in df_s.columns if 'ad' in c.lower()), 'Madde_Adi')
+    
+    df_f['Kod'] = df_f['Kod'].astype(str).apply(kod_standartlastir)
+    df_s['Kod'] = df_s[kod_col].astype(str).apply(kod_standartlastir)
+    df_s = df_s.drop_duplicates(subset=['Kod'], keep='first')
+    
+    df_f['Fiyat'] = pd.to_numeric(df_f['Fiyat'], errors='coerce')
+    df_f = df_f[df_f['Fiyat'] > 0]
+    
+    # Pivot (En ağır işlem burasıdır)
+    pivot = df_f.pivot_table(index='Kod', columns='Tarih_Str', values='Fiyat', aggfunc='mean')
+    pivot = pivot.ffill(axis=1).bfill(axis=1).reset_index()
+    
+    if pivot.empty: return None, None, None
+
+    # Grup Eşleştirme
+    if 'Grup' not in df_s.columns:
+        grup_map = {"01": "Gıda", "02": "Alkol-Tütün", "03": "Giyim", "04": "Konut",
+                    "05": "Ev Eşyası", "06": "Sağlık", "07": "Ulaşım", "08": "Haberleşme", 
+                    "09": "Eğlence", "10": "Eğitim", "11": "Lokanta", "12": "Çeşitli"}
+        df_s['Grup'] = df_s['Kod'].str[:2].map(grup_map).fillna("Diğer")
+
+    df_analiz_base = pd.merge(df_s, pivot, on='Kod', how='left')
+    
+    return df_analiz_base, raw_dates, ad_col
+
+
+# --- 2. ADIM: ARAYÜZ VE HESAPLAMA (HIZLI) ---
+def context_hazirla(df_analiz_base, raw_dates, ad_col):
+    """
+    Cache'ten gelen veriyi alır, Sidebar seçimlerine göre filtreler ve hesaplar.
+    """
+    if df_analiz_base is None: return None
+
     # Sidebar Ayarları
     st.sidebar.markdown("### ⚙️ Veri Ayarları")
     
@@ -793,19 +848,6 @@ def veri_motoru_calistir():
              if lottie_json: st_lottie(lottie_json, height=120, key="nav_anim")
     except: pass
 
-    # Veri Çekme
-    df_f = github_excel_oku(FIYAT_DOSYASI)
-    df_s = github_excel_oku(EXCEL_DOSYASI, SAYFA_ADI)
-    
-    if df_f.empty or df_s.empty:
-        return None 
-
-    # Tarih İşlemleri
-    df_f['Tarih_DT'] = pd.to_datetime(df_f['Tarih'], errors='coerce')
-    df_f = df_f.dropna(subset=['Tarih_DT']).sort_values('Tarih_DT')
-    df_f['Tarih_Str'] = df_f['Tarih_DT'].dt.strftime('%Y-%m-%d')
-    raw_dates = df_f['Tarih_Str'].unique().tolist()
-    
     # Başlangıç Tarihi Limiti
     BASLANGIC_LIMITI = "2026-02-04"
     tum_tarihler = sorted([d for d in raw_dates if d >= BASLANGIC_LIMITI], reverse=True)
@@ -816,10 +858,9 @@ def veri_motoru_calistir():
 
     secilen_tarih = st.sidebar.selectbox("Rapor Tarihi:", options=tum_tarihler, index=0)
     
-    # --- YENİ EKLENEN KISIM: TRADINGVIEW SIDEBAR ---
+    # --- TRADINGVIEW SIDEBAR (Aynen korundu) ---
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🌍 Piyasalar")
-    
     symbols = [
         {"s": "FX_IDC:USDTRY", "d": "Dolar / TL"},
         {"s": "FX_IDC:EURTRY", "d": "Euro / TL"},
@@ -827,59 +868,24 @@ def veri_motoru_calistir():
         {"s": "TVC:UKOIL", "d": "Brent Petrol"},
         {"s": "BINANCE:BTCUSDT", "d": "Bitcoin ($)"}
     ]
-    
-    # Dikey yığınlama
     for sym in symbols:
         widget_code = f"""
         <div class="tradingview-widget-container" style="border-radius:12px; overflow:hidden; margin-bottom:10px;">
           <div class="tradingview-widget-container__widget"></div>
           <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-          {{
-          "symbol": "{sym['s']}",
-          "width": "100%",
-          "height": 100,
-          "locale": "tr",
-          "dateRange": "1D",
-          "colorTheme": "dark",
-          "isTransparent": true,
-          "autosize": true,
-          "largeChartUrl": ""
-        }}
+          {{ "symbol": "{sym['s']}", "width": "100%", "height": 100, "locale": "tr", "dateRange": "1D", "colorTheme": "dark", "isTransparent": true, "autosize": true, "largeChartUrl": "" }}
           </script>
         </div>
         """
         with st.sidebar:
             components.html(widget_code, height=110)
     # ---------------------------------------------
-    
-    # --- İŞLEME ---
-    df_s.columns = df_s.columns.str.strip()
-    kod_col = next((c for c in df_s.columns if c.lower() == 'kod'), 'Kod')
-    ad_col = next((c for c in df_s.columns if 'ad' in c.lower()), 'Madde_Adi')
-    col_w25, col_w26 = 'Agirlik_2025', 'Agirlik_2026'
-    
-    df_f['Kod'] = df_f['Kod'].astype(str).apply(kod_standartlastir)
-    df_s['Kod'] = df_s[kod_col].astype(str).apply(kod_standartlastir)
-    df_s = df_s.drop_duplicates(subset=['Kod'], keep='first')
-    
-    df_f['Fiyat'] = pd.to_numeric(df_f['Fiyat'], errors='coerce')
-    df_f = df_f[df_f['Fiyat'] > 0]
-    
-    # Pivot
-    pivot = df_f.pivot_table(index='Kod', columns='Tarih_Str', values='Fiyat', aggfunc='mean')
-    pivot = pivot.ffill(axis=1).bfill(axis=1).reset_index()
-    
-    if pivot.empty: return None
 
-    # Grup Eşleştirme
-    if 'Grup' not in df_s.columns:
-        grup_map = {"01": "Gıda", "02": "Alkol-Tütün", "03": "Giyim", "04": "Konut",
-                    "05": "Ev Eşyası", "06": "Sağlık", "07": "Ulaşım", "08": "Haberleşme", 
-                    "09": "Eğlence", "10": "Eğitim", "11": "Lokanta", "12": "Çeşitli"}
-        df_s['Grup'] = df_s['Kod'].str[:2].map(grup_map).fillna("Diğer")
-
-    df_analiz = pd.merge(df_s, pivot, on='Kod', how='left')
-    tum_gunler_sirali = sorted([c for c in pivot.columns if c != 'Kod' and c >= BASLANGIC_LIMITI])
+    # Veriyi kopyala ki orijinali bozulmasın
+    df_analiz = df_analiz_base.copy()
+    
+    # Sütunları belirle
+    tum_gunler_sirali = sorted([c for c in df_analiz.columns if re.match(r'\d{4}-\d{2}-\d{2}', str(c)) and c >= BASLANGIC_LIMITI])
     
     # Tarih Filtresi
     if secilen_tarih in tum_gunler_sirali:
@@ -890,26 +896,29 @@ def veri_motoru_calistir():
 
     if not gunler: return None
 
-    # Sayısallaştırma
+    # Sayısallaştırma (Sadece ilgili günleri)
     for col in gunler: df_analiz[col] = pd.to_numeric(df_analiz[col], errors='coerce')
     son = gunler[-1]
     dt_son = datetime.strptime(son, '%Y-%m-%d')
     
     # Baz ve Endeks Mantığı
+    col_w25, col_w26 = 'Agirlik_2025', 'Agirlik_2026'
     ZINCIR_TARIHI = datetime(2026, 2, 4)
+    
     if dt_son >= ZINCIR_TARIHI:
         aktif_agirlik_col = col_w26
         gunler_2026 = [c for c in tum_gunler_sirali if c >= "2026-01-01"]
         baz_col = gunler_2026[0] if gunler_2026 else gunler[0]
-        if baz_col in df_analiz.columns: df_analiz[baz_col] = df_analiz[baz_col].fillna(df_analiz[son])
     else:
         aktif_agirlik_col = col_w25
         baz_col = gunler[0]
-        if baz_col in df_analiz.columns: df_analiz[baz_col] = df_analiz[baz_col].fillna(df_analiz[son])
         
+    if baz_col in df_analiz.columns: df_analiz[baz_col] = df_analiz[baz_col].fillna(df_analiz[son])
+    
     df_analiz[aktif_agirlik_col] = pd.to_numeric(df_analiz.get(aktif_agirlik_col, 0), errors='coerce').fillna(0)
     gecerli_veri = df_analiz[df_analiz[aktif_agirlik_col] > 0].copy()
     
+    # Geo Mean ve Enflasyon Hesapları
     def geo_mean(row):
         vals = [x for x in row if isinstance(x, (int, float)) and x > 0]
         return np.exp(np.mean(np.log(vals))) if vals else np.nan
@@ -921,7 +930,6 @@ def veri_motoru_calistir():
     gecerli_veri['Aylik_Ortalama'] = gecerli_veri[bu_ay_cols].apply(geo_mean, axis=1)
     gecerli_veri = gecerli_veri.dropna(subset=['Aylik_Ortalama', baz_col])
 
-    # Enflasyon Hesaplamaları
     enf_genel = 0.0; enf_gida = 0.0
     if not gecerli_veri.empty:
         w = gecerli_veri[aktif_agirlik_col]
@@ -955,24 +963,18 @@ def veri_motoru_calistir():
         if not gecerli_t.empty and gecerli_t[aktif_agirlik_col].sum() > 0:
              month_end_forecast = ((gecerli_t[aktif_agirlik_col] * (gecerli_t['Fixed_Ort']/gecerli_t[baz_col])).sum() / gecerli_t[aktif_agirlik_col].sum() * 100) - 100
 
-    # Resmi Veri (TÜİK) - AYLIK DEĞİŞİM HESABI
+    # Resmi Veri (TÜİK)
     resmi_aylik_degisim = 0.0
     try:
         df_resmi, _ = get_official_inflation()
         if df_resmi is not None and not df_resmi.empty:
              df_resmi = df_resmi.sort_values('Tarih')
-             # Son iki veriyi al
              if len(df_resmi) >= 2:
                  son_endeks = df_resmi.iloc[-1]['Resmi_TUFE']
                  onceki_endeks = df_resmi.iloc[-2]['Resmi_TUFE']
                  resmi_aylik_degisim = ((son_endeks / onceki_endeks) - 1) * 100
     except:
         resmi_aylik_degisim = 0.0
-
-    # İSTATİSTİKLER (Ana Sayfa İçin)
-    toplam_urun_sayisi = len(df_analiz)
-    toplam_kategori_sayisi = df_analiz['Grup'].nunique()
-    veri_noktasi_tahmini = toplam_urun_sayisi * len(tum_gunler_sirali)
 
     return {
         "df_analiz": df_analiz,
@@ -987,10 +989,9 @@ def veri_motoru_calistir():
         "agirlik_col": aktif_agirlik_col,
         "baz_col": baz_col,
         "gun_farki": gun_farki,
-        # Ana sayfa istatistikleri
-        "stats_urun": toplam_urun_sayisi,
-        "stats_kategori": toplam_kategori_sayisi,
-        "stats_veri_noktasi": veri_noktasi_tahmini
+        "stats_urun": len(df_analiz),
+        "stats_kategori": df_analiz['Grup'].nunique(),
+        "stats_veri_noktasi": len(df_analiz) * len(tum_gunler_sirali)
     }
 
 # --- 2. ADIM: SAYFA GÖRÜNÜMLERİ ---
@@ -1602,8 +1603,14 @@ def main():
                 st.error(res)
 
     # 1. Veriyi Yükle
-    with st.spinner("Piyasa verileri analiz ediliyor..."):
-        ctx = veri_motoru_calistir()
+    with st.spinner("Veri tabanına bağlanılıyor..."):
+        df_base, r_dates, col_name = verileri_getir_cache()
+    
+    # 2. Sonra Sidebar ve filtreleri çalıştır (Anlık çalışır)
+    if df_base is not None:
+        ctx = context_hazirla(df_base, r_dates, col_name)
+    else:
+        ctx = None
 
     # --- 2. NAVİGASYON ---
     
@@ -1674,3 +1681,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
