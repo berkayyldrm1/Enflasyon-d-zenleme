@@ -728,49 +728,59 @@ def sayfa_ana_sayfa(ctx):
     kategori_sayisi = ctx["stats_kategori"] if ctx else "..."
     veri_noktasi = ctx["stats_veri_noktasi"] if ctx else "..."
     
-    st.markdown(f"""
+    # HTML bloğunu oluşturuyoruz
+    html_hero = f"""
     <div style="text-align:center; padding: 40px 20px; animation: fadeInUp 0.8s ease;">
         <h1 style="font-size: 56px; font-weight: 800; margin-bottom: 20px; 
             background: -webkit-linear-gradient(45deg, #3b82f6, #8b5cf6); 
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
             Piyasa Monitörü
         </h1>
-        <p style="font-size: 20px; color: #a1a1aa; max-width: 800px; margin: 0 auto; line-height: 1.6;">
+        
+        <p style="font-size: 20px; color: #a1a1aa !important; max-width: 800px; margin: 0 auto; line-height: 1.6;">
             Türkiye'nin en kapsamlı yapay zeka destekli fiyat takip sistemi. <br>
             <strong>{kategori_sayisi}</strong> farklı kategorideki <strong>{urun_sayisi}</strong> ürünü anlık izliyor, resmi verilerle kıyaslıyoruz.
         </p>
+        
         <br><br>
+
         <div style="display:flex; justify-content:center; gap:30px; flex-wrap:wrap;">
             <div class="kpi-card" style="width:250px; text-align:center; padding:30px;">
                 <div style="font-size:42px; margin-bottom:10px;">📦</div>
                 <div class="kpi-value">{urun_sayisi}</div>
-                <div style="color:#a1a1aa; font-size:14px; font-weight:600;">TAKİP EDİLEN ÜRÜN</div>
+                <div style="color:#a1a1aa !important; font-size:14px; font-weight:600;">TAKİP EDİLEN ÜRÜN</div>
             </div>
             <div class="kpi-card" style="width:250px; text-align:center; padding:30px;">
                 <div style="font-size:42px; margin-bottom:10px;">📊</div>
                 <div class="kpi-value">{kategori_sayisi}</div>
-                <div style="color:#a1a1aa; font-size:14px; font-weight:600;">ANA KATEGORİ</div>
+                <div style="color:#a1a1aa !important; font-size:14px; font-weight:600;">ANA KATEGORİ</div>
             </div>
             <div class="kpi-card" style="width:250px; text-align:center; padding:30px;">
                 <div style="font-size:42px; margin-bottom:10px;">⚡</div>
                 <div class="kpi-value">{veri_noktasi}+</div>
-                <div style="color:#a1a1aa; font-size:14px; font-weight:600;">İŞLENEN VERİ NOKTASI</div>
+                <div style="color:#a1a1aa !important; font-size:14px; font-weight:600;">İŞLENEN VERİ NOKTASI</div>
             </div>
         </div>
+
         <br><br>
+
         <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); 
              padding: 15px; border-radius: 99px; display: inline-block; animation: pulseGlow 3s infinite;">
-            <span style="color: #60a5fa; font-weight: bold;">🚀 SİSTEM DURUMU:</span> 
-            <span style="color: #d1d5db;">Veri botları aktif. Fiyatlar <strong>{datetime.now().strftime('%H:%M')}</strong> itibarıyla güncel.</span>
+            <span style="color: #60a5fa !important; font-weight: bold;">🚀 SİSTEM DURUMU:</span> 
+            <span style="color: #d1d5db !important;">Veri botları aktif. Fiyatlar <strong>{datetime.now().strftime('%H:%M')}</strong> itibarıyla güncel.</span>
         </div>
         
-        <div style="margin-top: 40px; padding: 15px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
-            <p style="color: #94a3b8; font-size: 12px; font-style: italic;">
+        <div style="margin-top: 60px; padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
+            <p style="color: #94a3b8 !important; font-size: 12px; font-style: italic; max-width: 700px; margin: 0 auto;">
                 Bu platformda sunulan veriler deneysel ve akademik çalışma amaçlıdır. 
                 Resmi enflasyon verilerinin yerine geçmez ve yatırım tavsiyesi niteliği taşımaz.
             </p>
         </div>
-    </div>""", unsafe_allow_html=True)
+    </div>
+    """
+    
+    # HTML'i ekrana bas
+    st.markdown(html_hero, unsafe_allow_html=True)
 
 def sayfa_piyasa_ozeti(ctx):
     c1, c2, c3, c4 = st.columns(4)
@@ -996,3 +1006,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
