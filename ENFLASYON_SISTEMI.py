@@ -760,14 +760,12 @@ def sayfa_piyasa_ozeti(ctx):
     for _, r in inc.iterrows():
         val = r['Gunluk_Degisim']
         if val > 0:
-            # Inline CSS ile kırmızı renk zorlanıyor ve font kalınlaştırılıyor
             items.append(f"<span style='color:#ef4444; font-weight:800;'>▲ {r[ctx['ad_col']]} %{val*100:.1f}</span>")
             
     # DÜŞENLER İÇİN DÖNGÜ (YEŞİL RENK)
     for _, r in dec.iterrows():
         val = r['Gunluk_Degisim']
         if val < 0:
-            # Inline CSS ile yeşil renk zorlanıyor ve font kalınlaştırılıyor
             items.append(f"<span style='color:#22c55e; font-weight:800;'>▼ {r[ctx['ad_col']]} %{abs(val)*100:.1f}</span>")
             
     # Listeyi birleştir
@@ -786,27 +784,22 @@ def sayfa_piyasa_ozeti(ctx):
     """
     st.markdown(ticker_html, unsafe_allow_html=True)
     
-    # --- 4. GRAFİK VE LİSTE (GÜNCELLENDİ: HISTOGRAM -> GÜNLÜK ENFLASYON GRAFİĞİ) ---
-    # ... (kodun geri kalanı aynı) ...
-
-    # --- 4. GRAFİK (TREND GRAFİĞİ DÜZELTİLMİŞ HALİ) ---
-    # ... (kodun geri kalanı aynı) ...
-
-    # --- 4. GRAFİK (DÜZELTİLMİŞ & EŞİTLENMİŞ ALGORİTMA) ---
-    # ... (kodun üst kısımları aynı) ...
-
-    # --- 4. GRAFİK (DÜZELTİLMİŞ - KPI İLE BİREBİR EŞİTLENMİŞ) ---
-    # ... (önceki kodlar aynı) ...
-
-    # --- 4. GRAFİK (KPI FORMÜLÜNÜN BİREBİR AYNISI - GARANTİLİ YÖNTEM) ---
+    # --- 4. GRAFİK (KPI FORMÜLÜNÜN BİREBİR AYNISI - HATA DÜZELTİLDİ) ---
     col_g1, col_g2 = st.columns([2, 1])
     with col_g1:
         # Verileri al
         df_ana = ctx["df_analiz"].copy()
-        baz_col = ctx["baz_col"]        # Baz alınan ay (Örn: Ocak sonu)
-        agirlik_col = ctx["agirlik_col"] # Ağırlıklar (2025 veya 2026)
-        gunler = ctx["gunler"]          # Tüm tarih sütunları
-        son_gun = ctx["son"]            # Seçilen rapor tarihi
+        
+        # --- HATA DÜZELTME: Mükerrer sütunları temizle ---
+        # Bu satır, aynı isme sahip birden fazla sütun varsa ilkini tutar, diğerlerini atar.
+        # Böylece pd.to_numeric hata vermez.
+        df_ana = df_ana.loc[:, ~df_ana.columns.duplicated()]
+        # -------------------------------------------------
+
+        baz_col = ctx["baz_col"]        
+        agirlik_col = ctx["agirlik_col"] 
+        gunler = ctx["gunler"]          
+        son_gun = ctx["son"]            
         
         # --- ADIM 1: KPI KARTINDAKİ FİLTRELERİN AYNISINI UYGULA ---
         # Ağırlığı olmayanları temizle
@@ -819,42 +812,36 @@ def sayfa_piyasa_ozeti(ctx):
 
         trend_verisi = []
         
-        # Raporun ait olduğu ayı bul (Örn: "2026-02")
-        # KPI kartı sadece "BU AYIN" enflasyonunu gösterdiği için,
-        # grafik de bu ayın başından itibaren nasıl 2.67'ye geldiğimizi göstermeli.
+        # Raporun ait olduğu ayı bul
         hedef_ay_prefix = son_gun[:7] 
         bu_ayin_gunleri = [g for g in gunler if g.startswith(hedef_ay_prefix) and g <= son_gun]
 
         # --- ADIM 2: HER GÜN İÇİN KPI FORMÜLÜNÜ TEKRAR HESAPLA ---
         for gun in bu_ayin_gunleri:
             # O güne kadar olan kolonları al (Kümülatif Ortalama için)
-            # KPI Formülündeki 'bu_ay_cols' mantığı: Ayın 1'inden şu ana kadarki verilerin ortalaması
             gecerli_kolonlar = [g for g in bu_ayin_gunleri if g <= gun]
             
             # Sadece ilgili kolonları ve baz kolonunu içeren temiz bir dataframe al
-            # Hesaplama hızlansın diye sadece gerekli kısmı kesiyoruz
-            cols_to_use = gecerli_kolonlar + [baz_col, agirlik_col]
+            # Not:cols_to_use içindeki duplicate'leri de set ile temizliyoruz
+            cols_to_use = list(set(gecerli_kolonlar + [baz_col, agirlik_col]))
             temp_df = df_ana[cols_to_use].copy()
             
-            # Kolonları sayıya çevir (Garanti olsun)
+            # Kolonları sayıya çevir
             for c in gecerli_kolonlar:
-                temp_df[c] = pd.to_numeric(temp_df[c], errors='coerce')
+                if c in temp_df.columns:
+                    temp_df[c] = pd.to_numeric(temp_df[c], errors='coerce')
             
             # --- FORMÜL: GEOMETRİK ORTALAMA (KPI İLE AYNI) ---
-            # Ayın 1'inden o güne kadar olan fiyatların ortalaması
-            # 0 veya negatif değerler logaritmayı bozar, onları NaN yapıyoruz
             data_values = temp_df[gecerli_kolonlar].where(temp_df[gecerli_kolonlar] > 0, np.nan)
             
-            # Satır bazlı Geometrik Ortalama: exp(mean(log(x)))
-            # skipna=True sayesinde eksik günler ortalamayı bozmaz, mevcutlarla hesaplar
+            # Satır bazlı Geometrik Ortalama
             temp_df['Kümülatif_Ort'] = np.exp(np.log(data_values).mean(axis=1))
             
-            # Ortalaması oluşmayanları at (KPI mantığı)
+            # Ortalaması oluşmayanları at
             temp_df = temp_df.dropna(subset=['Kümülatif_Ort'])
             
             if not temp_df.empty:
                 # --- NİHAİ ENFLASYON HESABI (LASPEYRES) ---
-                # Endeks = Toplam(Ağırlık * (OrtalamaFiyat / BazFiyat)) / ToplamAğırlık
                 w = temp_df[agirlik_col]
                 p_rel = temp_df['Kümülatif_Ort'] / temp_df[baz_col]
                 
@@ -869,6 +856,10 @@ def sayfa_piyasa_ozeti(ctx):
                     })
         
         df_trend = pd.DataFrame(trend_verisi)
+        
+        # Sıralama garantisi (Grafik düzgün çıksın diye)
+        if not df_trend.empty:
+            df_trend = df_trend.sort_values('Tarih')
 
         if not df_trend.empty:
             son_deger = df_trend.iloc[-1]['Deger']
@@ -889,14 +880,6 @@ def sayfa_piyasa_ozeti(ctx):
             st.plotly_chart(style_chart(fig_trend), use_container_width=True)
         else:
             st.warning("Grafik verisi hesaplanamadı.")
-
-    # ... (kodun alt kısımları aynı) ...
-            
-    # ... (kodun alt kısımları aynı) ...
-
-    # ... (kodun geri kalanı aynı) ...
-
-    # ... (kodun geri kalanı aynı: with col_g2 kısmı vs.) ...
 
     with col_g2:
         # Sağ taraftaki özet kutusu
@@ -1127,6 +1110,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
