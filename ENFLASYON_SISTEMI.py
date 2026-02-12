@@ -787,10 +787,12 @@ def sayfa_piyasa_ozeti(ctx):
     st.markdown(ticker_html, unsafe_allow_html=True)
     
     # --- 4. GRAFİK VE LİSTE (GÜNCELLENDİ: HISTOGRAM -> GÜNLÜK ENFLASYON GRAFİĞİ) ---
+    # ... (kodun geri kalanı aynı) ...
+
+    # --- 4. GRAFİK (TREND GRAFİĞİ DÜZELTİLMİŞ HALİ) ---
     col_g1, col_g2 = st.columns([2, 1])
     with col_g1:
-        # --- TREND GRAFİĞİ HESAPLAMA ---
-        # Burada her gün için "O GÜNÜN" genel enflasyon oranı hesaplanıyor (Kümülatif değil, anlık durum)
+        # Gerekli verileri al
         df_ana = ctx["df_analiz"]
         baz_col = ctx["baz_col"]
         agirlik_col = ctx["agirlik_col"]
@@ -799,38 +801,45 @@ def sayfa_piyasa_ozeti(ctx):
         trend_verisi = []
         
         for gun in gunler:
-            # Sadece o gün ve baz gün verisi tam olanları al
+            # 1. O gün verisi, baz verisi ve ağırlığı olan satırları al
             temp = df_ana.dropna(subset=[gun, baz_col, agirlik_col])
+            # 2. Ağırlığı 0 olanları ele
+            temp = temp[temp[agirlik_col] > 0]
             
-            if not temp.empty and temp[agirlik_col].sum() > 0:
-                # Formül: (Toplam(Ağırlık * (GüncelFiyat / BazFiyat)) / ToplamAğırlık) - 1
-                w = temp[agirlik_col]
-                p_cur = temp[gun]
-                p_base = temp[baz_col]
+            if not temp.empty:
+                # FORMÜL: (Ağırlık * (O Günün Fiyatı / Baz Fiyat)) Toplamı / Toplam Ağırlık
+                # Bu hesaplama, sepetin o günkü değerinin baz tarihe göre ne kadar arttığını verir.
                 
-                rel_price = p_cur / p_base
-                weighted_sum = (w * rel_price).sum()
-                total_weight = w.sum()
+                toplam_agirlik = temp[agirlik_col].sum()
+                # Ağırlıklı endeks hesapla
+                agirlikli_toplam = (temp[agirlik_col] * (temp[gun] / temp[baz_col])).sum()
                 
-                inflation_val = (weighted_sum / total_weight * 100) - 100
+                # Yüzde değişimi bul (Endeks - 1) * 100
+                enflasyon_degeri = (agirlikli_toplam / toplam_agirlik * 100) - 100
                 
-                trend_verisi.append({"Tarih": gun, "Deger": inflation_val})
+                trend_verisi.append({"Tarih": gun, "Deger": enflasyon_degeri})
         
         df_trend = pd.DataFrame(trend_verisi)
 
         if not df_trend.empty:
-            # --- Y-EKSENİ AYARLAMA ---
-            # İstenen: -5 ile +5 arası sabit kalsın, ama veri taşarsa grafik bozulmasın (genişlesin)
+            # Y Eksenini sabitle (-5 ile +5 arası), ama veri taşarsa grafik bozulmasın
             y_max = max(5, df_trend['Deger'].max() + 0.5)
             y_min = min(-5, df_trend['Deger'].min() - 0.5)
 
-            fig_trend = px.line(df_trend, x='Tarih', y='Deger', title="GENEL ENFLASYON SEYRİ (%)", markers=True)
-            fig_trend.update_traces(line_color='#3b82f6', line_width=4, marker_size=8)
-            # Eksen aralığını ayarlama
+            fig_trend = px.line(df_trend, x='Tarih', y='Deger', title="GENEL ENFLASYON TRENDİ (Kümülatif %)", markers=True)
+            
+            # Çizgi rengi ve kalınlığı
+            fig_trend.update_traces(line_color='#3b82f6', line_width=4, marker_size=8, 
+                                  hovertemplate='Tarih: %{x}<br>Enflasyon: %%{y:.2f}<extra></extra>')
+            
+            # Eksen ayarları
             fig_trend.update_layout(yaxis_range=[y_min, y_max])
+            
             st.plotly_chart(style_chart(fig_trend), use_container_width=True)
         else:
             st.warning("Trend grafiği oluşturulacak veri yok.")
+
+    # ... (kodun geri kalanı aynı: with col_g2 kısmı vs.) ...
 
     with col_g2:
         # Sağ taraftaki özet kutusu
@@ -1061,3 +1070,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
