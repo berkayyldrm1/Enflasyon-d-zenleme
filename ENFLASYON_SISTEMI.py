@@ -216,7 +216,7 @@ def apply_theme():
         .ticker-move {
             display: inline-block;
             white-space: nowrap;
-            animation: marquee 45s linear infinite; /* Hız ayarlandı */
+            animation: marquee 45s linear infinite;
         }
         
         .ticker-item {
@@ -814,6 +814,10 @@ def sayfa_piyasa_ozeti(ctx):
 
 def sayfa_kategori_detay(ctx):
     df = ctx["df_analiz"]
+    # --- YENİ EKLENEN KISIM: NaN ve Geçersiz Verileri Filtrele ---
+    df = df.dropna(subset=[ctx['son'], ctx['ad_col']])
+    # -------------------------------------------------------------
+    
     st.markdown("### 🔍 Kategori Bazlı Fiyat Takibi")
     col_sel, col_src = st.columns([1, 2])
     kategoriler = ["Tümü"] + sorted(df['Grup'].unique().tolist())
@@ -851,6 +855,10 @@ def sayfa_kategori_detay(ctx):
 def sayfa_tam_liste(ctx):
     st.markdown("### 📋 Detaylı Veri Seti")
     df = ctx["df_analiz"]
+    # --- YENİ EKLENEN KISIM: NaN ve Geçersiz Verileri Filtrele ---
+    df = df.dropna(subset=[ctx['son'], ctx['ad_col']])
+    # -------------------------------------------------------------
+    
     def fix_sparkline(row):
         vals = row.tolist(); 
         if vals and min(vals) == max(vals): vals[-1] += 0.00001
@@ -944,7 +952,7 @@ def main():
     
     # --- AYAR: SENKRONİZASYON BUTONU ---
     # Bu ayarı False yaparak butonu tamamen gizleyebilirsiniz.
-    SENKRONIZASYON_AKTIF = False 
+    SENKRONIZASYON_AKTIF = False
 
     # --- Üst Bilgi Barı (Sticky Header) ---
     st.markdown(f"""
@@ -1028,4 +1036,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
