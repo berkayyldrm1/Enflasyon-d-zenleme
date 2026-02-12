@@ -53,11 +53,6 @@ def apply_theme():
             color: #ffffff;
         }
 
-        /* --- ÖNEMLİ: RENK KORUMA --- */
-        /* Ticker ve renkli span'ların beyaz olmasını engeller */
-        span[style*="color"] { color: inherit !important; }
-        .ticker-move span { color: inherit !important; }
-
         /* --- DROPDOWN (SELECT-BOX) DÜZELTMESİ --- */
         div[data-baseweb="select"] > div {
             color: #ffffff !important;
@@ -86,12 +81,6 @@ def apply_theme():
             to { opacity: 1; transform: translate3d(0, 0, 0); }
         }
         
-        @keyframes pulseGlow {
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-        }
-
         @keyframes marquee {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); }
@@ -115,7 +104,7 @@ def apply_theme():
             border-right: 1px solid var(--border);
         }
 
-        /* --- YATAY MENÜ (GÜNCELLENDİ: TEK SATIR & SİMETRİK) --- */
+        /* --- YATAY MENÜ --- */
         [data-testid="stRadio"] > label {
             display: none !important;
         }
@@ -123,36 +112,35 @@ def apply_theme():
         [data-testid="stRadio"] > div {
             display: flex;
             flex-direction: row;
-            flex-wrap: nowrap !important; /* ASLA ALT SATIRA GEÇMEZ */
-            overflow-x: auto; /* Sığmazsa kaydırılabilir olur */
-            justify-content: center; /* Ortalar */
+            flex-wrap: nowrap !important;
+            overflow-x: auto;
+            justify-content: center;
             align-items: center;
-            gap: 8px; /* Boşlukları düzenledik */
+            gap: 8px;
             background: rgba(30, 33, 40, 0.4);
             padding: 8px;
             border-radius: 16px;
             border: 1px solid var(--border);
             margin-top: -20px;
-            white-space: nowrap; /* Metin kaymasını engeller */
+            white-space: nowrap;
         }
         
-        /* Menü kaydırma çubuğunu güzelleştir (sığmayan ekranlar için) */
         [data-testid="stRadio"] > div::-webkit-scrollbar { height: 4px; }
         [data-testid="stRadio"] > div::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
 
         [data-testid="stRadio"] label {
             background-color: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 8px 12px; /* İç boşluğu optimize ettik */
+            padding: 8px 12px;
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.2s ease;
             font-family: 'Inter', sans-serif;
             font-weight: 500;
-            font-size: 13px; /* Yazı boyutu ideal */
+            font-size: 13px;
             color: #ffffff !important;
-            min-width: auto; /* Sabit genişliği kaldırdık, içeriğe göre sığsın */
-            flex: 0 0 auto; /* Butonların büzüşmesini engeller */
+            min-width: auto;
+            flex: 0 0 auto;
             text-align: center;
             display: flex;
             justify-content: center;
@@ -189,22 +177,11 @@ def apply_theme():
             overflow: hidden;
         }
         
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 4px; height: 100%;
-            background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
         .kpi-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.3);
             border-color: rgba(59, 130, 246, 0.4);
         }
-        
-        .kpi-card:hover::before { opacity: 1; }
 
         .kpi-title {
             font-size: 11px;
@@ -239,7 +216,7 @@ def apply_theme():
         .ticker-move {
             display: inline-block;
             white-space: nowrap;
-            animation: marquee 30s linear infinite;
+            animation: marquee 45s linear infinite; /* Hız ayarlandı */
         }
         
         .ticker-item {
@@ -756,7 +733,7 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
     ctx = hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, ad_col, agirlik_col=None, baz_col=baz_col, aktif_agirlik_col=aktif_agirlik_col, son=son)
     return ctx
 
-# --- SAYFA FONKSİYONLARI (ESTETİK GÜNCELLEMELER) ---
+# --- SAYFA FONKSİYONLARI ---
 # ANA SAYFA FONKSİYONU KALDIRILDI
 
 def sayfa_piyasa_ozeti(ctx):
@@ -769,7 +746,7 @@ def sayfa_piyasa_ozeti(ctx):
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # --- 2. TICKER (KAYAN YAZI) HAZIRLIĞI ---
+    # --- 2. TICKER (KAYAN YAZI) ---
     df = ctx["df_analiz"]
     
     # En çok artan (Enflasyonist - Kötü - Kırmızı)
@@ -783,15 +760,15 @@ def sayfa_piyasa_ozeti(ctx):
     for _, r in inc.iterrows():
         val = r['Gunluk_Degisim']
         if val > 0:
-            # !important ekledik ki renk kesin görünsün
-            items.append(f"<span style='color:#ef4444 !important; font-weight:900;'>▲ {r[ctx['ad_col']]} %{val*100:.1f}</span>")
+            # Inline CSS ile kırmızı renk zorlanıyor ve font kalınlaştırılıyor
+            items.append(f"<span style='color:#ef4444; font-weight:800;'>▲ {r[ctx['ad_col']]} %{val*100:.1f}</span>")
             
     # DÜŞENLER İÇİN DÖNGÜ (YEŞİL RENK)
     for _, r in dec.iterrows():
         val = r['Gunluk_Degisim']
         if val < 0:
-            # !important ekledik ki renk kesin görünsün
-            items.append(f"<span style='color:#22c55e !important; font-weight:900;'>▼ {r[ctx['ad_col']]} %{abs(val)*100:.1f}</span>")
+            # Inline CSS ile yeşil renk zorlanıyor ve font kalınlaştırılıyor
+            items.append(f"<span style='color:#22c55e; font-weight:800;'>▼ {r[ctx['ad_col']]} %{abs(val)*100:.1f}</span>")
             
     # Listeyi birleştir
     ticker_str = " &nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp; ".join(items)
@@ -966,7 +943,8 @@ def sayfa_trend_analizi(ctx):
 def main():
     
     # --- AYAR: SENKRONİZASYON BUTONU ---
-    SENKRONIZASYON_AKTIF = False # True ise buton görünür, False ise gizlenir
+    # Bu ayarı False yaparak butonu tamamen gizleyebilirsiniz.
+    SENKRONIZASYON_AKTIF = True 
 
     # --- Üst Bilgi Barı (Sticky Header) ---
     st.markdown(f"""
@@ -988,7 +966,7 @@ def main():
 
     # --- Menü Tanımları (Ana Sayfa Kaldırıldı) ---
     menu_items = {
-        "📊 Enflasyon Özeti": "Enflasyon Özeti", # Piyasa Özeti -> Enflasyon Özeti oldu
+        "📊 Enflasyon Özeti": "Enflasyon Özeti", 
         "📈 Trendler": "Trendler",
         "📦 Maddeler": "Maddeler",
         "🏷️ Kategori Detay": "Kategori Detay",
@@ -1050,4 +1028,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
