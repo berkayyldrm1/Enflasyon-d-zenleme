@@ -786,29 +786,47 @@ def sayfa_piyasa_ozeti(ctx):
     """
     st.markdown(ticker_html, unsafe_allow_html=True)
     
-    # --- 4. GRAFİK VE LİSTE (GÜNCELLENDİ: HISTOGRAM -> TREND GRAFİĞİ) ---
+    # --- 4. GRAFİK VE LİSTE (GÜNCELLENDİ: HISTOGRAM -> GÜNLÜK ENFLASYON GRAFİĞİ) ---
     col_g1, col_g2 = st.columns([2, 1])
     with col_g1:
         # --- TREND GRAFİĞİ HESAPLAMA ---
-        gunler = ctx["gunler"]; agirlik_col = ctx["agirlik_col"]
-        endeks_verisi = []
+        # Burada her gün için "O GÜNÜN" genel enflasyon oranı hesaplanıyor (Kümülatif değil, anlık durum)
+        df_ana = ctx["df_analiz"]
+        baz_col = ctx["baz_col"]
+        agirlik_col = ctx["agirlik_col"]
+        gunler = ctx["gunler"]
+        
+        trend_verisi = []
+        
         for gun in gunler:
-            temp_df = df.dropna(subset=[gun, agirlik_col])
-            if not temp_df.empty and temp_df[agirlik_col].sum() > 0:
-                index_val = (temp_df[gun] * temp_df[agirlik_col]).sum() / temp_df[agirlik_col].sum()
-                endeks_verisi.append({"Tarih": gun, "Deger": index_val})
-        df_endeks = pd.DataFrame(endeks_verisi)
-
-        if not df_endeks.empty:
-            df_endeks['Kümülatif_Degisim'] = ((df_endeks['Deger'] / df_endeks.iloc[0]['Deger']) - 1) * 100
+            # Sadece o gün ve baz gün verisi tam olanları al
+            temp = df_ana.dropna(subset=[gun, baz_col, agirlik_col])
             
-            # --- Y-EKSENİ AYARLAMA ---
-            y_max = max(5, df_endeks['Kümülatif_Degisim'].max() + 0.5)
-            y_min = min(-5, df_endeks['Kümülatif_Degisim'].min() - 0.5)
+            if not temp.empty and temp[agirlik_col].sum() > 0:
+                # Formül: (Toplam(Ağırlık * (GüncelFiyat / BazFiyat)) / ToplamAğırlık) - 1
+                w = temp[agirlik_col]
+                p_cur = temp[gun]
+                p_base = temp[baz_col]
+                
+                rel_price = p_cur / p_base
+                weighted_sum = (w * rel_price).sum()
+                total_weight = w.sum()
+                
+                inflation_val = (weighted_sum / total_weight * 100) - 100
+                
+                trend_verisi.append({"Tarih": gun, "Deger": inflation_val})
+        
+        df_trend = pd.DataFrame(trend_verisi)
 
-            fig_trend = px.line(df_endeks, x='Tarih', y='Kümülatif_Degisim', title="GENEL ENFLASYON TRENDİ (Kümülatif %)", markers=True)
+        if not df_trend.empty:
+            # --- Y-EKSENİ AYARLAMA ---
+            # İstenen: -5 ile +5 arası sabit kalsın, ama veri taşarsa grafik bozulmasın (genişlesin)
+            y_max = max(5, df_trend['Deger'].max() + 0.5)
+            y_min = min(-5, df_trend['Deger'].min() - 0.5)
+
+            fig_trend = px.line(df_trend, x='Tarih', y='Deger', title="GENEL ENFLASYON SEYRİ (%)", markers=True)
             fig_trend.update_traces(line_color='#3b82f6', line_width=4, marker_size=8)
-            # Eksen aralığını sabitleme (Ancak değer aşarsa dinamik genişler)
+            # Eksen aralığını ayarlama
             fig_trend.update_layout(yaxis_range=[y_min, y_max])
             st.plotly_chart(style_chart(fig_trend), use_container_width=True)
         else:
@@ -959,7 +977,7 @@ def main():
     
     # --- AYAR: SENKRONİZASYON BUTONU ---
     # Bu ayarı False yaparak butonu tamamen gizleyebilirsiniz.
-    SENKRONIZASYON_AKTIF = False
+    SENKRONIZASYON_AKTIF = True 
 
     # --- Üst Bilgi Barı (Sticky Header) ---
     st.markdown(f"""
