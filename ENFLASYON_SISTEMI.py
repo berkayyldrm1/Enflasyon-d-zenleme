@@ -966,7 +966,7 @@ def sayfa_trend_analizi(ctx):
 def main():
     
     # --- AYAR: SENKRONİZASYON BUTONU ---
-    SENKRONIZASYON_AKTIF = True # True ise buton görünür, False ise gizlenir
+    SENKRONIZASYON_AKTIF = False # True ise buton görünür, False ise gizlenir
 
     # --- Üst Bilgi Barı (Sticky Header) ---
     st.markdown(f"""
@@ -1050,3 +1050,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
