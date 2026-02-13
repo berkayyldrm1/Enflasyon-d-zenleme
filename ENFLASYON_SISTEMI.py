@@ -454,38 +454,22 @@ def fiyat_bul_siteye_gore(soup, url):
     kaynak = ""
     domain = url.lower() if url else ""
 
-    # --- 1. MIGROS (Sadece Normal Fiyat) ---
-    if "migros" in domain:
+    # --- 1. CIMRI.COM ÖZEL AYRIŞTIRMA ---
+    if "cimri" in domain:
         try:
-            # İsteğiniz üzerine indirimli fiyat kontrolü kaldırıldı.
-            # Sadece <span class="single-price-amount"> etiketi okunuyor.
-            normal_tag = soup.find("span", class_="single-price-amount")
-            if normal_tag:
-                if v := temizle_fiyat(normal_tag.get_text()):
-                    return v, "Migros-Normal"
-        except:
-            pass
-
-    # --- 2. CIMRI (Önceki İsteğiniz) ---
-    elif "cimri" in domain:
-        try:
+            # İlettiğiniz HTML yapısı: <span class="yEvpr">350,14 TL</span>
+            # Bu class ismine sahip span etiketini arıyoruz.
             cimri_tag = soup.find("span", class_="yEvpr")
-            if cimri_tag:
-                if v := temizle_fiyat(cimri_tag.get_text()):
-                    return v, "Cimri-Bot"
-        except:
-            pass
-
-    # --- 3. GENEL REGEX (Yedek) ---
-    if m := re.search(r'(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)\s*(?:TL|₺)', soup.get_text()[:5000]):
-        if v := temizle_fiyat(m.group(1)): 
-            fiyat = v
-            kaynak = "Regex"
             
-    return fiyat, kaynak
+            if cimri_tag:
+                raw_txt = cimri_tag.get_text()
+                if v := temizle_fiyat(raw_txt):
+                    return v, "Cimri-Bot"
+        except Exception:
+            pass # Cimri özel çekimi başarısız olursa genel yönteme düşer
 
-    # --- 3. GENEL REGEX (YEDEK YÖNTEM) ---
-    # Özel tanımlı sitelerden çekemezse veya site tanımsızsa burası çalışır
+    # --- 2. GENEL REGEX (YEDEK/MEVCUT YÖNTEM) ---
+    # Diğer siteler veya Cimri yapısı değişirse burası çalışır
     if m := re.search(r'(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)\s*(?:TL|₺)', soup.get_text()[:5000]):
         if v := temizle_fiyat(m.group(1)): 
             fiyat = v
@@ -1150,6 +1134,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
