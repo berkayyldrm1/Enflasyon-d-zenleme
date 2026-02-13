@@ -450,9 +450,31 @@ def temizle_fiyat(t):
 def kod_standartlastir(k): return str(k).replace('.0', '').strip().zfill(7)
 
 def fiyat_bul_siteye_gore(soup, url):
-    fiyat = 0; kaynak = ""; domain = url.lower() if url else ""
+    fiyat = 0
+    kaynak = ""
+    domain = url.lower() if url else ""
+
+    # --- 1. CIMRI.COM ÖZEL AYRIŞTIRMA ---
+    if "cimri" in domain:
+        try:
+            # İlettiğiniz HTML yapısı: <span class="yEvpr">350,14 TL</span>
+            # Bu class ismine sahip span etiketini arıyoruz.
+            cimri_tag = soup.find("span", class_="yEvpr")
+            
+            if cimri_tag:
+                raw_txt = cimri_tag.get_text()
+                if v := temizle_fiyat(raw_txt):
+                    return v, "Cimri-Bot"
+        except Exception:
+            pass # Cimri özel çekimi başarısız olursa genel yönteme düşer
+
+    # --- 2. GENEL REGEX (YEDEK/MEVCUT YÖNTEM) ---
+    # Diğer siteler veya Cimri yapısı değişirse burası çalışır
     if m := re.search(r'(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)\s*(?:TL|₺)', soup.get_text()[:5000]):
-        if v := temizle_fiyat(m.group(1)): fiyat = v; kaynak = "Regex"
+        if v := temizle_fiyat(m.group(1)): 
+            fiyat = v
+            kaynak = "Regex"
+            
     return fiyat, kaynak
 
 def html_isleyici(progress_callback):
@@ -1112,6 +1134,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
