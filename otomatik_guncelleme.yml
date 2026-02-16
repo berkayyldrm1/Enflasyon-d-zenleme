@@ -1,0 +1,33 @@
+name: Enflasyon Verisi Güncelleme  # Robotun adı
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # ZAMANLAYICI: Her gün saat 06:00 UTC (TR saatiyle 09:00) çalış.
+  workflow_dispatch:      # MANUEL BUTON: GitHub sayfasından elle tetiklememe izin ver.
+
+jobs:
+  veri-guncelleme-isi:
+    runs-on: ubuntu-latest  # Robotun kullandığı işletim sistemi (Sanal Linux)
+
+    steps:
+      # ADIM 1: Robot senin kodlarını depodan kendi sanal bilgisayarına indirir.
+      - name: Depoyu Çek (Checkout)
+        uses: actions/checkout@v3
+
+      # ADIM 2: Robot kendine Python kurar.
+      - name: Python Kurulumu
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # ADIM 3: Senin kullandığın kütüphaneleri yükler.
+      - name: Kütüphaneleri Yükle
+        run: |
+          pip install pandas openpyxl beautifulsoup4 PyGithub requests
+
+      # ADIM 4: Senin yazdığın o özel Python dosyasını çalıştırır.
+      - name: Güncelleme Scriptini Çalıştır
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}  # Şifreleri kasadan alıp robota verir
+          REPO_NAME: ${{ secrets.REPO_NAME }}
+        run: python update_data.py
