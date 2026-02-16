@@ -858,7 +858,7 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
     # Widget'ları biraz daha kompakt hale getirdim
     for sym in symbols:
         widget_code = f"""<div class="tradingview-widget-container" style="border-radius:8px; overflow:hidden; margin-bottom:8px;"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>{{ "symbol": "{sym['s']}", "width": "100%", "height": 70, "locale": "tr", "dateRange": "1D", "colorTheme": "dark", "isTransparent": true, "autosize": true, "largeChartUrl": "" }}</script></div>"""
-        with st.sidebar: components.html(widget_code, height=75)
+        with st.sidebar: components.html(widget_code, height=90)
     
     return ctx
 
@@ -1242,6 +1242,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
