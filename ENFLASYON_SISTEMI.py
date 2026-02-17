@@ -452,83 +452,71 @@ def kod_standartlastir(k): return str(k).replace('.0', '').strip().zfill(7)
 def fiyat_bul_siteye_gore(soup, kaynak_tipi):
     """
     HTML içeriğini alır.
-    Sadece Ürün Başlığının (H1) bulunduğu 'Header' alanındaki fiyatı çeker.
-    Aşağıdaki slider/önerilen ürünleri KESİNLİKLE görmezden gelir.
+    SADECE Migros ve Cimri için fiyat çeker.
+    Diğer kaynaklar (Carrefour, HB vb.) yorum satırına alınmıştır ve 0 döner.
     """
     fiyat = 0
     kaynak_tipi = str(kaynak_tipi).lower()
     
     try:
-        # --- A. MIGROS (BAŞLIK KOMŞULUĞU YÖNTEMİ) ---
+        # ==========================================
+        # ✅ AKTİF KAYNAK 1: MIGROS
+        # ==========================================
         if "migros" in kaynak_tipi:
-            # 1. Önce H1 (Ürün Adı) etiketini bul
+            # 1. Başlık (H1) üzerinden git (Slider hatasını önler)
             baslik = soup.find("h1")
             
             if baslik:
-                # Başlığın olduğu en yakın üst kapsayıcıyı (Parent) bul.
-                # Migros'ta yapı: <div class="name-price-wrapper"> içinde H1 ve Fiyat var.
                 header_wrapper = baslik.find_parent("div", class_="name-price-wrapper")
-                
                 if header_wrapper:
-                    # SADECE bu başlık kutusunun içine bak.
-                    
-                    # a) İndirimli Fiyat
+                    # İndirimli
                     discount_tag = header_wrapper.select_one(".money-discount-label-wrapper .sale-price")
                     if discount_tag: return temizle_fiyat(discount_tag.get_text())
-                    
-                    # b) Normal Fiyat
+                    # Normal
                     normal_tag = header_wrapper.select_one(".single-price-amount")
                     if normal_tag: return temizle_fiyat(normal_tag.get_text())
             
-            # Eğer yukarıdaki çalışmazsa (H1 bulunamazsa),
-            # Manuel olarak sadece en üstteki 'product-details' class'ına bak
-            # (Asla 'list-page-item' veya 'swiper' içine bakma)
+            # Yedek (H1 yoksa)
             fallback_scope = soup.select_one("div.product-details")
             if fallback_scope:
                  tag = fallback_scope.select_one(".single-price-amount")
                  if tag: return temizle_fiyat(tag.get_text())
 
-
-        # --- B. CARREFOURSA (BAŞLIK KOMŞULUĞU YÖNTEMİ) ---
-        elif "carrefour" in kaynak_tipi:
-            # 1. Önce H1 etiketini bul
-            baslik = soup.find("h1")
-            
-            if baslik:
-                # Carrefour'da H1'in olduğu yer: .product-details
-                # Fiyat ise hemen altındaki .price-row içinde.
-                # İkisini kapsayan en yakın ortak ata: .product-details-cont
-                
-                ana_kapsayici = baslik.find_parent(class_="product-details-cont")
-                
-                if ana_kapsayici:
-                    # Sadece bu ana kapsayıcı içindeki 'item-price'a bak.
-                    # Bu kapsayıcı, alttaki sekmeleri (tabs) içermez.
-                    price_tag = ana_kapsayici.select_one(".item-price")
-                    if price_tag: return temizle_fiyat(price_tag.get_text())
-                    
-                    # Yedek: Üstü çizili fiyat
-                    alt_tag = ana_kapsayici.select_one(".priceLineThrough")
-                    if alt_tag: return temizle_fiyat(alt_tag.get_text())
-
-        # --- C. CIMRI (DEĞİŞMEDİ) ---
+        # ==========================================
+        # ✅ AKTİF KAYNAK 2: CIMRI
+        # ==========================================
         elif "cimri" in kaynak_tipi:
-            # Cimri'de yapı daha standart, en ucuz fiyat etiketini alıyoruz.
             cimri_tag = soup.select_one("span.yEvpr")
             if cimri_tag: return temizle_fiyat(cimri_tag.get_text())
 
-        # --- D. HEPSIBURADA (DEĞİŞMEDİ) ---
-        elif "hepsiburada" in kaynak_tipi:
-            checkout_tag = soup.select_one('[data-test-id="checkout-price"]')
-            if checkout_tag: return temizle_fiyat(checkout_tag.get_text())
-            active_tag = soup.select_one('[data-test-id="price"]')
-            if active_tag: return temizle_fiyat(active_tag.get_text())
+        # ==========================================
+        # ❌ PASİF KAYNAKLAR (YORUMA ALINDI)
+        # ==========================================
+        
+        # elif "carrefour" in kaynak_tipi:
+        #     # Carrefour kodları devre dışı bırakıldı.
+        #     # Açmak istersen # işaretlerini kaldır.
+        #     baslik = soup.find("h1")
+        #     if baslik:
+        #         ana_kapsayici = baslik.find_parent(class_="product-details-cont")
+        #         if ana_kapsayici:
+        #             price_tag = ana_kapsayici.select_one(".item-price")
+        #             if price_tag: return temizle_fiyat(price_tag.get_text())
+        #             alt_tag = ana_kapsayici.select_one(".priceLineThrough")
+        #             if alt_tag: return temizle_fiyat(alt_tag.get_text())
+
+        # elif "hepsiburada" in kaynak_tipi:
+        #     # HB kodları devre dışı.
+        #     checkout_tag = soup.select_one('[data-test-id="checkout-price"]')
+        #     if checkout_tag: return temizle_fiyat(checkout_tag.get_text())
+        #     active_tag = soup.select_one('[data-test-id="price"]')
+        #     if active_tag: return temizle_fiyat(active_tag.get_text())
 
     except Exception as e:
-        print(f"Parser Kritik Hata ({kaynak_tipi}): {e}")
+        print(f"Parser Hatası ({kaynak_tipi}): {e}")
         
     return 0
-
+    
 # --- 2. ANA İŞLEYİCİ (ZIP Okuyucu ve Hesaplayıcı) ---
 def html_isleyici(progress_callback):
     repo = get_github_repo()
@@ -536,23 +524,18 @@ def html_isleyici(progress_callback):
     
     progress_callback(0.05) 
     try:
-        # Excel'den ürün listesini çek (Sadece Kod ve İsim eşleşmesi için)
         df_conf = github_excel_oku(EXCEL_DOSYASI, SAYFA_ADI)
         df_conf.columns = df_conf.columns.str.strip()
         
         kod_col = next((c for c in df_conf.columns if c.lower() == 'kod'), 'Kod')
         ad_col = next((c for c in df_conf.columns if 'ad' in c.lower()), 'Madde_Adi')
         
-        # Kod -> Ürün Adı haritası (0101 -> Süt)
         urun_isimleri = pd.Series(df_conf[ad_col].values, index=df_conf[kod_col].astype(str).apply(kod_standartlastir)).to_dict()
 
-        # ZIP Dosyalarını Bul
         contents = repo.get_contents("", ref=st.secrets["github"]["branch"])
         zip_files = [c for c in contents if c.name.endswith(".zip") and c.name.startswith("Bolum")]
         total_zips = len(zip_files)
         
-        # Verileri toplayacağımız havuz:
-        # veri_havuzu["0101"] = [15.00, 14.50]  <- Migros ve Carrefour Fiyatları
         veri_havuzu = {}
         
         for i, zip_file in enumerate(zip_files):
@@ -567,17 +550,15 @@ def html_isleyici(progress_callback):
                     for file_name in z.namelist():
                         if not file_name.endswith(('.html', '.htm')): continue
                         
-                        # Dosya adından Kodu yakala (0101_Migros.html -> 0101)
                         dosya_kodu = file_name.split('_')[0]
                         dosya_kodu = kod_standartlastir(dosya_kodu)
                         
-                        # Eğer bu kod Excel listemizde yoksa boşuna işlem yapma
                         if dosya_kodu not in urun_isimleri: continue
 
                         with z.open(file_name) as f:
                             raw = f.read().decode("utf-8", errors="ignore")
                             
-                            # --- 1. METADATA OKUMA (Kaynak Tipi) ---
+                            # Metadata Okuma
                             kaynak_tipi = "Bilinmiyor"
                             if "SOURCE_TYPE:" in raw:
                                 parts = raw.split("SOURCE_TYPE:")
@@ -587,10 +568,12 @@ def html_isleyici(progress_callback):
                                 if "_" in file_name:
                                     kaynak_tipi = file_name.split('_')[1].replace('.html','')
 
-                            # --- 2. HTML PARSE VE FİYAT ÇEKME ---
+                            # Fiyat Çekme
                             soup = BeautifulSoup(raw, 'html.parser')
                             fiyat = fiyat_bul_siteye_gore(soup, kaynak_tipi)
                             
+                            # Sadece Migros ve Cimri fiyat döndüreceği için,
+                            # Carrefour dosyaları olsa bile fiyat 0 gelecek ve buraya girmeyecek.
                             if fiyat > 0:
                                 if dosya_kodu not in veri_havuzu:
                                     veri_havuzu[dosya_kodu] = []
@@ -600,29 +583,25 @@ def html_isleyici(progress_callback):
                 print(f"Zip Okuma Hatası ({zip_file.name}): {e}")
                 continue
 
-        # --- 3. SONUÇLARI HESAPLA (GEOMETRİK ORTALAMA) ---
+        # --- SONUÇLAR VE GEOMETRİK ORTALAMA ---
         final_list = []
         bugun = datetime.now().strftime("%Y-%m-%d")
         simdi = datetime.now().strftime("%H:%M")
 
         for kod, fiyatlar in veri_havuzu.items():
             if fiyatlar:
-                # --- GEOMETRİK ORTALAMA HESABI ---
-                # Formül: (p1 * p2 * ... * pn)^(1/n)
-                # Logaritmik yöntemle hesaplanır: exp(mean(log(p)))
-                
+                # GEOMETRİK ORTALAMA HESABI
                 if len(fiyatlar) > 1:
-                    # 0 veya negatif değerleri temizle (Log hatası vermemesi için)
                     clean_vals = [p for p in fiyatlar if p > 0]
                     if clean_vals:
                         geo_mean = np.exp(np.mean(np.log(clean_vals)))
                         final_fiyat = float(f"{geo_mean:.2f}")
-                        kaynak_str = f"GeoMean ({len(clean_vals)} Kaynak)"
-                    else:
-                        continue
+                        # Kaynak bilgisini de güncelledik
+                        kaynak_str = f"Migros & Cimri (GeoMean)"
+                    else: continue
                 else:
                     final_fiyat = fiyatlar[0]
-                    kaynak_str = "Single"
+                    kaynak_str = "Single Source"
 
                 final_list.append({
                     "Tarih": bugun,
@@ -638,7 +617,7 @@ def html_isleyici(progress_callback):
         if final_list:
             return github_excel_guncelle(pd.DataFrame(final_list), FIYAT_DOSYASI)
         else:
-            return "ZIP dosyalarında okunabilir veri bulunamadı."
+            return "ZIP dosyalarında (Migros/Cimri için) uygun veri bulunamadı."
             
     except Exception as e:
         return f"Genel Hata: {str(e)}"
@@ -1312,6 +1291,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
