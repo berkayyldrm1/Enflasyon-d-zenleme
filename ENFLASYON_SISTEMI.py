@@ -500,20 +500,21 @@ def fiyat_bul_siteye_gore(soup, kaynak_tipi):
         
     return 0
 
+# --- 2. ANA İŞLEYİCİ (ZIP Okuyucu ve Hesaplayıcı) ---
 def html_isleyici(progress_callback):
     repo = get_github_repo()
     if not repo: return "GitHub Bağlantı Hatası"
     
     progress_callback(0.05) 
     try:
-        # Excel'den ürün listesini çek (Sadece Kod ve İsim eşleşmesi için)
+        # Excel'den ürün listesini çek
         df_conf = github_excel_oku(EXCEL_DOSYASI, SAYFA_ADI)
         df_conf.columns = df_conf.columns.str.strip()
         
         kod_col = next((c for c in df_conf.columns if c.lower() == 'kod'), 'Kod')
         ad_col = next((c for c in df_conf.columns if 'ad' in c.lower()), 'Madde_Adi')
         
-        # Kod -> Ürün Adı haritası (0101 -> Süt)
+        # Kod -> Ürün Adı haritası
         urun_isimleri = pd.Series(df_conf[ad_col].values, index=df_conf[kod_col].astype(str).apply(kod_standartlastir)).to_dict()
 
         # ZIP Dosyalarını Bul
@@ -521,11 +522,8 @@ def html_isleyici(progress_callback):
         zip_files = [c for c in contents if c.name.endswith(".zip") and c.name.startswith("Bolum")]
         total_zips = len(zip_files)
         
-        # Verileri toplayacağımız havuz:
-        # veri_havuzu["0101"] = [30.50, 29.90, 31.00]
+        # Veri Havuzu: Kod -> [Fiyat1, Fiyat2, Fiyat3]
         veri_havuzu = {}
-        
-        processed_count = 0
         
         for i, zip_file in enumerate(zip_files):
             current_progress = 0.10 + (0.80 * ((i + 1) / max(1, total_zips)))
@@ -540,30 +538,25 @@ def html_isleyici(progress_callback):
                         if not file_name.endswith(('.html', '.htm')): continue
                         
                         # Dosya adından Kodu yakala (0101_Migros.html -> 0101)
-                        # Bu en hızlı yöntemdir.
                         dosya_kodu = file_name.split('_')[0]
                         dosya_kodu = kod_standartlastir(dosya_kodu)
                         
-                        # Eğer bu kod Excel listemizde yoksa boşuna işlem yapma
                         if dosya_kodu not in urun_isimleri: continue
 
                         with z.open(file_name) as f:
                             raw = f.read().decode("utf-8", errors="ignore")
                             
-                            # --- 1. METADATA OKUMA (Senin Eklediğin İmza) ---
-                            # Dosyanın en altına eklediğin kısmını arıyoruz
+                            # --- METADATA OKUMA ---
                             kaynak_tipi = "Bilinmiyor"
                             if "SOURCE_TYPE:" in raw:
-                                # Regex kullanmadan basit string işlemi ile bulalım (daha hızlı)
                                 parts = raw.split("SOURCE_TYPE:")
                                 if len(parts) > 1:
                                     kaynak_tipi = parts[1].split("-->")[0].strip()
                             else:
-                                # İmza yoksa dosya adından tahmin et (0101_Migros.html)
                                 if "_" in file_name:
                                     kaynak_tipi = file_name.split('_')[1].replace('.html','')
 
-                            # --- 2. HTML PARSE VE FİYAT ÇEKME ---
+                            # --- HTML PARSE VE FİYAT ÇEKME ---
                             soup = BeautifulSoup(raw, 'html.parser')
                             fiyat = fiyat_bul_siteye_gore(soup, kaynak_tipi)
                             
@@ -576,21 +569,20 @@ def html_isleyici(progress_callback):
                 print(f"Zip Okuma Hatası ({zip_file.name}): {e}")
                 continue
 
-        # --- SONUÇLARI HESAPLA (Geometrik Ortalama) ---
+        # --- SONUÇLARI HESAPLA (MAKSİMUM FİYAT) ---
         final_list = []
         bugun = datetime.now().strftime("%Y-%m-%d")
         simdi = datetime.now().strftime("%H:%M")
 
         for kod, fiyatlar in veri_havuzu.items():
             if fiyatlar:
-                # İSTATİSTİKSEL SEÇİM: GEOMETRİK ORTALAMA
-                # Birden fazla kaynak varsa (Migros+Carrefour) ortalamasını al.
+                # --- DEĞİŞİKLİK BURADA: MAX ALINIYOR ---
+                # Birden fazla kaynak varsa (Migros: 30, Carrefour: 35), en yükseğini (35) al.
+                final_fiyat = max(fiyatlar) 
+                
                 if len(fiyatlar) > 1:
-                    geo_mean = np.exp(np.mean(np.log(fiyatlar)))
-                    final_fiyat = float(f"{geo_mean:.2f}")
-                    kaynak_str = f"Multi ({len(fiyatlar)} Kaynak)"
+                    kaynak_str = f"Max ({len(fiyatlar)} Kaynak)"
                 else:
-                    final_fiyat = fiyatlar[0]
                     kaynak_str = "Single"
 
                 final_list.append({
@@ -598,7 +590,7 @@ def html_isleyici(progress_callback):
                     "Zaman": simdi,
                     "Kod": kod,
                     "Madde_Adi": urun_isimleri.get(kod, "Bilinmeyen Ürün"),
-                    "Fiyat": final_fiyat,
+                    "Fiyat": float(f"{final_fiyat:.2f}"),
                     "Kaynak": kaynak_str,
                     "URL": "ZIP_ARCHIVE"
                 })
@@ -611,7 +603,7 @@ def html_isleyici(progress_callback):
             
     except Exception as e:
         return f"Genel Hata: {str(e)}"
-
+        
 # --- 7. STATİK ANALİZ MOTORU ---
 def generate_detailed_static_report(df_analiz, tarih, enf_genel, enf_gida, gun_farki, tahmin, ad_col, agirlik_col):
     df_clean = df_analiz.dropna(subset=['Fark'])
@@ -1278,6 +1270,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
