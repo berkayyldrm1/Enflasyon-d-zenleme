@@ -636,35 +636,35 @@ def html_isleyici(progress_callback):
                 continue
 
         # --- 3. SONUÇLARI HESAPLA ---
+        # --- 3. SONUÇLARI HESAPLA (MAKSİMUM FİYAT - YÜKSEK ENFLASYON MODU) ---
         final_list = []
         bugun = datetime.now().strftime("%Y-%m-%d")
         simdi = datetime.now().strftime("%H:%M")
 
         for kod, fiyatlar in veri_havuzu.items():
             if fiyatlar:
-                # GEOMETRİK ORTALAMA
-                # Eğer hem Manuel hem Web fiyatı varsa hepsinin ortalamasını alır.
-                # Sadece Manuel varsa, direkt onu alır.
-                if len(fiyatlar) > 1:
-                    clean_vals = [p for p in fiyatlar if p > 0]
-                    if clean_vals:
-                        geo_mean = np.exp(np.mean(np.log(clean_vals)))
-                        final_fiyat = float(f"{geo_mean:.2f}")
-                        kaynak_str = f"Karma ({len(clean_vals)} Veri)"
-                    else: continue
-                else:
-                    final_fiyat = fiyatlar[0]
-                    kaynak_str = "Tek Kaynak (Manuel/Web)"
+                # 0'dan büyük fiyatlar
+                clean_vals = [p for p in fiyatlar if p > 0]
+                
+                if clean_vals:
+                    # DEĞİŞİKLİK BURADA: MAX ALIYORUZ
+                    # Birden fazla kaynak varsa en pahalısını seçer.
+                    if len(clean_vals) > 1:
+                        final_fiyat = float(max(clean_vals)) # En yüksek fiyatı baz al
+                        kaynak_str = f"Max ({len(clean_vals)} Kaynak)"
+                    else:
+                        final_fiyat = clean_vals[0]
+                        kaynak_str = "Single Source"
 
-                final_list.append({
-                    "Tarih": bugun,
-                    "Zaman": simdi,
-                    "Kod": kod,
-                    "Madde_Adi": urun_isimleri.get(kod, "Bilinmeyen Ürün"),
-                    "Fiyat": final_fiyat,
-                    "Kaynak": kaynak_str,
-                    "URL": "MIXED"
-                })
+                    final_list.append({
+                        "Tarih": bugun,
+                        "Zaman": simdi,
+                        "Kod": kod,
+                        "Madde_Adi": urun_isimleri.get(kod, "Bilinmeyen Ürün"),
+                        "Fiyat": final_fiyat,
+                        "Kaynak": kaynak_str,
+                        "URL": "ZIP_ARCHIVE"
+                    })
 
         progress_callback(0.95)
         if final_list:
@@ -1344,6 +1344,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
