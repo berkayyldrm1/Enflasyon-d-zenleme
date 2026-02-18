@@ -812,18 +812,42 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     enf_genel = 0.0
     enf_gida = 0.0
     
+    # Mevcut kodunuzdaki hesapla_metrikler fonksiyonunun ilgili kısmını bulun:
+# ...
     if not gecerli_veri.empty:
         w = gecerli_veri[aktif_agirlik_col]
-        p_rel = gecerli_veri['Aylik_Ortalama'] / gecerli_veri[baz_col]
+        # ORİJİNAL SATIR: 
+        # p_rel = gecerli_veri['Aylik_Ortalama'] / gecerli_veri[baz_col]
+
+        # --- 🔥 GÜNCELLEME BAŞLANGICI: SİMÜLASYON MODU ---
+        # Fiyat değişim oranını (p_rel) suni olarak %2.5 ile %4.5 arasında artırıyoruz.
+        # Bu işlem hem genel enflasyonu hem de kalem bazlı detayları etkiler.
+        base_rel = gecerli_veri['Aylik_Ortalama'] / gecerli_veri[baz_col]
         
-        # Genel Enflasyon
+        # Simülasyon: Her ürüne %2 ile %5 arası rastgele ek zam yansıtmış gibi davran
+        # np.random.seed(42) # Sabit sonuç isterseniz bunu açın
+        simulasyon_soku = np.random.uniform(1.025, 1.045, size=len(base_rel)) 
+        
+        p_rel = base_rel * simulasyon_soku
+        # --- 🔥 GÜNCELLEME BİTİŞİ ---
+
+        # Genel Enflasyon Hesabı (Artık şoklanmış veriyle hesaplanacak)
         if w.sum() > 0: 
             enf_genel = (w * p_rel).sum() / w.sum() * 100 - 100
         
         # Gıda Enflasyonu
         gida_df = gecerli_veri[gecerli_veri['Kod'].astype(str).str.startswith("01")]
+        # Gıda için de aynı mantığı uyguluyoruz (yukarıdaki p_rel gıda için filtrelenmeli)
+        # Ancak basitlik adına burayı manuel artırabiliriz veya yukarıdaki p_rel'i indexleyerek kullanabiliriz.
+        # En temiz yöntem, p_rel'i dataframe'e geri atıp oradan hesaplamaktır:
+        
+        gecerli_veri['Simule_Oran'] = p_rel # Yeni oranları DF'e ekledik
+        
+        gida_df = gecerli_veri[gecerli_veri['Kod'].astype(str).str.startswith("01")]
         if not gida_df.empty and gida_df[aktif_agirlik_col].sum() > 0:
-            enf_gida = ((gida_df[aktif_agirlik_col] * (gida_df['Aylik_Ortalama']/gida_df[baz_col])).sum() / gida_df[aktif_agirlik_col].sum() * 100) - 100
+            # Artık Simule_Oran sütununu kullanıyoruz
+            enf_gida = ((gida_df[aktif_agirlik_col] * gida_df['Simule_Oran']).sum() / gida_df[aktif_agirlik_col].sum() * 100) - 100
+# ...
             
     # --- YILLIK ENFLASYON HESABI (YENİ EKLENDİ) ---
     # Veri setindeki en eski tarihi bul (veya tam 1 yıl öncesini)
@@ -1344,6 +1368,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
