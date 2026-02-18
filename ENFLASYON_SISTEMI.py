@@ -441,13 +441,17 @@ def get_official_inflation():
 def temizle_fiyat(t):
     if not t: return None
     t = str(t).replace('TL', '').replace('₺', '').strip()
-    t = t.replace('.', '').replace(',', '.') if ',' in t and '.' in t else t.replace(',', '.')
+    if ',' in t and '.' in t:
+        t = t.replace('.', '').replace(',', '.')
+    elif ',' in t:
+        t = t.replace(',', '.')
     try:
         return float(re.sub(r'[^\d.]', '', t))
     except:
         return None
-
-def kod_standartlastir(k): return str(k).replace('.0', '').strip().zfill(7)
+        
+def kod_standartlastir(k): 
+    return str(k).replace('.0', '').strip().zfill(7)
 
 def fiyat_bul_siteye_gore(soup, kaynak_tipi):
     """
@@ -482,35 +486,66 @@ def fiyat_bul_siteye_gore(soup, kaynak_tipi):
                  tag = fallback_scope.select_one(".single-price-amount")
                  if tag: return temizle_fiyat(tag.get_text())
 
+        # ==============def fiyat_bul_siteye_gore(soup, kaynak_tipi):
+    """
+    HTML içeriğini alır.
+    Migros ve Carrefour için katı kurallar uygular.
+    Migros için sınıf bulunamazsa Regex ile 'TL' arar.
+    """
+    fiyat = 0
+    kaynak_tipi = str(kaynak_tipi).lower()
+    
+    try:
         # ==========================================
-        # ✅ AKTİF KAYNAK 2: CIMRI
+        # ✅ 1. MIGROS (GÜÇLENDİRİLMİŞ)
+        # ==========================================
+        if "migros" in kaynak_tipi:
+            # 1. Başlık (H1) üzerinden git (Doğru kutuyu bul)
+            baslik = soup.find("h1")
+            
+            if baslik:
+                header_wrapper = baslik.find_parent("div", class_="name-price-wrapper")
+                
+                if header_wrapper:
+                    # YÖNTEM A: İndirimli Fiyat (Money)
+                    discount_tag = header_wrapper.select_one(".money-discount-label-wrapper .sale-price")
+                    if discount_tag: return temizle_fiyat(discount_tag.get_text())
+                    
+                    # YÖNTEM B: Normal Fiyat (Sınıf ile)
+                    normal_tag = header_wrapper.select_one(".single-price-amount")
+                    if normal_tag: return temizle_fiyat(normal_tag.get_text())
+
+                    # YÖNTEM C (YENİ KURTARICI): Regex ile Tarama
+                    # Eğer yukarıdaki sınıflar yoksa, kutunun içindeki tüm metni al
+                    # ve içinde "1.250,50 TL" formatına uyan şeyi bul.
+                    raw_text = header_wrapper.get_text(strip=True)
+                    
+                    # Regex Açıklaması: 
+                    # \d{1,3}   -> 1 ila 3 basamaklı sayı (1 veya 250)
+                    # (?:\.\d{3})* -> Opsiyonel binlik ayracı (.250 gibi)
+                    # ,\d{2}    -> Mutlaka virgül ve 2 kuruş hanesi (,95)
+                    # \s*TL     -> Boşluk ve TL
+                    match = re.search(r'(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)\s*(?:TL|₺)', raw_text)
+                    if match:
+                        fiyat_txt = match.group(1)
+                        # Hatalı eşleşme koruması (Bazen gramajı fiyat sanabilir, TL kontrolü şart)
+                        if "TL" in raw_text or "₺" in raw_text:
+                            return temizle_fiyat(fiyat_txt)
+
+            # Fallback (H1 bulunamazsa eski yöntem)
+            fallback_scope = soup.select_one("div.product-details")
+            if fallback_scope:
+                 # Burada da regex deneyelim
+                 txt = fallback_scope.get_text()
+                 m = re.search(r'(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)\s*(?:TL|₺)', txt)
+                 if m: return temizle_fiyat(m.group(1))
+
+        # ==========================================
+        # ✅ 2. CIMRI (STANDART)
         # ==========================================
         elif "cimri" in kaynak_tipi:
             cimri_tag = soup.select_one("span.yEvpr")
             if cimri_tag: return temizle_fiyat(cimri_tag.get_text())
-
-        # ==========================================
-        # ❌ PASİF KAYNAKLAR (YORUMA ALINDI)
-        # ==========================================
-        
-        # elif "carrefour" in kaynak_tipi:
-        #     # Carrefour kodları devre dışı bırakıldı.
-        #     # Açmak istersen # işaretlerini kaldır.
-        #     baslik = soup.find("h1")
-        #     if baslik:
-        #         ana_kapsayici = baslik.find_parent(class_="product-details-cont")
-        #         if ana_kapsayici:
-        #             price_tag = ana_kapsayici.select_one(".item-price")
-        #             if price_tag: return temizle_fiyat(price_tag.get_text())
-        #             alt_tag = ana_kapsayici.select_one(".priceLineThrough")
-        #             if alt_tag: return temizle_fiyat(alt_tag.get_text())
-
-        # elif "hepsiburada" in kaynak_tipi:
-        #     # HB kodları devre dışı.
-        #     checkout_tag = soup.select_one('[data-test-id="checkout-price"]')
-        #     if checkout_tag: return temizle_fiyat(checkout_tag.get_text())
-        #     active_tag = soup.select_one('[data-test-id="price"]')
-        #     if active_tag: return temizle_fiyat(active_tag.get_text())
 
     except Exception as e:
         print(f"Parser Hatası ({kaynak_tipi}): {e}")
@@ -1291,6 +1326,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
