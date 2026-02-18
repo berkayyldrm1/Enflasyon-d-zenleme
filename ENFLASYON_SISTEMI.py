@@ -789,7 +789,7 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     # --- AYAR 1: AYLIK ENFLASYON SİMÜLASYONU ---
     # Aylık sonucun %3 - %4.5 aralığında çıkması için zam şoku
     SIM_ALT_LIMIT = 1.025  # %2.5
-    SIM_UST_LIMIT = 1.035  # %4.5
+    SIM_UST_LIMIT = 1.032  # %4.5
     
     # --- AYAR 2: YILLIK ENFLASYON HEDEFİ ---
     # Yıllık enflasyonu %30-35 bandına çekmek için, yılın geri kalanında
@@ -1370,6 +1370,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
