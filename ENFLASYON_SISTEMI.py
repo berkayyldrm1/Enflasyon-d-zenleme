@@ -789,7 +789,7 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     # Bu oranlar her ürüne rastgele eklenir. 
     # Örneğin 1.025 = %2.5 Zam, 1.045 = %4.5 Zam demektir.
     SIM_ALT_LIMIT = 1.025 
-    SIM_UST_LIMIT = 1.045
+    SIM_UST_LIMIT = 1.035
     # ---------------------------------------------------------
 
     # Sayısal dönüşümler
@@ -1369,6 +1369,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
