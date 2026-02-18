@@ -456,39 +456,6 @@ def kod_standartlastir(k):
 def fiyat_bul_siteye_gore(soup, kaynak_tipi):
     """
     HTML içeriğini alır.
-    SADECE Migros ve Cimri için fiyat çeker.
-    Diğer kaynaklar (Carrefour, HB vb.) yorum satırına alınmıştır ve 0 döner.
-    """
-    fiyat = 0
-    kaynak_tipi = str(kaynak_tipi).lower()
-    
-    try:
-        # ==========================================
-        # ✅ AKTİF KAYNAK 1: MIGROS
-        # ==========================================
-        if "migros" in kaynak_tipi:
-            # 1. Başlık (H1) üzerinden git (Slider hatasını önler)
-            baslik = soup.find("h1")
-            
-            if baslik:
-                header_wrapper = baslik.find_parent("div", class_="name-price-wrapper")
-                if header_wrapper:
-                    # İndirimli
-                    discount_tag = header_wrapper.select_one(".money-discount-label-wrapper .sale-price")
-                    if discount_tag: return temizle_fiyat(discount_tag.get_text())
-                    # Normal
-                    normal_tag = header_wrapper.select_one(".single-price-amount")
-                    if normal_tag: return temizle_fiyat(normal_tag.get_text())
-            
-            # Yedek (H1 yoksa)
-            fallback_scope = soup.select_one("div.product-details")
-            if fallback_scope:
-                 tag = fallback_scope.select_one(".single-price-amount")
-                 if tag: return temizle_fiyat(tag.get_text())
-
-        # ==============def fiyat_bul_siteye_gore(soup, kaynak_tipi):
-    """
-    HTML içeriğini alır.
     Migros ve Carrefour için katı kurallar uygular.
     Migros için sınıf bulunamazsa Regex ile 'TL' arar.
     """
@@ -551,6 +518,7 @@ def fiyat_bul_siteye_gore(soup, kaynak_tipi):
         print(f"Parser Hatası ({kaynak_tipi}): {e}")
         
     return 0
+         
     
 # --- 2. ANA İŞLEYİCİ (ZIP Okuyucu ve Hesaplayıcı) ---
 def html_isleyici(progress_callback):
@@ -1326,6 +1294,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
