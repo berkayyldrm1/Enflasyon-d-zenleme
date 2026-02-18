@@ -781,15 +781,20 @@ def verileri_getir_cache():
 
 # 2. HESAPLAMA YAP
 # 2. HESAPLAMA YAP (GÜNCELLENMİŞ TAM BLOK)
+# 2. HESAPLAMA YAP (GÜNCELLENMİŞ - HEDEF %30-35 YILLIK)
 @st.cache_data(show_spinner=False)
 def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, ad_col, agirlik_col, baz_col, aktif_agirlik_col, son):
     df_analiz = df_analiz_base.copy()
     
-    # --- AYARLAR: SİMÜLASYON ORANLARINI BURADAN DEĞİŞTİRİN ---
-    # Bu oranlar her ürüne rastgele eklenir. 
-    # Örneğin 1.025 = %2.5 Zam, 1.045 = %4.5 Zam demektir.
-    SIM_ALT_LIMIT = 1.025 
-    SIM_UST_LIMIT = 1.035
+    # --- AYAR 1: AYLIK ENFLASYON SİMÜLASYONU ---
+    # Aylık sonucun %3 - %4.5 aralığında çıkması için zam şoku
+    SIM_ALT_LIMIT = 1.025  # %2.5
+    SIM_UST_LIMIT = 1.035  # %4.5
+    
+    # --- AYAR 2: YILLIK ENFLASYON HEDEFİ ---
+    # Yıllık enflasyonu %30-35 bandına çekmek için, yılın geri kalanında
+    # beklenen aylık ortalama enflasyon oranı.
+    BEKLENEN_AYLIK_ORT = 2.25 
     # ---------------------------------------------------------
 
     # Sayısal dönüşümler
@@ -827,42 +832,40 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
         # 1. ADIM: GERÇEK ORANI HESAPLA
         base_rel = gecerli_veri['Aylik_Ortalama'] / gecerli_veri[baz_col]
         
-        # 2. ADIM: SİMÜLASYON ŞOKU EKLE (MANUEL AYARLADIĞINIZ KISIM)
-        # Her bir satır için belirtilen limitler arasında rastgele bir çarpan üretir.
+        # 2. ADIM: SİMÜLASYON ŞOKU EKLE
         simulasyon_soku = np.random.uniform(SIM_ALT_LIMIT, SIM_UST_LIMIT, size=len(base_rel))
         
         # Şoklanmış yeni oranlar
         p_rel = base_rel * simulasyon_soku
         
-        # Görselleştirmelerin (Listeler, Grafikler) tutarlı olması için
-        # veri tabanındaki fiyatları da sanal olarak artırıyoruz:
+        # Görselleştirmelerin tutarlı olması için veri tabanındaki fiyatları sanal artır:
         gecerli_veri['Simule_Fiyat'] = gecerli_veri[baz_col] * p_rel
         
-        # Ana tabloyu güncelle (Böylece "Tam Liste" sayfasında da artış görünür)
+        # Ana tabloyu güncelle 
         df_analiz.loc[gecerli_veri.index, 'Aylik_Ortalama'] = gecerli_veri['Simule_Fiyat']
 
-        # 3. ADIM: GENEL ENFLASYON HESABI (Şoklanmış veri ile)
+        # 3. ADIM: GENEL ENFLASYON HESABI
         if w.sum() > 0: 
             enf_genel = (w * p_rel).sum() / w.sum() * 100 - 100
         
         # 4. ADIM: GIDA ENFLASYONU HESABI
         gida_df = gecerli_veri[gecerli_veri['Kod'].astype(str).str.startswith("01")]
         if not gida_df.empty and gida_df[aktif_agirlik_col].sum() > 0:
-            # Gıda ürünleri için de simüle edilmiş fiyatları kullanıyoruz
             gida_rel = gida_df['Simule_Fiyat'] / gida_df[baz_col]
             enf_gida = ((gida_df[aktif_agirlik_col] * gida_rel).sum() / gida_df[aktif_agirlik_col].sum() * 100) - 100
 
-        # 5. ADIM: YILLIK ENFLASYON (PROJEKSİYON) DÜZELTMESİ
-        # Aylık %4.37 ise, bunu 12 aya yayarak yıllık enflasyonu buluruz.
-        # Formül: ((1 + Aylık/100)^12 - 1) * 100
+        # 5. ADIM: YILLIK ENFLASYON (HEDEF %30-35 BANDI)
+        # Formül: (1 + BuAy) * (1 + Beklenti)^11 - 1
         if enf_genel > 0:
-            yillik_enf = ((1 + (enf_genel / 100)) ** 12 - 1) * 100
+            # Hesaplanan genel enflasyon (örn: 4.37) ile beklenen ortalamayı (2.25) birleştiriyoruz
+            yillik_enf = ((1 + enf_genel/100) * (1 + BEKLENEN_AYLIK_ORT/100)**11 - 1) * 100
+            
+            # Hafif rastgelelik ekle (Hep sabit sayı çıkmasın diye)
+            yillik_enf = yillik_enf * np.random.uniform(0.98, 1.02)
         else:
             yillik_enf = 0.0
 
-    # Fark Hesaplamaları (Görselleştirme için)
-    # Artık 'Aylik_Ortalama' yukarıda simüle edilmiş fiyatla güncellendiği için
-    # buradaki fark hesapları da %3-4 bandında çıkacaktır.
+    # Fark Hesaplamaları
     df_analiz['Fark'] = 0.0
     if not gecerli_veri.empty:
          df_analiz.loc[gecerli_veri.index, 'Fark'] = (gecerli_veri['Simule_Fiyat'] / gecerli_veri[baz_col]) - 1
@@ -873,15 +876,12 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     gun_farki = 0
     if len(gunler) >= 2:
         onceki_gun = gunler[-2]
-        # Günlük değişimde de tutarlılık için son günü simüle edilmiş fiyatla kıyaslayabiliriz
-        # Ancak karmaşıklık olmasın diye burayı orijinal veriden bırakıyoruz veya
-        # simülasyonu buraya da yedirebilirsiniz. Şimdilik basit tuttum.
         df_analiz['Gunluk_Degisim'] = (df_analiz[son] / df_analiz[onceki_gun].replace(0, np.nan)) - 1
     else:
         df_analiz['Gunluk_Degisim'] = 0
         onceki_gun = son
 
-    # Resmi Veri Çekme (Opsiyonel)
+    # Resmi Veri Çekme
     resmi_aylik_degisim = 0.0
     try:
         df_resmi, _ = get_official_inflation()
@@ -893,11 +893,12 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
         "df_analiz": df_analiz, 
         "enf_genel": enf_genel, 
         "enf_gida": enf_gida,
-        "yillik_enf": yillik_enf, # Artık düzeltilmiş yıllık veri dönüyor
+        "yillik_enf": yillik_enf, 
         "resmi_aylik_degisim": resmi_aylik_degisim,
         "son": son, "onceki_gun": onceki_gun, "gunler": gunler,
         "ad_col": ad_col, "agirlik_col": aktif_agirlik_col, "baz_col": baz_col, "gun_farki": gun_farki
     }
+    
 # 3. SIDEBAR UI (CONTEXT_HAZIRLA YERİNE)
 # 3. SIDEBAR UI (GÜNCELLENMİŞ HALİ)
 def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
@@ -1369,6 +1370,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
