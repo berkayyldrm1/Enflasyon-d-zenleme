@@ -904,10 +904,10 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
 # 3. SIDEBAR UI (CONTEXT_HAZIRLA YERİNE)
 # 3. SIDEBAR UI (GÜNCELLENMİŞ HALİ)
 def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
-    if st.sidebar.button("🔄 Önbelleği Temizle (Verileri Tazele)"):
+    if df_analiz_base is None: return None
+    if st.sidebar.button("🔄 Verileri Yenile (Önbelleği Sil)", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
-    if df_analiz_base is None: return None
 
     # --- 1. YERLEŞİM PLANI (LAYOUT) ---
     # En üstte AI Görüşü için yer ayırıyoruz (Henüz boş)
@@ -1477,6 +1477,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
