@@ -1423,6 +1423,7 @@ def main():
             sync_clicked = st.button("SİSTEMİ SENKRONİZE ET ⚡", type="primary", use_container_width=True)
 
         # İşlemleri kolonun DIŞINDA yapıyoruz ki progress bar ve uyarılar tam ekran görünsün
+        # İşlemleri kolonun DIŞINDA yapıyoruz
         if sync_clicked:
             progress_bar = st.progress(0, text="Veri akışı sağlanıyor...")
             res = html_isleyici(lambda p: progress_bar.progress(min(1.0, max(0.0, p)), text="Senkronizasyon sürüyor..."))
@@ -1433,18 +1434,19 @@ def main():
             
             # Sonuç Kontrolü
             if "OK" in res:
-                st.cache_data.clear() # Mevcut cache'i temizle
-                st.success('Sistem Senkronize Edildi! Sayfa yenileniyor...', icon='🚀')
-                # GitHub API'nin dosyayı sunucuda tazelemesi için 2 saniye bekleme süresi
-                time.sleep(2) 
-                st.rerun() # Sayfayı yenile
+                st.success('Sistem Senkronize Edildi! GitHub sunucuları güncelleniyor...', icon='🚀')
+                
+                # KRİTİK DÜZELTME: GitHub API'nin yeni veriyi algılaması için 8 saniye zaman tanıyoruz
+                time.sleep(8) 
+                
+                # Hafızayı (cache) bekledikten SONRA temizliyoruz ki eski dosyayı tekrar hafızaya almasın
+                st.cache_data.clear() 
+                
+                st.rerun() # Şimdi yenile
                 
             elif "Veri bulunamadı" in res:
-                # Eğer yeni eklenecek veri yoksa kullanıcıyı uyar ve sayfayı boşuna yenileme
-                st.warning("⚠️ Yeni veri akışı yok. Güncellenecek yeni fiyat veya ZIP dosyası bulunamadı.")
-                
+                st.warning("⚠️ Yeni veri akışı yok. Güncellenecek yeni fiyat bulunamadı.")
             else:
-                # Github Token süresi bitmesi, API limiti vb. durumlarda hatayı göster
                 st.error(f"⚠️ Senkronizasyon sırasında hata oluştu: {res}")
 
     # --- Veri Yükleme ---
@@ -1472,6 +1474,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
