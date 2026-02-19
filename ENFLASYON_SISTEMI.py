@@ -1020,18 +1020,20 @@ def sayfa_piyasa_ozeti(ctx):
     st.markdown("---")
     
     # --- YENİ EKLENEN: TOP 10 LİSTESİ ---
-    st.markdown("### 🔥 Günlük Hızlı Fiyat Hareketleri (Top 10)")
+    # --- YENİ EKLENEN: TOP 10 LİSTESİ (SİMÜLASYON UYUMLU) ---
+    st.markdown("### 🔥 Fiyatı En Çok Değişenler (Simüle Edilmiş - Top 10)")
     c_art, c_az = st.columns(2)
     
-    df_gunluk = ctx["df_analiz"].dropna(subset=['Gunluk_Degisim', ctx['son'], ctx['ad_col']])
-    artan_10 = df_gunluk[df_gunluk['Gunluk_Degisim'] > 0].sort_values('Gunluk_Degisim', ascending=False).head(10)
-    azalan_10 = df_gunluk[df_gunluk['Gunluk_Degisim'] < 0].sort_values('Gunluk_Degisim', ascending=True).head(10)
+    # Gunluk_Degisim yerine simüle edilmiş "Fark" kolonunu baz alıyoruz
+    df_fark = ctx["df_analiz"].dropna(subset=['Fark', ctx['son'], ctx['ad_col']])
+    artan_10 = df_fark[df_fark['Fark'] > 0].sort_values('Fark', ascending=False).head(10)
+    azalan_10 = df_fark[df_fark['Fark'] < 0].sort_values('Fark', ascending=True).head(10)
     
     with c_art:
         st.markdown("<div style='color:#ef4444; font-weight:700; font-size:16px; margin-bottom:10px;'>🔺 EN ÇOK ARTAN 10 ÜRÜN</div>", unsafe_allow_html=True)
         if not artan_10.empty:
             disp_artan = artan_10[[ctx['ad_col'], ctx['son']]].copy()
-            disp_artan['Değişim'] = artan_10['Gunluk_Degisim'] * 100
+            disp_artan['Değişim'] = artan_10['Fark'] * 100
             st.dataframe(
                 disp_artan,
                 column_config={
@@ -1042,13 +1044,13 @@ def sayfa_piyasa_ozeti(ctx):
                 hide_index=True, use_container_width=True
             )
         else:
-            st.info("Bugün fiyatı artan ürün tespit edilmedi.")
+            st.info("Fiyatı artan ürün tespit edilmedi.")
             
     with c_az:
         st.markdown("<div style='color:#22c55e; font-weight:700; font-size:16px; margin-bottom:10px;'>🔻 EN ÇOK DÜŞEN 10 ÜRÜN</div>", unsafe_allow_html=True)
         if not azalan_10.empty:
             disp_azalan = azalan_10[[ctx['ad_col'], ctx['son']]].copy()
-            disp_azalan['Değişim'] = azalan_10['Gunluk_Degisim'] * 100
+            disp_azalan['Değişim'] = azalan_10['Fark'] * 100
             st.dataframe(
                 disp_azalan,
                 column_config={
@@ -1059,7 +1061,7 @@ def sayfa_piyasa_ozeti(ctx):
                 hide_index=True, use_container_width=True
             )
         else:
-            st.info("Bugün fiyatı düşen ürün tespit edilmedi.")
+            st.info("Fiyatı düşen ürün tespit edilmedi.")
 
     st.markdown("---")
     
@@ -1340,6 +1342,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
