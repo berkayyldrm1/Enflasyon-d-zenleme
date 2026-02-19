@@ -723,11 +723,11 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     df_analiz = df_analiz_base.copy()
     
     # --- AYAR 1: AYLIK ENFLASYON SİMÜLASYONU ---
-    SIM_ALT_LIMIT = 1.025  # %2.0
-    SIM_UST_LIMIT = 1.025  # %4.5
+    SIM_ALT_LIMIT = 1.030  # %2.0
+    SIM_UST_LIMIT = 1.035 # %4.5
     
     # --- AYAR 2: YILLIK ENFLASYON HEDEFİ ---
-    BEKLENEN_AYLIK_ORT = 2.25 
+    BEKLENEN_AYLIK_ORT = 3.10 
     
     for col in gunler: df_analiz[col] = pd.to_numeric(df_analiz[col], errors='coerce')
     if baz_col in df_analiz.columns: df_analiz[baz_col] = df_analiz[baz_col].fillna(df_analiz[son])
@@ -1351,6 +1351,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
