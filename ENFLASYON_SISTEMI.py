@@ -1,5 +1,5 @@
 # GEREKLİ KÜTÜPHANELER:
-# pip install streamlit-lottie python-docx plotly pandas xlsxwriter matplotlib requests
+# pip install streamlit-lottie python-docx plotly pandas xlsxwriter matplotlib requests PyGithub
 
 import streamlit as st
 import pandas as pd
@@ -42,18 +42,15 @@ def apply_theme():
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
 
-        /* --- HEADER VE TOOLBAR GİZLEME --- */
         header {visibility: hidden;}
         [data-testid="stHeader"] { visibility: hidden; height: 0px; }
         [data-testid="stToolbar"] { display: none; }
         .main .block-container { padding-top: 1rem; }
 
-        /* --- GLOBAL YAZI RENGİ (BEYAZ) --- */
         .stApp, p, h1, h2, h3, h4, h5, h6, label, .stMarkdown, .stDataFrame div, .stDataFrame span {
             color: #ffffff;
         }
 
-        /* --- DROPDOWN (SELECT-BOX) DÜZELTMESİ --- */
         div[data-baseweb="select"] > div {
             color: #ffffff !important;
             background-color: rgba(255, 255, 255, 0.05);
@@ -70,12 +67,10 @@ def apply_theme():
             background-color: #e2e8f0 !important;
         }
 
-        /* --- RENKLENDİRME İÇİN ÖZEL SINIFLAR --- */
         .pg-red { color: #fca5a5 !important; }
         .pg-green { color: #6ee7b7 !important; }
         .pg-yellow { color: #fde047 !important; }
 
-        /* --- ANİMASYON TANIMLARI --- */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translate3d(0, 20px, 0); }
             to { opacity: 1; transform: translate3d(0, 0, 0); }
@@ -98,13 +93,11 @@ def apply_theme():
             font-family: 'Inter', sans-serif;
         }
 
-        /* Sidebar Styling */
         section[data-testid="stSidebar"] {
             background-color: #090a0c;
             border-right: 1px solid var(--border);
         }
 
-        /* --- YATAY MENÜ --- */
         [data-testid="stRadio"] > label {
             display: none !important;
         }
@@ -163,7 +156,6 @@ def apply_theme():
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
         }
 
-        /* --- KART TASARIMLARI --- */
         .kpi-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
@@ -200,7 +192,6 @@ def apply_theme():
             text-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
         }
         
-        /* --- TICKER --- */
         .ticker-wrap {
             width: 100%;
             overflow: hidden;
@@ -226,7 +217,6 @@ def apply_theme():
             font-size: 13px;
         }
 
-        /* --- ÜRÜN KARTLARI --- */
         .pg-card {
             background: linear-gradient(145deg, rgba(30, 33, 40, 0.6), rgba(20, 23, 30, 0.8));
             border: 1px solid var(--border);
@@ -290,13 +280,11 @@ def create_word_report(text_content, tarih, df_analiz=None):
     buffer = BytesIO()
     try:
         doc = Document()
-        # Font Ayarları
         style = doc.styles['Normal']
         font = style.font
         font.name = 'Arial'
         font.size = Pt(11)
 
-        # Başlıklar
         head = doc.add_heading(f'ENFLASYON GÖRÜNÜM RAPORU', 0)
         head.alignment = WD_ALIGN_PARAGRAPH.CENTER
         
@@ -304,7 +292,6 @@ def create_word_report(text_content, tarih, df_analiz=None):
         subhead.alignment = WD_ALIGN_PARAGRAPH.RIGHT
         doc.add_paragraph("-" * 50)
 
-        # Metin İçeriği
         paragraphs = text_content.split('\n')
         for p_text in paragraphs:
             if not p_text.strip(): 
@@ -312,7 +299,6 @@ def create_word_report(text_content, tarih, df_analiz=None):
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
             
-            # Bold İşleme (** ile yapılanları bold yap)
             parts = p_text.split('**')
             for i, part in enumerate(parts):
                 run = p.add_run(part)
@@ -320,13 +306,11 @@ def create_word_report(text_content, tarih, df_analiz=None):
                     run.bold = True
                     run.font.color.rgb = RGBColor(0, 50, 100)
         
-        # Grafik Ekleme (Hata verirse atla ama dosyayı bozma)
         if df_analiz is not None and not df_analiz.empty and 'Fark' in df_analiz.columns:
             try:
                 doc.add_page_break()
                 doc.add_heading('EKLER: GÖRSEL ANALİZLER', 1)
                 
-                # Matplotlib Grafiği
                 data = pd.to_numeric(df_analiz['Fark'], errors='coerce').dropna() * 100
                 if not data.empty:
                     fig, ax = plt.subplots(figsize=(6, 4))
@@ -345,13 +329,11 @@ def create_word_report(text_content, tarih, df_analiz=None):
             except Exception as img_err:
                 doc.add_paragraph(f"[Grafik oluşturulamadı: {str(img_err)}]")
 
-        # Dosyayı Kaydet
         doc.save(buffer)
         buffer.seek(0)
         return buffer
 
     except Exception as e:
-        # Hata durumunda içinde hata mesajı olan bir dosya döndür
         err_doc = Document()
         err_doc.add_heading('HATA', 0)
         err_doc.add_paragraph(f"Rapor oluşturulurken hata oluştu: {str(e)}")
@@ -361,7 +343,6 @@ def create_word_report(text_content, tarih, df_analiz=None):
         return buffer
 
 # --- 4. GITHUB İŞLEMLERİ ---
-# @st.cache_resource  <--- BU SATIRI SİLİYORUZ
 def get_github_connection():
     try:
         return Github(st.secrets["github"]["token"])
@@ -373,44 +354,6 @@ def get_github_repo():
     if g:
         return g.get_repo(st.secrets["github"]["repo_name"])
     return None
-
-# @st.cache_data(ttl=600, show_spinner=False)  <--- BU SATIRI SİLİYORUZ
-def github_excel_oku(dosya_adi, sayfa_adi=None):
-    try:
-        repo_name = st.secrets["github"]["repo_name"]
-        branch = st.secrets["github"]["branch"]
-        token = st.secrets["github"]["token"]
-        
-        # --- GITHUB CDN ÖNBELLEK KIRICI (CACHE-BUSTER) ---
-        # URL'nin sonuna "?t=1234567" gibi o anki saniyeyi ekliyoruz.
-        # Bu sayede GitHub her seferinde "yepyeni bir dosya" istendiğini sanıp
-        # eski veriyi vermekten vazgeçiyor ve anlık en güncel dosyayı çekiyor!
-        timestamp = int(time.time())
-        url = f"https://raw.githubusercontent.com/{repo_name}/{branch}/{dosya_adi}?t={timestamp}"
-        
-        headers = {
-            "Authorization": f"token {token}",
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0"
-        }
-        
-        # Doğrudan Raw sunucusundan çekiyoruz (PyGithub aradan çıkıyor)
-        res = requests.get(url, headers=headers)
-        
-        if res.status_code != 200:
-            print(f"Hata Kodu: {res.status_code}")
-            return pd.DataFrame()
-            
-        if sayfa_adi:
-            df = pd.read_excel(BytesIO(res.content), sheet_name=sayfa_adi, dtype=str)
-        else:
-            df = pd.read_excel(BytesIO(res.content), dtype=str)
-            
-        return df
-    except Exception as e:
-        print(f"Raw Fetch Hatası: {e}")
-        return pd.DataFrame()
 
 def github_excel_guncelle(df_yeni, dosya_adi):
     repo = get_github_repo()
@@ -482,61 +425,41 @@ def fiyat_bul_siteye_gore(soup, kaynak_tipi):
     kaynak_tipi = str(kaynak_tipi).lower()
     
     try:
-        # ==========================================
-        # 🟢 1. MIGROS (Decompose Yöntemi - KESİN ÇÖZÜM)
-        # ==========================================
         if "migros" in kaynak_tipi:
-            # ADIM 1: Sayfadaki "Tehlikeli" Alanları Komple Sil (Decompose)
-            # Bu işlem slider'ları, benzer ürünleri, footer'ı HTML'den tamamen uçurur.
             cop_elementler = [
                 "sm-list-page-item", 
                 ".horizontal-list-page-items-container", 
                 "app-product-carousel",
                 ".similar-products", 
                 "div.badges-wrapper",
-                "mat-tab-body",  # Sekmeler (Benzer ürünler burada saklanır)
-                ".mat-mdc-tab-body-wrapper" # Senin özellikle istemediğin yer
+                "mat-tab-body", 
+                ".mat-mdc-tab-body-wrapper"
             ]
-            
             for cop in cop_elementler:
                 for element in soup.select(cop):
-                    element.decompose() # Elementi ağaçtan söküp atar
+                    element.decompose()
 
-            # ADIM 2: Şimdi temizlenmiş HTML'de fiyat ara
-            # H1 başlığının yanındaki fiyat bloğunu bulmaya çalış
             main_wrapper = soup.select_one(".name-price-wrapper")
-            
             if main_wrapper:
-                # Öncelik sırasına göre seçiciler
                 seciciler = [
-                    (".money-discount-label-wrapper .sale-price", "Migros(Indirim)"), # Money İndirimi
+                    (".money-discount-label-wrapper .sale-price", "Migros(Indirim)"),
                     (".single-price-amount", "Migros(Normal)"),
                     (".price.subtitle-1", "Migros(Subtitle)"),
                     ("#sale-price", "Migros(SaleID)")
                 ]
-                
                 for css_kural, etiket in seciciler:
                     el = main_wrapper.select_one(css_kural)
                     if el:
                         val = temizle_fiyat(el.get_text())
                         if val and val > 0: return val
             
-            # ADIM 3: Eğer wrapper bulunamadıysa (ki decompose sonrası çok güvenli)
-            # Sayfada kalan 'TL' ibareli ilk geçerli fiyatı al.
-            # Artık sliderlar silindiği için burası ana fiyatı bulacaktır.
             if fiyat == 0:
                 text_content = soup.get_text()
-                # Regex ile "1.250,50 TL" formatını ara
-                import re
                 match = re.search(r'(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)\s*(?:TL|₺)', text_content)
                 if match:
                     return temizle_fiyat(match.group(1))
 
-        # ==========================================
-        # 🟢 2. CARREFOURSA (Decompose Yöntemi)
-        # ==========================================
         elif "carrefour" in kaynak_tipi:
-            # Carrefour'daki slider ve sekmeleri sil
             cop_elementler = [
                 ".product-carousel",
                 ".category-tabs",
@@ -548,16 +471,12 @@ def fiyat_bul_siteye_gore(soup, kaynak_tipi):
                 for element in soup.select(cop):
                     element.decompose()
 
-            # Temiz HTML'de arama yap
             price_tag = soup.select_one(".item-price")
             if price_tag: return temizle_fiyat(price_tag.get_text())
             
             alt_tag = soup.select_one(".priceLineThrough")
             if alt_tag: return temizle_fiyat(alt_tag.get_text())
 
-        # ==========================================
-        # 🟢 3. CIMRI (Standart)
-        # ==========================================
         elif "cimri" in kaynak_tipi:
             cimri_tag = soup.select_one("span.yEvpr")
             if cimri_tag: return temizle_fiyat(cimri_tag.get_text())
@@ -566,52 +485,39 @@ def fiyat_bul_siteye_gore(soup, kaynak_tipi):
         print(f"Parser Hatası ({kaynak_tipi}): {e}")
         
     return 0
-         
-    
-# --- 2. ANA İŞLEYİCİ (ZIP Okuyucu ve Hesaplayıcı) ---
-# --- 2. ANA İŞLEYİCİ (MANUEL + ZIP + GEOMETRİK ORTALAMA) ---
+          
+# --- ANA İŞLEYİCİ (ZIP Okuyucu ve Hesaplayıcı) ---
 def html_isleyici(progress_callback):
     repo = get_github_repo()
     if not repo: return "GitHub Bağlantı Hatası"
     
     progress_callback(0.05) 
     try:
-        # Excel Okuma
-        df_conf = github_excel_oku(EXCEL_DOSYASI, SAYFA_ADI)
+        df_conf = pd.DataFrame() # Basit bir dataframe döndür, çünkü verileri doğrudan cache'siz okuyacağız.
+        c = repo.get_contents(EXCEL_DOSYASI, ref=st.secrets["github"]["branch"])
+        df_conf = pd.read_excel(BytesIO(c.decoded_content), sheet_name=SAYFA_ADI, dtype=str)
         df_conf.columns = df_conf.columns.str.strip()
         
         kod_col = next((c for c in df_conf.columns if c.lower() == 'kod'), 'Kod')
         ad_col = next((c for c in df_conf.columns if 'ad' in c.lower()), 'Madde_Adi')
-        
-        # Manuel Fiyat Sütununu Bul (Büyük/küçük harf duyarlı olmaması için)
         manuel_col = next((c for c in df_conf.columns if 'manuel' in c.lower() and 'fiyat' in c.lower()), None)
 
-        # Ürün Adı Haritası
         urun_isimleri = pd.Series(df_conf[ad_col].values, index=df_conf[kod_col].astype(str).apply(kod_standartlastir)).to_dict()
-
-        # Veri Havuzu: Kod -> [Fiyat1, Fiyat2...]
         veri_havuzu = {}
 
-        # -------------------------------------------------------
-        # ADIM 1: MANUEL FİYATLARI EKLE (YENİ EKLENEN KISIM)
-        # -------------------------------------------------------
         if manuel_col:
             for _, row in df_conf.iterrows():
                 try:
                     kod = kod_standartlastir(row[kod_col])
-                    # Manuel fiyatı temizle ve al
                     fiyat_manuel = temizle_fiyat(row[manuel_col])
                     
                     if fiyat_manuel and fiyat_manuel > 0:
                         if kod not in veri_havuzu:
                             veri_havuzu[kod] = []
-                        # Manuel fiyatı havuza ekle
                         veri_havuzu[kod].append(fiyat_manuel)
                 except:
                     continue 
-        # -------------------------------------------------------
 
-        # ADIM 2: ZIP DOSYALARINI TARA (MIGROS + CIMRI)
         contents = repo.get_contents("", ref=st.secrets["github"]["branch"])
         zip_files = [c for c in contents if c.name.endswith(".zip") and c.name.startswith("Bolum")]
         total_zips = len(zip_files)
@@ -628,7 +534,6 @@ def html_isleyici(progress_callback):
                     for file_name in z.namelist():
                         if not file_name.endswith(('.html', '.htm')): continue
                         
-                        # Dosya Filtreleme (Sadece Migros ve Cimri)
                         fname_lower = file_name.lower()
                         if "migros" not in fname_lower and "cimri" not in fname_lower:
                             continue 
@@ -641,12 +546,10 @@ def html_isleyici(progress_callback):
                         with z.open(file_name) as f:
                             raw = f.read().decode("utf-8", errors="ignore")
                             
-                            # Kaynak Tipi
                             if "migros" in fname_lower: kaynak_tipi = "migros"
                             elif "cimri" in fname_lower: kaynak_tipi = "cimri"
                             else: kaynak_tipi = "bilinmiyor"
 
-                            # Parse İşlemi
                             soup = BeautifulSoup(raw, 'html.parser')
                             fiyat = fiyat_bul_siteye_gore(soup, kaynak_tipi)
                             
@@ -659,24 +562,19 @@ def html_isleyici(progress_callback):
                 print(f"Zip Okuma Hatası ({zip_file.name}): {e}")
                 continue
 
-        # --- 3. SONUÇLARI HESAPLA ---
-        # --- 3. SONUÇLARI HESAPLA (MAKSİMUM FİYAT - YÜKSEK ENFLASYON MODU) ---
-        final_list = []
-        # Sunucu neresi olursa olsun zorla Türkiye saatini (UTC+3) kullan
+        # --- ZAMAN DÜZELTMESİ (Türkiye Saati) ---
         tr_saati = datetime.utcnow() + timedelta(hours=3)
         bugun = tr_saati.strftime("%Y-%m-%d")
         simdi = tr_saati.strftime("%H:%M")
 
+        final_list = []
         for kod, fiyatlar in veri_havuzu.items():
             if fiyatlar:
-                # 0'dan büyük fiyatlar
                 clean_vals = [p for p in fiyatlar if p > 0]
                 
                 if clean_vals:
-                    # DEĞİŞİKLİK BURADA: MAX ALIYORUZ
-                    # Birden fazla kaynak varsa en pahalısını seçer.
                     if len(clean_vals) > 1:
-                        final_fiyat = float(max(clean_vals)) # En yüksek fiyatı baz al
+                        final_fiyat = float(max(clean_vals))
                         kaynak_str = f"Max ({len(clean_vals)} Kaynak)"
                     else:
                         final_fiyat = clean_vals[0]
@@ -744,7 +642,7 @@ def generate_detailed_static_report(df_analiz, tarih, enf_genel, enf_gida, gun_f
 {dec_str}
 
 **4. 💡 SONUÇ**
-Tahmin modelimiz, ay sonu kapanışının **%{tahmin:.2f}** bandında olacağını öngörmektedir.
+Hesaplanan verilere göre ay sonu projeksiyonu **%{tahmin:.2f}** bandında seyretmektedir.
 
 ---
 *Otomatik Rapor Sistemi | Validasyon Müdürlüğü*
@@ -773,7 +671,7 @@ def style_chart(fig, is_pdf=False, is_sunburst=False):
 
 # --- 9. VERİ VE HESAPLAMA MOTORLARI ---
 
-# 1. VERİ GETİR
+# 1. VERİ GETİR (Önbellek (Cache) tamamen iptal edildi, ham URL üzerinden saniye bazlı taze veri çeker)
 def verileri_getir_cache():
     try:
         repo_name = st.secrets["github"]["repo_name"]
@@ -782,56 +680,30 @@ def verileri_getir_cache():
         
         headers = {
             "Authorization": f"token {token}",
-            "Accept": "application/vnd.github.v3+json",
-            "Cache-Control": "no-cache"
+            "Cache-Control": "no-cache, max-age=0, must-revalidate",
+            "Pragma": "no-cache"
         }
         
-        # ---------------------------------------------------------
-        # 🔴 BÜYÜK HİLE: ÖNCE GITHUB'A "EN SON YAPILAN İŞLEMİN KİMLİĞİNİ (SHA)" SORUYORUZ
-        # ---------------------------------------------------------
-        commit_url = f"https://api.github.com/repos/{repo_name}/commits/{branch}"
-        commit_res = requests.get(commit_url, headers=headers)
+        # Saniyelik cache kırıcı
+        timestamp = int(time.time())
+        url_fiyat = f"https://raw.githubusercontent.com/{repo_name}/{branch}/{FIYAT_DOSYASI}?t={timestamp}"
+        url_conf = f"https://raw.githubusercontent.com/{repo_name}/{branch}/{EXCEL_DOSYASI}?t={timestamp}"
         
-        if commit_res.status_code != 200:
-            st.sidebar.error("Commit kimliği okunamadı!")
-            return None, None, None
-            
-        latest_sha = commit_res.json()['sha'] # İşte sihirli anahtar bu!
-        st.sidebar.success(f"🔑 Aktif Veri Kimliği: {latest_sha[:7]}")
-        
-        # ---------------------------------------------------------
-        # 🔴 ŞİMDİ O KİMLİKLE DOSYAYI İSTİYORUZ (GITHUB ESKİ DOSYAYI VEREMEZ!)
-        # ---------------------------------------------------------
-        url_fiyat = f"https://api.github.com/repos/{repo_name}/contents/{FIYAT_DOSYASI}?ref={latest_sha}"
         res_fiyat = requests.get(url_fiyat, headers=headers)
-        
-        if res_fiyat.status_code != 200:
-            st.sidebar.error("Fiyat dosyası okunamadı!")
-            return None, None, None
-            
-        content_fiyat = base64.b64decode(res_fiyat.json()['content'])
-        df_f = pd.read_excel(BytesIO(content_fiyat), dtype=str)
-        
-        # KONFİGÜRASYON DOSYASINI DA AYNI ŞEKİLDE ÇEKİYORUZ
-        url_conf = f"https://api.github.com/repos/{repo_name}/contents/{EXCEL_DOSYASI}?ref={latest_sha}"
         res_conf = requests.get(url_conf, headers=headers)
         
-        if res_conf.status_code == 200:
-            content_conf = base64.b64decode(res_conf.json()['content'])
-            df_s = pd.read_excel(BytesIO(content_conf), sheet_name=SAYFA_ADI, dtype=str)
-        else:
-            df_s = pd.DataFrame()
+        if res_fiyat.status_code != 200 or res_conf.status_code != 200:
+            return None, None, None
+            
+        df_f = pd.read_excel(BytesIO(res_fiyat.content), dtype=str)
+        df_s = pd.read_excel(BytesIO(res_conf.content), sheet_name=SAYFA_ADI, dtype=str)
 
-        # --- VERİ İŞLEME (Senin Orijinal Mantığın) ---
         if df_f.empty or df_s.empty: return None, None, None
 
         df_f['Tarih_DT'] = pd.to_datetime(df_f['Tarih'], errors='coerce')
         df_f = df_f.dropna(subset=['Tarih_DT']).sort_values('Tarih_DT')
         df_f['Tarih_Str'] = df_f['Tarih_DT'].dt.strftime('%Y-%m-%d')
         raw_dates = df_f['Tarih_Str'].unique().tolist()
-        
-        # GERÇEK ZAMANLI RADAR
-        st.sidebar.info(f"📡 API'nin Gördüğü Son Tarih: {raw_dates[-1] if raw_dates else 'YOK'}")
 
         df_s.columns = df_s.columns.str.strip()
         kod_col = next((c for c in df_s.columns if c.lower() == 'kod'), 'Kod')
@@ -858,27 +730,11 @@ def verileri_getir_cache():
     except Exception as e:
         st.sidebar.error(f"Kritik Hata: {str(e)}")
         return None, None, None
-# 2. HESAPLAMA YAP
-# 2. HESAPLAMA YAP (GÜNCELLENMİŞ TAM BLOK)
-# 2. HESAPLAMA YAP (GÜNCELLENMİŞ - HEDEF %30-35 YILLIK)
-# @st.cache_data(show_spinner=False)  <--- BU SATIRI SİLİYORUZ
+
+# 2. HESAPLAMA YAP (SEK HALİ - SİMÜLASYON İPTAL)
 def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, ad_col, agirlik_col, baz_col, aktif_agirlik_col, son):
-    # (İçerik aynı kalacak...)
     df_analiz = df_analiz_base.copy()
     
-    # --- AYAR 1: AYLIK ENFLASYON SİMÜLASYONU ---
-    # Aylık sonucun %3 - %4.5 aralığında çıkması için zam şoku
-    # --- AYAR 1: AYLIK ENFLASYON SİMÜLASYONU ---
-    # Aylık sonucun dinamik çıkması için şok aralığı
-    SIM_ALT_LIMIT = 1.020  # %2.0 (Alt Sınır)
-    SIM_UST_LIMIT = 1.021  # %4.5 (Üst Sınır)
-    
-    # --- AYAR 2: YILLIK ENFLASYON HEDEFİ ---
-    # Yıllık enflasyonu %30-35 bandına çekmek için, yılın geri kalanında
-    # beklenen aylık ortalama enflasyon oranı.
-    BEKLENEN_AYLIK_ORT = 2.25 
-    # ---------------------------------------------------------
-
     # Sayısal dönüşümler
     for col in gunler: 
         df_analiz[col] = pd.to_numeric(df_analiz[col], errors='coerce')
@@ -911,20 +767,14 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     if not gecerli_veri.empty:
         w = gecerli_veri[aktif_agirlik_col]
         
-        # 1. ADIM: GERÇEK ORANI HESAPLA
-        base_rel = gecerli_veri['Aylik_Ortalama'] / gecerli_veri[baz_col]
+        # 1. ADIM: GERÇEK ORANI HESAPLA (SİMÜLASYON YORUMA ALINDI)
+        p_rel = gecerli_veri['Aylik_Ortalama'] / gecerli_veri[baz_col]
         
-        # 2. ADIM: SİMÜLASYON ŞOKU EKLE
-        simulasyon_soku = np.random.uniform(SIM_ALT_LIMIT, SIM_UST_LIMIT, size=len(base_rel))
-        
-        # Şoklanmış yeni oranlar
-        p_rel = base_rel * simulasyon_soku
-        
-        # Görselleştirmelerin tutarlı olması için veri tabanındaki fiyatları sanal artır:
-        gecerli_veri['Simule_Fiyat'] = gecerli_veri[baz_col] * p_rel
+        # SİMÜLASYON İPTAL EDİLDİ (Direkt gerçek veriyi kullan)
+        gecerli_veri['Simule_Fiyat'] = gecerli_veri['Aylik_Ortalama']
         
         # Ana tabloyu güncelle 
-        df_analiz.loc[gecerli_veri.index, 'Aylik_Ortalama'] = gecerli_veri['Simule_Fiyat']
+        df_analiz.loc[gecerli_veri.index, 'Aylik_Ortalama'] = gecerli_veri['Aylik_Ortalama']
 
         # 3. ADIM: GENEL ENFLASYON HESABI
         if w.sum() > 0: 
@@ -936,16 +786,9 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
             gida_rel = gida_df['Simule_Fiyat'] / gida_df[baz_col]
             enf_gida = ((gida_df[aktif_agirlik_col] * gida_rel).sum() / gida_df[aktif_agirlik_col].sum() * 100) - 100
 
-        # 5. ADIM: YILLIK ENFLASYON (HEDEF %30-35 BANDI)
-        # Formül: (1 + BuAy) * (1 + Beklenti)^11 - 1
-        if enf_genel > 0:
-            # Hesaplanan genel enflasyon (örn: 4.37) ile beklenen ortalamayı (2.25) birleştiriyoruz
-            yillik_enf = ((1 + enf_genel/100) * (1 + BEKLENEN_AYLIK_ORT/100)**11 - 1) * 100
-            
-            # Hafif rastgelelik ekle (Hep sabit sayı çıkmasın diye)
-            yillik_enf = yillik_enf * np.random.uniform(0.98, 1.02)
-        else:
-            yillik_enf = 0.0
+        # 5. ADIM: YILLIK ENFLASYON 
+        # (Yıllık enflasyon formülü manipüle edilmeden bırakıldı. Veritabanı doldukça gerçek hesaplayacak)
+        yillik_enf = 0.0 # Şimdilik sadece aylık performans gösteriliyor
 
     # Fark Hesaplamaları
     df_analiz['Fark'] = 0.0
@@ -971,6 +814,9 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
              resmi_aylik_degisim = ((df_resmi.iloc[-1]['Resmi_TUFE'] / df_resmi.iloc[-2]['Resmi_TUFE']) - 1) * 100
     except: pass
 
+    # Tahmin için mevcut değeri dönüyoruz
+    tahmin = enf_genel
+
     return {
         "df_analiz": df_analiz, 
         "enf_genel": enf_genel, 
@@ -978,27 +824,17 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
         "yillik_enf": yillik_enf, 
         "resmi_aylik_degisim": resmi_aylik_degisim,
         "son": son, "onceki_gun": onceki_gun, "gunler": gunler,
-        "ad_col": ad_col, "agirlik_col": aktif_agirlik_col, "baz_col": baz_col, "gun_farki": gun_farki
+        "ad_col": ad_col, "agirlik_col": aktif_agirlik_col, "baz_col": baz_col, "gun_farki": gun_farki, "tahmin": tahmin
     }
     
-# 3. SIDEBAR UI (CONTEXT_HAZIRLA YERİNE)
-# 3. SIDEBAR UI (GÜNCELLENMİŞ HALİ)
+# 3. SIDEBAR UI
 def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
     if df_analiz_base is None: return None
-    if st.sidebar.button("🔄 Verileri Yenile (Önbelleği Sil)", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
 
-    # --- 1. YERLEŞİM PLANI (LAYOUT) ---
-    # En üstte AI Görüşü için yer ayırıyoruz (Henüz boş)
     ai_container = st.sidebar.container()
-    
-    st.sidebar.markdown("---") # Ayıraç
-    
-    # --- 2. VERİ AYARLARI (ORTA) ---
+    st.sidebar.markdown("---")
     st.sidebar.markdown("### ⚙️ Veri Ayarları")
     
-    # Lottie (İsteğe bağlı görsel)
     lottie_url = "https://lottie.host/98606416-297c-4a37-9b2a-714013063529/5D6o8k8fW0.json"
     try:
         lottie_json = load_lottieurl(lottie_url)
@@ -1006,7 +842,6 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
              if lottie_json: st_lottie(lottie_json, height=100, key="nav_anim")
     except: pass
 
-    # Tarih Seçimi Mantığı
     BASLANGIC_LIMITI = "2026-02-04"
     tum_tarihler = sorted([d for d in raw_dates if d >= BASLANGIC_LIMITI], reverse=True)
     
@@ -1014,10 +849,8 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
         st.sidebar.warning("Veri henüz oluşmadı.")
         return None
         
-    # 'key' değerine en yeni tarihi ekliyoruz. Böylece yeni gün geldiğinde menü kendini zorla sıfırlayıp en yeni günü seçecek!
     secilen_tarih = st.sidebar.selectbox("Rapor Tarihi:", options=tum_tarihler, index=0, key=f"tarih_secici_{tum_tarihler[0]}")
     
-    # Tarih bazlı hesaplamalar (Logic)
     tum_gunler_sirali = sorted([c for c in df_analiz_base.columns if re.match(r'\d{4}-\d{2}-\d{2}', str(c)) and c >= BASLANGIC_LIMITI])
     
     if secilen_tarih in tum_gunler_sirali:
@@ -1038,30 +871,19 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
     else:
         aktif_agirlik_col = col_w25; baz_col = gunler[0]
 
-    # HESAPLAMAYI YAP (Context Oluştur)
     ctx = hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, ad_col, agirlik_col=None, baz_col=baz_col, aktif_agirlik_col=aktif_agirlik_col, son=son)
 
-    # --- 3. AI GÖRÜŞÜNÜ EN TEPEYE DOLDURMA (Refill Logic) ---
-    # Hesaplama bittiği için ctx verisini kullanarak en üstteki kutuyu dolduruyoruz.
     with ai_container:
         st.markdown("### 🧠 AI Görüşü")
-        
         genel = ctx["enf_genel"]
         gida = ctx["enf_gida"]
         
-        # Basit Kural Tabanlı Yorum Mantığı
         if genel > 5:
-            durum = "KRİTİK"
-            renk = "#ef4444" # Kırmızı
-            yorum = "Enflasyon ivmesi çok yüksek. Harcama disiplini şart."
+            durum = "KRİTİK"; renk = "#ef4444"; yorum = "Enflasyon ivmesi çok yüksek. Harcama disiplini şart."
         elif genel > 2:
-            durum = "YÜKSEK"
-            renk = "#f59e0b" # Turuncu
-            yorum = "Fiyatlar artış trendinde. Lüks harcamalar ertelenmeli."
+            durum = "YÜKSEK"; renk = "#f59e0b"; yorum = "Fiyatlar artış trendinde. Lüks harcamalar ertelenmeli."
         else:
-            durum = "STABİL"
-            renk = "#10b981" # Yeşil
-            yorum = "Piyasa dengeli görünüyor. Ani şok beklenmiyor."
+            durum = "STABİL"; renk = "#10b981"; yorum = "Piyasa dengeli görünüyor. Ani şok beklenmiyor."
             
         ek_not = ""
         if gida > (genel * 1.2):
@@ -1075,10 +897,8 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
         </div>
         """, unsafe_allow_html=True)
 
-    # --- 4. PİYASALAR (EN ALT) ---
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🌍 Piyasalar")
-    
     symbols = [ 
         {"s": "FX_IDC:USDTRY", "d": "Dolar"}, 
         {"s": "FX_IDC:EURTRY", "d": "Euro"}, 
@@ -1086,8 +906,6 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
         {"s": "TVC:UKOIL", "d": "Brent Petrol"}, 
         {"s": "BINANCE:BTCUSDT", "d": "Bitcoin"} 
     ]
-    
-    # Widget'ları biraz daha kompakt hale getirdim
     for sym in symbols:
         widget_code = f"""<div class="tradingview-widget-container" style="border-radius:8px; overflow:hidden; margin-bottom:8px;"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>{{ "symbol": "{sym['s']}", "width": "100%", "height": 100, "locale": "tr", "dateRange": "1D", "colorTheme": "dark", "isTransparent": true, "autosize": true, "largeChartUrl": "" }}</script></div>"""
         with st.sidebar: components.html(widget_code, height=100)
@@ -1095,48 +913,31 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
     return ctx
 
 # --- SAYFA FONKSİYONLARI ---
-# ANA SAYFA FONKSİYONU KALDIRILDI
 
 def sayfa_piyasa_ozeti(ctx):
-    # --- 1. KPI KARTLARI ---
     c1, c2, c3, c4 = st.columns(4)
     
-    # Kart 1: Genel Enflasyon
     with c1: 
         st.markdown(f'<div class="kpi-card"><div class="kpi-title">GENEL ENFLASYON</div><div class="kpi-value">%{ctx["enf_genel"]:.2f}</div><div class="kpi-sub" style="color:#ef4444; font-size:12px;">Aylık Değişim</div></div>', unsafe_allow_html=True)
-    
-    # Kart 2: Gıda Enflasyonu
     with c2: 
         st.markdown(f'<div class="kpi-card"><div class="kpi-title">GIDA ENFLASYONU</div><div class="kpi-value">%{ctx["enf_gida"]:.2f}</div><div class="kpi-sub" style="color:#fca5a5; font-size:12px;">Mutfak Sepeti</div></div>', unsafe_allow_html=True)
-    
-    # Kart 3: YILLIK ENFLASYON (GÜNCELLENDİ)
-    # Rengi mor (#a78bfa) yaptık.
     with c3: 
         st.markdown(f'<div class="kpi-card"><div class="kpi-title">YILLIK ENFLASYON</div><div class="kpi-value">%{ctx["yillik_enf"]:.2f}</div><div class="kpi-sub" style="color:#a78bfa; font-size:12px;">Yıllık Değişim</div></div>', unsafe_allow_html=True)
-    
-    # Kart 4: Resmi Veri
     with c4: 
         st.markdown(f'<div class="kpi-card"><div class="kpi-title">RESMİ (TÜİK) VERİSİ</div><div class="kpi-value">%{ctx["resmi_aylik_degisim"]:.2f}</div><div class="kpi-sub" style="color:#fbbf24; font-size:12px;">Son Açıklanan Aylık</div></div>', unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # --- 2. TICKER (KAYAN YAZI) ---
     df = ctx["df_analiz"]
-    
-    # En çok artan
     inc = df.sort_values('Gunluk_Degisim', ascending=False).head(5)
-    # En çok düşen
     dec = df.sort_values('Gunluk_Degisim', ascending=True).head(5)
     
     items = []
-    
-    # ARTANLAR
     for _, r in inc.iterrows():
         val = r['Gunluk_Degisim']
         if val > 0:
             items.append(f"<span style='color:#ef4444; font-weight:800;'>▲ {r[ctx['ad_col']]} %{val*100:.1f}</span>")
             
-    # DÜŞENLER
     for _, r in dec.iterrows():
         val = r['Gunluk_Degisim']
         if val < 0:
@@ -1145,7 +946,6 @@ def sayfa_piyasa_ozeti(ctx):
     ticker_str = " &nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp; ".join(items)
     if not ticker_str: ticker_str = "Veri bekleniyor..."
 
-    # --- 3. TICKER HTML ---
     ticker_html = f"""
     <div class="ticker-wrap" style="background: rgba(255,255,255,0.02); border-top:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(255,255,255,0.1); padding:10px 0; margin-bottom:20px;">
         <div class="ticker-move">
@@ -1157,17 +957,9 @@ def sayfa_piyasa_ozeti(ctx):
     """
     st.markdown(ticker_html, unsafe_allow_html=True)
     
-    # --- 4. GRAFİK KISMI (MEVCUT HALİYLE KALACAK) ---
     col_g1, col_g2 = st.columns([2, 1])
-    # ... (Grafik kodlarının geri kalanı aynı) ...
-    # Burayı tekrar kopyalamıyorum, mevcut kodun alt kısmı aynen kalabilir.
-    # Ancak yukarıdaki KPI ve Ticker kısmını güncellemen yeterli.
     
     with col_g1:
-       # ... Grafik Kodları ...
-       # (Önceki cevabımdaki kodun aynısı)
-       
-       # Verileri al
        df_ana = ctx["df_analiz"].copy()
        df_ana = df_ana.loc[:, ~df_ana.columns.duplicated()]
        baz_col = ctx["baz_col"]
@@ -1225,7 +1017,6 @@ def sayfa_piyasa_ozeti(ctx):
            st.warning("Grafik verisi hesaplanamadı.")
 
     with col_g2:
-       # Özet Kutusu
        ozet_html = f"""
        <div class="kpi-card" style="height:100%">
            <div style="font-size:12px; color:#94a3b8; font-weight:700;">YÜKSELENLER</div>
@@ -1237,14 +1028,12 @@ def sayfa_piyasa_ozeti(ctx):
        """
        st.markdown(ozet_html, unsafe_allow_html=True)
 
-    # Tree Map
     st.subheader("Sektörel Isı Haritası")
     fig_tree = px.treemap(df, path=[px.Constant("Enflasyon Sepeti"), 'Grup', ctx['ad_col']], values=ctx['agirlik_col'], color='Fark', color_continuous_scale='RdYlGn_r')
     st.plotly_chart(style_chart(fig_tree, is_sunburst=True), use_container_width=True)
     
 def sayfa_kategori_detay(ctx):
     df = ctx["df_analiz"]
-    # NaN ve Geçersiz Verileri Filtrele
     df = df.dropna(subset=[ctx['son'], ctx['ad_col']])
     
     st.markdown("### 🔍 Kategori Bazlı Fiyat Takibi")
@@ -1284,7 +1073,6 @@ def sayfa_kategori_detay(ctx):
 def sayfa_tam_liste(ctx):
     st.markdown("### 📋 Detaylı Veri Seti")
     df = ctx["df_analiz"]
-    # NaN ve Geçersiz Verileri Filtrele
     df = df.dropna(subset=[ctx['son'], ctx['ad_col']])
     
     def fix_sparkline(row):
@@ -1303,21 +1091,18 @@ def sayfa_tam_liste(ctx):
 def sayfa_raporlama(ctx):
     st.markdown("### 📝 Stratejik Enflasyon Raporu")
     
-    # Rapor metnini oluştur
     rap_text = generate_detailed_static_report(
         ctx["df_analiz"], ctx["son"], ctx["enf_genel"], 
         ctx["enf_gida"], ctx["gun_farki"], ctx["tahmin"], 
         ctx["ad_col"], ctx["agirlik_col"]
     )
     
-    # Ekrana bas (HTML olarak)
     st.markdown(f"""
     <div style="background:rgba(255,255,255,0.03); padding:30px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); font-family:'Inter'; line-height:1.8; animation:fadeInUp 0.5s;">
         {rap_text.replace(chr(10), '<br>').replace('**', '<b>').replace('**', '</b>')}
     </div>
     """, unsafe_allow_html=True)
     
-    # Word dosyasını hazırla
     word_buffer = create_word_report(rap_text, ctx["son"], ctx["df_analiz"])
     
     st.download_button(
@@ -1335,23 +1120,17 @@ def sayfa_maddeler(ctx):
     ad_col = ctx["ad_col"]
 
     st.markdown("### 📦 Kategori ve Madde Analizi")
-    
-    # --- 1. SEKTÖREL ENFLASYON KARNESİ (ÖZET) ---
     st.markdown("#### 📊 Sektörel Enflasyon (Ay Başına Göre)")
-    st.info("💡 Bu grafik, simüle edilmiş fiyatlar üzerinden kategorilerin ağırlıklı ortalama artışını gösterir.")
 
-    # Ağırlıklı Ortalama Hesaplama Fonksiyonu
     def agirlikli_ort(x):
         w = x[agirlik_col]
-        val = x['Fark_Yuzde'] # hesapla_metrikler fonksiyonundan gelen Ay Başına Göre Değişim
+        val = x['Fark_Yuzde'] 
         if w.sum() == 0: return 0
         return (w * val).sum() / w.sum()
 
-    # Kategori bazlı grupla ve hesapla
     df_cat_summary = df.groupby('Grup').apply(agirlikli_ort).reset_index(name='Ortalama_Degisim')
-    df_cat_summary = df_cat_summary.sort_values('Ortalama_Degisim', ascending=True) # Grafikte düzgün durması için
+    df_cat_summary = df_cat_summary.sort_values('Ortalama_Degisim', ascending=True) 
     
-    # Sektör Grafiği
     fig_cat = px.bar(
         df_cat_summary, 
         x='Ortalama_Degisim', 
@@ -1359,7 +1138,7 @@ def sayfa_maddeler(ctx):
         orientation='h',
         text_auto='.2f',
         color='Ortalama_Degisim',
-        color_continuous_scale=['#10b981', '#f59e0b', '#ef4444'] # Yeşil -> Sarı -> Kırmızı Skalası
+        color_continuous_scale=['#10b981', '#f59e0b', '#ef4444'] 
     )
     fig_cat.update_layout(
         title="Kategori Bazlı Enflasyon (%)",
@@ -1371,38 +1150,29 @@ def sayfa_maddeler(ctx):
     st.plotly_chart(style_chart(fig_cat), use_container_width=True)
 
     st.markdown("---")
-
-    # --- 2. MADDE DETAYLARI (SEÇİMLİ) ---
     st.markdown("#### 🔎 Ürün Bazlı Detaylar")
-    st.markdown("<p style='color:#a1a1aa; font-size:14px;'>Bir kategori seçerek, o grubun içindeki ürünlerin bireysel performansını inceleyebilirsiniz.</p>", unsafe_allow_html=True)
     
-    # Kategori Seçimi
     kategoriler = ["TÜMÜ"] + sorted(df['Grup'].unique().tolist())
     col1, col2 = st.columns([1, 3])
     with col1: 
         secilen_kat = st.selectbox("Kategori Seçiniz:", options=kategoriler, index=0)
     
-    # Veri Filtreleme
     if secilen_kat == "TÜMÜ":
         df_sub = df.copy()
     else:
         df_sub = df[df['Grup'] == secilen_kat].copy()
         
-    # Sıralama (En çok artan en üstte veya grafikte en sağda olsun)
     df_sub = df_sub.sort_values('Fark_Yuzde', ascending=True)
 
     if not df_sub.empty:
-        # Renklendirme Mantığı
         colors = []
         for x in df_sub['Fark_Yuzde']:
-            if x < 0: colors.append('#10b981')     # Düşenler Yeşil
-            elif x < 2.5: colors.append('#fde047') # Hedef içi Sarı
-            else: colors.append('#ef4444')         # Yüksek Kırmızı
+            if x < 0: colors.append('#10b981')     
+            elif x < 2.5: colors.append('#fde047') 
+            else: colors.append('#ef4444')         
         
-        # Dinamik Yükseklik (Ürün sayısı arttıkça grafik uzasın)
         dynamic_height = max(500, len(df_sub) * 30)
 
-        # Çubuk Grafik
         fig = go.Figure(go.Bar(
             x=df_sub['Fark_Yuzde'], 
             y=df_sub[ad_col], 
@@ -1422,7 +1192,6 @@ def sayfa_maddeler(ctx):
         )
         st.plotly_chart(style_chart(fig), use_container_width=True)
         
-        # İsteğe Bağlı: Tablo Görünümü
         with st.expander("📄 Verileri Tablo Olarak Gör"):
             st.dataframe(
                 df_sub[[ad_col, 'Grup', 'Fark_Yuzde']].sort_values('Fark_Yuzde', ascending=False),
@@ -1439,7 +1208,6 @@ def sayfa_trend_analizi(ctx):
     st.markdown("### 📈 Trend Analizleri")
     df = ctx["df_analiz"]; gunler = ctx["gunler"]; agirlik_col = ctx["agirlik_col"]
     
-    # Not: Genel trend grafiği artık Özet sayfasında. Buraya sadece ürün bazlı trendleri bıraktım.
     st.info("ℹ️ Genel Enflasyon Trendi için 'Enflasyon Özeti' sayfasına bakınız.")
 
     st.subheader("Ürün Bazlı Fiyat Trendleri")
@@ -1452,33 +1220,25 @@ def sayfa_trend_analizi(ctx):
 
 # --- ANA MAIN ---
 def main():
-    
-    # --- AYAR: SENKRONİZASYON BUTONU ---
-    # Bu ayarı False yaparak butonu tamamen gizleyebilirsiniz.
     SENKRONIZASYON_AKTIF = True
-    
-    
-    
 
-    # --- Üst Bilgi Barı (Sticky Header) ---
     st.markdown(f"""
         <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 25px; 
             background:linear-gradient(90deg, #0f172a 0%, #1e1b4b 100%); border-radius:12px; margin-bottom:20px; margin-top:-30px; animation: fadeInUp 0.5s;">
             <div>
                 <div style="font-weight:800; font-size:24px; color:#fff;">
                     Enflasyon Monitörü 
-                    <span style="background:rgba(16,185,129,0.15); color:#34d399; font-size:10px; padding:3px 8px; border-radius:4px; border:1px solid rgba(16,185,129,0.2); vertical-align: middle;">SİMÜLASYON</span>
+                    <span style="background:rgba(59,130,246,0.15); color:#60a5fa; font-size:10px; padding:3px 8px; border-radius:4px; border:1px solid rgba(59,130,246,0.2); vertical-align: middle;">GERÇEK VERİ MODU</span>
                 </div>
                 <div style="font-size:12px; color:#94a3b8;">Yapay Zeka Destekli Enflasyon Analiz Platformu</div>
             </div>
             <div style="text-align:right;">
-                <div style="font-size:10px; color:#64748b; font-weight:700; letter-spacing:1.5px;">İSTANBUL</div>
-                <div style="font-size:20px; font-weight:700; color:#e2e8f0; font-family:'JetBrains Mono';">{datetime.now().strftime("%d.%m.%Y")}</div>
+                <div style="font-size:10px; color:#64748b; font-weight:700; letter-spacing:1.5px;">TÜRKİYE SAATİ</div>
+                <div style="font-size:20px; font-weight:700; color:#e2e8f0; font-family:'JetBrains Mono';">{(datetime.utcnow() + timedelta(hours=3)).strftime("%d.%m.%Y")}</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-    # --- Menü Tanımları (Ana Sayfa Kaldırıldı) ---
     menu_items = {
         "📊 Enflasyon Özeti": "Enflasyon Özeti", 
         "📈 Trendler": "Trendler",
@@ -1488,7 +1248,6 @@ def main():
         "📝 Raporlama": "Raporlama"
     }
     
-    # Menü Radyo Butonu
     secilen_etiket = st.radio(
         "Navigasyon", 
         options=list(menu_items.keys()), 
@@ -1498,16 +1257,11 @@ def main():
     )
     secim = menu_items[secilen_etiket]
 
-    # --- Senkronizasyon Butonu (İsteğe Bağlı) ---
-    # --- Senkronizasyon Butonu (İsteğe Bağlı) ---
     if SENKRONIZASYON_AKTIF:
         col_empty, col_btn = st.columns([4, 1])
         with col_btn:
-            # Butona tıklandığını bir değişkene atıyoruz
             sync_clicked = st.button("SİSTEMİ SENKRONİZE ET ⚡", type="primary", use_container_width=True)
 
-        # İşlemleri kolonun DIŞINDA yapıyoruz ki progress bar ve uyarılar tam ekran görünsün
-        # İşlemleri kolonun DIŞINDA yapıyoruz
         if sync_clicked:
             progress_bar = st.progress(0, text="Veri akışı sağlanıyor...")
             res = html_isleyici(lambda p: progress_bar.progress(min(1.0, max(0.0, p)), text="Senkronizasyon sürüyor..."))
@@ -1516,31 +1270,25 @@ def main():
             time.sleep(0.5)
             progress_bar.empty()
             
-            # Sonuç Kontrolü
-            # Sonuç Kontrolü
             if "OK" in res:
-                # Hem verileri hem de menüdeki eski seçim hafızasını siliyoruz!
                 st.cache_data.clear()
                 st.session_state.clear() 
-                
                 st.success('Sistem Senkronize Edildi! Sayfa yenileniyor...', icon='🚀')
                 time.sleep(1)
                 st.rerun()
                 
             elif "Veri bulunamadı" in res:
-                st.warning("⚠️ Yeni veri akışı yok. Güncellenecek yeni fiyat bulunamadı.")
+                st.warning("⚠️ Yeni veri akışı yok. Güncellenecek yeni fiyat veya ZIP dosyası bulunamadı.")
             else:
                 st.error(f"⚠️ Senkronizasyon sırasında hata oluştu: {res}")
 
-    # --- Veri Yükleme ---
-    with st.spinner("Veri tabanına bağlanılıyor..."):
+    with st.spinner("Veri tabanına bağlanılıyor (Önbelleksiz, Canlı Bağlantı)..."):
         df_base, r_dates, col_name = verileri_getir_cache()
     
     ctx = None
     if df_base is not None:
         ctx = ui_sidebar_ve_veri_hazirlama(df_base, r_dates, col_name)
 
-    # --- Sayfa Yönlendirme (ROUTER) ---
     if ctx: 
         if secim == "Enflasyon Özeti": sayfa_piyasa_ozeti(ctx)
         elif secim == "Trendler": sayfa_trend_analizi(ctx)
@@ -1549,7 +1297,6 @@ def main():
         elif secim == "Tam Liste": sayfa_tam_liste(ctx)
         elif secim == "Raporlama": sayfa_raporlama(ctx)
     else:
-        # Veri yüklenemediyse uyarı ver
         err_msg = "<br><div style='text-align:center; padding:20px; background:rgba(255,0,0,0.1); border-radius:10px; color:#fff;'>⚠️ Veri seti yüklenemedi veya internet bağlantısı yok. Lütfen sayfayı yenileyin.</div>"
         st.markdown(err_msg, unsafe_allow_html=True)
 
@@ -1557,66 +1304,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
