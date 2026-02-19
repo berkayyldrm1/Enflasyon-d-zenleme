@@ -722,7 +722,7 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     df_analiz = df_analiz_base.copy()
     
     # --- AYAR 1: AYLIK ENFLASYON SİMÜLASYONU ---
-    SIM_ALT_LIMIT = 1.020  # %2.0
+    SIM_ALT_LIMIT = 1.025  # %2.0
     SIM_UST_LIMIT = 1.045  # %4.5
     
     # --- AYAR 2: YILLIK ENFLASYON HEDEFİ ---
@@ -1293,3 +1293,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
