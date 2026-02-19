@@ -379,13 +379,24 @@ def github_excel_oku(dosya_adi, sayfa_adi=None):
     repo = get_github_repo()
     if not repo: return pd.DataFrame()
     try:
-        c = repo.get_contents(dosya_adi, ref=st.secrets["github"]["branch"])
+        # --- GITHUB CACHE BUSTER (SİNSİ ÖNBELLEĞİ AŞMA) ---
+        branch_name = st.secrets["github"]["branch"]
+        
+        # Branch isminden ziyade, repodaki "en güncel hareketin" (commit) benzersiz kodunu alıyoruz
+        latest_sha = repo.get_branch(branch_name).commit.sha
+        
+        # GitHub'a "bana branchi değil, bu spesifik güncellemeyi ver" diyoruz. 
+        # Böylece GitHub CDN'i eski dosyayı veremez!
+        c = repo.get_contents(dosya_adi, ref=latest_sha)
+        # ----------------------------------------------------
+
         if sayfa_adi:
             df = pd.read_excel(BytesIO(c.decoded_content), sheet_name=sayfa_adi, dtype=str)
         else:
             df = pd.read_excel(BytesIO(c.decoded_content), dtype=str)
         return df
-    except:
+    except Exception as e:
+        print(f"GitHub Okuma Hatası: {e}")
         return pd.DataFrame()
 
 def github_excel_guncelle(df_yeni, dosya_adi):
@@ -1477,6 +1488,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
