@@ -361,7 +361,7 @@ def create_word_report(text_content, tarih, df_analiz=None):
         return buffer
 
 # --- 4. GITHUB İŞLEMLERİ ---
-@st.cache_resource
+# @st.cache_resource  <--- BU SATIRI SİLİYORUZ
 def get_github_connection():
     try:
         return Github(st.secrets["github"]["token"])
@@ -374,8 +374,9 @@ def get_github_repo():
         return g.get_repo(st.secrets["github"]["repo_name"])
     return None
 
-@st.cache_data(ttl=600, show_spinner=False)
+# @st.cache_data(ttl=600, show_spinner=False)  <--- BU SATIRI SİLİYORUZ
 def github_excel_oku(dosya_adi, sayfa_adi=None):
+    # (İçerik aynı kalacak...)
     repo = get_github_repo()
     if not repo: return pd.DataFrame()
     try:
@@ -759,8 +760,9 @@ def style_chart(fig, is_pdf=False, is_sunburst=False):
 # --- 9. VERİ VE HESAPLAMA MOTORLARI ---
 
 # 1. VERİ GETİR
-@st.cache_data(ttl=600, show_spinner=False)
+# @st.cache_data(ttl=600, show_spinner=False)  <--- BU SATIRI SİLİYORUZ
 def verileri_getir_cache():
+    # (İçerik aynı kalacak...)
     df_f = github_excel_oku(FIYAT_DOSYASI)
     df_s = github_excel_oku(EXCEL_DOSYASI, SAYFA_ADI)
     if df_f.empty or df_s.empty: return None, None, None
@@ -793,8 +795,9 @@ def verileri_getir_cache():
 # 2. HESAPLAMA YAP
 # 2. HESAPLAMA YAP (GÜNCELLENMİŞ TAM BLOK)
 # 2. HESAPLAMA YAP (GÜNCELLENMİŞ - HEDEF %30-35 YILLIK)
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)  <--- BU SATIRI SİLİYORUZ
 def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, ad_col, agirlik_col, baz_col, aktif_agirlik_col, son):
+    # (İçerik aynı kalacak...)
     df_analiz = df_analiz_base.copy()
     
     # --- AYAR 1: AYLIK ENFLASYON SİMÜLASYONU ---
@@ -1488,6 +1491,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
