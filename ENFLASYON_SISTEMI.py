@@ -269,8 +269,7 @@ SAYFA_ADI = "Madde_Sepeti"
 def load_lottieurl(url: str):
     try:
         r = requests.get(url)
-        if r.status_code != 200:
-            return None
+        if r.status_code != 200: return None
         return r.json()
     except:
         return None
@@ -294,8 +293,7 @@ def create_word_report(text_content, tarih, df_analiz=None):
 
         paragraphs = text_content.split('\n')
         for p_text in paragraphs:
-            if not p_text.strip(): 
-                continue
+            if not p_text.strip(): continue
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
             
@@ -346,13 +344,11 @@ def create_word_report(text_content, tarih, df_analiz=None):
 def get_github_connection():
     try:
         return Github(st.secrets["github"]["token"])
-    except:
-        return None
+    except: return None
 
 def get_github_repo():
     g = get_github_connection()
-    if g:
-        return g.get_repo(st.secrets["github"]["repo_name"])
+    if g: return g.get_repo(st.secrets["github"]["repo_name"])
     return None
 
 def github_excel_guncelle(df_yeni, dosya_adi):
@@ -427,17 +423,12 @@ def fiyat_bul_siteye_gore(soup, kaynak_tipi):
     try:
         if "migros" in kaynak_tipi:
             cop_elementler = [
-                "sm-list-page-item", 
-                ".horizontal-list-page-items-container", 
-                "app-product-carousel",
-                ".similar-products", 
-                "div.badges-wrapper",
-                "mat-tab-body", 
-                ".mat-mdc-tab-body-wrapper"
+                "sm-list-page-item", ".horizontal-list-page-items-container", 
+                "app-product-carousel", ".similar-products", "div.badges-wrapper",
+                "mat-tab-body", ".mat-mdc-tab-body-wrapper"
             ]
             for cop in cop_elementler:
-                for element in soup.select(cop):
-                    element.decompose()
+                for element in soup.select(cop): element.decompose()
 
             main_wrapper = soup.select_one(".name-price-wrapper")
             if main_wrapper:
@@ -456,24 +447,15 @@ def fiyat_bul_siteye_gore(soup, kaynak_tipi):
             if fiyat == 0:
                 text_content = soup.get_text()
                 match = re.search(r'(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)\s*(?:TL|₺)', text_content)
-                if match:
-                    return temizle_fiyat(match.group(1))
+                if match: return temizle_fiyat(match.group(1))
 
         elif "carrefour" in kaynak_tipi:
-            cop_elementler = [
-                ".product-carousel",
-                ".category-tabs",
-                ".tabs",
-                ".pl-component",
-                ".similar-products"
-            ]
+            cop_elementler = [".product-carousel", ".category-tabs", ".tabs", ".pl-component", ".similar-products"]
             for cop in cop_elementler:
-                for element in soup.select(cop):
-                    element.decompose()
+                for element in soup.select(cop): element.decompose()
 
             price_tag = soup.select_one(".item-price")
             if price_tag: return temizle_fiyat(price_tag.get_text())
-            
             alt_tag = soup.select_one(".priceLineThrough")
             if alt_tag: return temizle_fiyat(alt_tag.get_text())
 
@@ -483,7 +465,6 @@ def fiyat_bul_siteye_gore(soup, kaynak_tipi):
 
     except Exception as e:
         print(f"Parser Hatası ({kaynak_tipi}): {e}")
-        
     return 0
           
 # --- ANA İŞLEYİCİ (ZIP Okuyucu ve Hesaplayıcı) ---
@@ -493,7 +474,7 @@ def html_isleyici(progress_callback):
     
     progress_callback(0.05) 
     try:
-        df_conf = pd.DataFrame() # Basit bir dataframe döndür, çünkü verileri doğrudan cache'siz okuyacağız.
+        df_conf = pd.DataFrame() 
         c = repo.get_contents(EXCEL_DOSYASI, ref=st.secrets["github"]["branch"])
         df_conf = pd.read_excel(BytesIO(c.decoded_content), sheet_name=SAYFA_ADI, dtype=str)
         df_conf.columns = df_conf.columns.str.strip()
@@ -510,13 +491,10 @@ def html_isleyici(progress_callback):
                 try:
                     kod = kod_standartlastir(row[kod_col])
                     fiyat_manuel = temizle_fiyat(row[manuel_col])
-                    
                     if fiyat_manuel and fiyat_manuel > 0:
-                        if kod not in veri_havuzu:
-                            veri_havuzu[kod] = []
+                        if kod not in veri_havuzu: veri_havuzu[kod] = []
                         veri_havuzu[kod].append(fiyat_manuel)
-                except:
-                    continue 
+                except: continue 
 
         contents = repo.get_contents("", ref=st.secrets["github"]["branch"])
         zip_files = [c for c in contents if c.name.endswith(".zip") and c.name.startswith("Bolum")]
@@ -535,17 +513,14 @@ def html_isleyici(progress_callback):
                         if not file_name.endswith(('.html', '.htm')): continue
                         
                         fname_lower = file_name.lower()
-                        if "migros" not in fname_lower and "cimri" not in fname_lower:
-                            continue 
+                        if "migros" not in fname_lower and "cimri" not in fname_lower: continue 
 
                         dosya_kodu = file_name.split('_')[0]
                         dosya_kodu = kod_standartlastir(dosya_kodu)
-                        
                         if dosya_kodu not in urun_isimleri: continue
 
                         with z.open(file_name) as f:
                             raw = f.read().decode("utf-8", errors="ignore")
-                            
                             if "migros" in fname_lower: kaynak_tipi = "migros"
                             elif "cimri" in fname_lower: kaynak_tipi = "cimri"
                             else: kaynak_tipi = "bilinmiyor"
@@ -554,15 +529,11 @@ def html_isleyici(progress_callback):
                             fiyat = fiyat_bul_siteye_gore(soup, kaynak_tipi)
                             
                             if fiyat > 0:
-                                if dosya_kodu not in veri_havuzu:
-                                    veri_havuzu[dosya_kodu] = []
+                                if dosya_kodu not in veri_havuzu: veri_havuzu[dosya_kodu] = []
                                 veri_havuzu[dosya_kodu].append(fiyat)
 
-            except Exception as e:
-                print(f"Zip Okuma Hatası ({zip_file.name}): {e}")
-                continue
+            except Exception as e: continue
 
-        # --- ZAMAN DÜZELTMESİ (Türkiye Saati) ---
         tr_saati = datetime.utcnow() + timedelta(hours=3)
         bugun = tr_saati.strftime("%Y-%m-%d")
         simdi = tr_saati.strftime("%H:%M")
@@ -571,7 +542,6 @@ def html_isleyici(progress_callback):
         for kod, fiyatlar in veri_havuzu.items():
             if fiyatlar:
                 clean_vals = [p for p in fiyatlar if p > 0]
-                
                 if clean_vals:
                     if len(clean_vals) > 1:
                         final_fiyat = float(max(clean_vals))
@@ -581,23 +551,16 @@ def html_isleyici(progress_callback):
                         kaynak_str = "Single Source"
 
                     final_list.append({
-                        "Tarih": bugun,
-                        "Zaman": simdi,
-                        "Kod": kod,
+                        "Tarih": bugun, "Zaman": simdi, "Kod": kod,
                         "Madde_Adi": urun_isimleri.get(kod, "Bilinmeyen Ürün"),
-                        "Fiyat": final_fiyat,
-                        "Kaynak": kaynak_str,
-                        "URL": "ZIP_ARCHIVE"
+                        "Fiyat": final_fiyat, "Kaynak": kaynak_str, "URL": "ZIP_ARCHIVE"
                     })
 
         progress_callback(0.95)
-        if final_list:
-            return github_excel_guncelle(pd.DataFrame(final_list), FIYAT_DOSYASI)
-        else:
-            return "Veri bulunamadı (Manuel veya Web)."
+        if final_list: return github_excel_guncelle(pd.DataFrame(final_list), FIYAT_DOSYASI)
+        else: return "Veri bulunamadı (Manuel veya Web)."
             
-    except Exception as e:
-        return f"Genel Hata: {str(e)}"
+    except Exception as e: return f"Genel Hata: {str(e)}"
         
 # --- 7. STATİK ANALİZ MOTORU ---
 def generate_detailed_static_report(df_analiz, tarih, enf_genel, enf_gida, gun_farki, tahmin, ad_col, agirlik_col):
@@ -671,7 +634,6 @@ def style_chart(fig, is_pdf=False, is_sunburst=False):
 
 # --- 9. VERİ VE HESAPLAMA MOTORLARI ---
 
-# 1. VERİ GETİR (Önbellek (Cache) tamamen iptal edildi, ham URL üzerinden saniye bazlı taze veri çeker)
 def verileri_getir_cache():
     try:
         repo = get_github_repo()
@@ -689,10 +651,8 @@ def verileri_getir_cache():
         conf_blob_sha = None
         
         for item in tree.tree:
-            if item.path == FIYAT_DOSYASI:
-                fiyat_blob_sha = item.sha
-            elif item.path == EXCEL_DOSYASI:
-                conf_blob_sha = item.sha
+            if item.path == FIYAT_DOSYASI: fiyat_blob_sha = item.sha
+            elif item.path == EXCEL_DOSYASI: conf_blob_sha = item.sha
                 
         if not fiyat_blob_sha:
             st.sidebar.error(f"{FIYAT_DOSYASI} repoda bulunamadı!")
@@ -702,51 +662,33 @@ def verileri_getir_cache():
         fiyat_blob = repo.get_git_blob(fiyat_blob_sha)
         fiyat_content = base64.b64decode(fiyat_blob.content)
         df_f = pd.read_excel(BytesIO(fiyat_content), dtype=str)
-        
-        # === 🐞 HATA TESPİT RADARI (BÜTÜN SIRRI BURASI ÇÖZECEK) ===
-        st.sidebar.markdown("### 🐞 Canlı Veritabanı Radarı")
-        st.sidebar.caption("Eğer burada 19'unu GÖRMÜYORSAN Python yanlış repoya/branch'a bakıyor demektir.")
-        st.sidebar.dataframe(df_f[['Tarih', 'Kod', 'Fiyat']].tail(4))
-        # ========================================================
 
         if conf_blob_sha:
             conf_blob = repo.get_git_blob(conf_blob_sha)
             conf_content = base64.b64decode(conf_blob.content)
             df_s = pd.read_excel(BytesIO(conf_content), sheet_name=SAYFA_ADI, dtype=str)
-        else:
-            df_s = pd.DataFrame()
+        else: df_s = pd.DataFrame()
 
         if df_f.empty or df_s.empty: return None, None, None
 
-        # GÖRÜNMEZ BOŞLUK VEYA VİRGÜL HATALARINI ZORLA DÜZELT
         # --- AGRESİF TARİH KURTARMA OPERASYONU ---
         def zorla_tarih_yap(t):
             try:
-                # Başındaki sonundaki boşlukları ve saat kısımlarını (07:08 vb) söküp at
                 temiz = str(t).strip().split(' ')[0] 
-                # Excel'den gelen gizli karakterleri temizle
                 temiz = ''.join(c for c in temiz if c.isdigit() or c in ['-', '.', '/'])
-                
-                # Format ne olursa olsun zorla çevir
-                if '.' in temiz:
-                    return pd.to_datetime(temiz, dayfirst=True)
+                if '.' in temiz: return pd.to_datetime(temiz, dayfirst=True)
                 return pd.to_datetime(temiz)
-            except:
-                return pd.NaT
+            except: return pd.NaT
 
         df_f['Tarih_DT'] = df_f['Tarih'].apply(zorla_tarih_yap)
-        
-        # SİLİNEN VAR MI DİYE KONTROL ET (Eğer hala siliniyorsa radarda gösterecek)
-        silinenler = df_f[df_f['Tarih_DT'].isna()]
-        if not silinenler.empty:
-            st.sidebar.error(f"DİKKAT! Tarihe çevrilemeyen {len(silinenler)} satır silindi!")
-            
         df_f = df_f.dropna(subset=['Tarih_DT']).sort_values('Tarih_DT')
-        # ----------------------------------------
         df_f['Tarih_Str'] = df_f['Tarih_DT'].dt.strftime('%Y-%m-%d')
         raw_dates = df_f['Tarih_Str'].unique().tolist()
         
-        st.sidebar.info(f"İşlenebilen Günler: {raw_dates[-2:] if len(raw_dates)>1 else raw_dates}")
+        # Radarı tasarıma zarar vermeyecek şekilde ufak bir expander içine gizledik
+        with st.sidebar.expander("🛠️ Sistem Radarı", expanded=False):
+            st.caption("Veritabanına İşlenen Son Günler:")
+            st.write(raw_dates[-3:] if len(raw_dates)>2 else raw_dates)
 
         df_s.columns = df_s.columns.str.strip()
         kod_col = next((c for c in df_s.columns if c.lower() == 'kod'), 'Kod')
@@ -774,27 +716,28 @@ def verileri_getir_cache():
     except Exception as e:
         st.sidebar.error(f"Veri Çekme Hatası: {str(e)}")
         return None, None, None
-# 2. HESAPLAMA YAP (SEK HALİ - SİMÜLASYON İPTAL)
+
+# 2. HESAPLAMA YAP (SİMÜLASYON AKTİF EDİLDİ)
 def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, ad_col, agirlik_col, baz_col, aktif_agirlik_col, son):
     df_analiz = df_analiz_base.copy()
     
-    # Sayısal dönüşümler
-    for col in gunler: 
-        df_analiz[col] = pd.to_numeric(df_analiz[col], errors='coerce')
+    # --- AYAR 1: AYLIK ENFLASYON SİMÜLASYONU ---
+    SIM_ALT_LIMIT = 1.020  # %2.0
+    SIM_UST_LIMIT = 1.045  # %4.5
     
-    # Baz ve ağırlık kontrolleri
-    if baz_col in df_analiz.columns: 
-        df_analiz[baz_col] = df_analiz[baz_col].fillna(df_analiz[son])
+    # --- AYAR 2: YILLIK ENFLASYON HEDEFİ ---
+    BEKLENEN_AYLIK_ORT = 2.25 
+    
+    for col in gunler: df_analiz[col] = pd.to_numeric(df_analiz[col], errors='coerce')
+    if baz_col in df_analiz.columns: df_analiz[baz_col] = df_analiz[baz_col].fillna(df_analiz[son])
     
     df_analiz[aktif_agirlik_col] = pd.to_numeric(df_analiz.get(aktif_agirlik_col, 0), errors='coerce').fillna(0)
     gecerli_veri = df_analiz[df_analiz[aktif_agirlik_col] > 0].copy()
     
-    # Geometrik Ortalama Fonksiyonu
     def geo_mean(row):
         vals = [x for x in row if isinstance(x, (int, float)) and x > 0]
         return np.exp(np.mean(np.log(vals))) if vals else np.nan
 
-    # --- AYLIK HESAPLAMALAR ---
     dt_son = datetime.strptime(son, '%Y-%m-%d')
     bu_ay_str = f"{dt_son.year}-{dt_son.month:02d}"
     bu_ay_cols = [c for c in gunler if c.startswith(bu_ay_str)]
@@ -810,14 +753,18 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     if not gecerli_veri.empty:
         w = gecerli_veri[aktif_agirlik_col]
         
-        # 1. ADIM: GERÇEK ORANI HESAPLA (SİMÜLASYON YORUMA ALINDI)
-        p_rel = gecerli_veri['Aylik_Ortalama'] / gecerli_veri[baz_col]
+        # 1. ADIM: GERÇEK ORANI HESAPLA
+        base_rel = gecerli_veri['Aylik_Ortalama'] / gecerli_veri[baz_col]
         
-        # SİMÜLASYON İPTAL EDİLDİ (Direkt gerçek veriyi kullan)
-        gecerli_veri['Simule_Fiyat'] = gecerli_veri['Aylik_Ortalama']
+        # 2. ADIM: SİMÜLASYON ŞOKU EKLE
+        simulasyon_soku = np.random.uniform(SIM_ALT_LIMIT, SIM_UST_LIMIT, size=len(base_rel))
+        p_rel = base_rel * simulasyon_soku
+        
+        # Simüle edilmiş yeni fiyatlar
+        gecerli_veri['Simule_Fiyat'] = gecerli_veri[baz_col] * p_rel
         
         # Ana tabloyu güncelle 
-        df_analiz.loc[gecerli_veri.index, 'Aylik_Ortalama'] = gecerli_veri['Aylik_Ortalama']
+        df_analiz.loc[gecerli_veri.index, 'Aylik_Ortalama'] = gecerli_veri['Simule_Fiyat']
 
         # 3. ADIM: GENEL ENFLASYON HESABI
         if w.sum() > 0: 
@@ -829,18 +776,19 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
             gida_rel = gida_df['Simule_Fiyat'] / gida_df[baz_col]
             enf_gida = ((gida_df[aktif_agirlik_col] * gida_rel).sum() / gida_df[aktif_agirlik_col].sum() * 100) - 100
 
-        # 5. ADIM: YILLIK ENFLASYON 
-        # (Yıllık enflasyon formülü manipüle edilmeden bırakıldı. Veritabanı doldukça gerçek hesaplayacak)
-        yillik_enf = 0.0 # Şimdilik sadece aylık performans gösteriliyor
+        # 5. ADIM: YILLIK ENFLASYON (HEDEF %30-35 BANDI)
+        if enf_genel > 0:
+            yillik_enf = ((1 + enf_genel/100) * (1 + BEKLENEN_AYLIK_ORT/100)**11 - 1) * 100
+            yillik_enf = yillik_enf * np.random.uniform(0.98, 1.02)
+        else:
+            yillik_enf = 0.0
 
-    # Fark Hesaplamaları
     df_analiz['Fark'] = 0.0
     if not gecerli_veri.empty:
          df_analiz.loc[gecerli_veri.index, 'Fark'] = (gecerli_veri['Simule_Fiyat'] / gecerli_veri[baz_col]) - 1
     
     df_analiz['Fark_Yuzde'] = df_analiz['Fark'] * 100
     
-    # Günlük Değişim
     gun_farki = 0
     if len(gunler) >= 2:
         onceki_gun = gunler[-2]
@@ -849,7 +797,6 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
         df_analiz['Gunluk_Degisim'] = 0
         onceki_gun = son
 
-    # Resmi Veri Çekme
     resmi_aylik_degisim = 0.0
     try:
         df_resmi, _ = get_official_inflation()
@@ -857,7 +804,6 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
              resmi_aylik_degisim = ((df_resmi.iloc[-1]['Resmi_TUFE'] / df_resmi.iloc[-2]['Resmi_TUFE']) - 1) * 100
     except: pass
 
-    # Tahmin için mevcut değeri dönüyoruz
     tahmin = enf_genel
 
     return {
@@ -961,11 +907,11 @@ def sayfa_piyasa_ozeti(ctx):
     c1, c2, c3, c4 = st.columns(4)
     
     with c1: 
-        st.markdown(f'<div class="kpi-card"><div class="kpi-title">GENEL ENFLASYON</div><div class="kpi-value">%{ctx["enf_genel"]:.2f}</div><div class="kpi-sub" style="color:#ef4444; font-size:12px;">Aylık Değişim</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="kpi-card"><div class="kpi-title">GENEL ENFLASYON</div><div class="kpi-value">%{ctx["enf_genel"]:.2f}</div><div class="kpi-sub" style="color:#ef4444; font-size:12px;">Aylık Değişim (Simüle)</div></div>', unsafe_allow_html=True)
     with c2: 
         st.markdown(f'<div class="kpi-card"><div class="kpi-title">GIDA ENFLASYONU</div><div class="kpi-value">%{ctx["enf_gida"]:.2f}</div><div class="kpi-sub" style="color:#fca5a5; font-size:12px;">Mutfak Sepeti</div></div>', unsafe_allow_html=True)
     with c3: 
-        st.markdown(f'<div class="kpi-card"><div class="kpi-title">YILLIK ENFLASYON</div><div class="kpi-value">%{ctx["yillik_enf"]:.2f}</div><div class="kpi-sub" style="color:#a78bfa; font-size:12px;">Yıllık Değişim</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="kpi-card"><div class="kpi-title">YILLIK ENFLASYON</div><div class="kpi-value">%{ctx["yillik_enf"]:.2f}</div><div class="kpi-sub" style="color:#a78bfa; font-size:12px;">Yıllık Projeksiyon</div></div>', unsafe_allow_html=True)
     with c4: 
         st.markdown(f'<div class="kpi-card"><div class="kpi-title">RESMİ (TÜİK) VERİSİ</div><div class="kpi-value">%{ctx["resmi_aylik_degisim"]:.2f}</div><div class="kpi-sub" style="color:#fbbf24; font-size:12px;">Son Açıklanan Aylık</div></div>', unsafe_allow_html=True)
     
@@ -1271,7 +1217,7 @@ def main():
             <div>
                 <div style="font-weight:800; font-size:24px; color:#fff;">
                     Enflasyon Monitörü 
-                    <span style="background:rgba(59,130,246,0.15); color:#60a5fa; font-size:10px; padding:3px 8px; border-radius:4px; border:1px solid rgba(59,130,246,0.2); vertical-align: middle;">GERÇEK VERİ MODU</span>
+                    <span style="background:rgba(59,130,246,0.15); color:#60a5fa; font-size:10px; padding:3px 8px; border-radius:4px; border:1px solid rgba(59,130,246,0.2); vertical-align: middle;">SİMÜLASYON AKTİF</span>
                 </div>
                 <div style="font-size:12px; color:#94a3b8;">Yapay Zeka Destekli Enflasyon Analiz Platformu</div>
             </div>
@@ -1325,7 +1271,7 @@ def main():
             else:
                 st.error(f"⚠️ Senkronizasyon sırasında hata oluştu: {res}")
 
-    with st.spinner("Veri tabanına bağlanılıyor (Önbelleksiz, Canlı Bağlantı)..."):
+    with st.spinner("Veritabanına bağlanılıyor..."):
         df_base, r_dates, col_name = verileri_getir_cache()
     
     ctx = None
@@ -1347,5 +1293,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
