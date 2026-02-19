@@ -1017,6 +1017,53 @@ def sayfa_piyasa_ozeti(ctx):
        """
        st.markdown(ozet_html, unsafe_allow_html=True)
 
+    st.markdown("---")
+    
+    # --- YENİ EKLENEN: TOP 10 LİSTESİ ---
+    st.markdown("### 🔥 Günlük Hızlı Fiyat Hareketleri (Top 10)")
+    c_art, c_az = st.columns(2)
+    
+    df_gunluk = ctx["df_analiz"].dropna(subset=['Gunluk_Degisim', ctx['son'], ctx['ad_col']])
+    artan_10 = df_gunluk[df_gunluk['Gunluk_Degisim'] > 0].sort_values('Gunluk_Degisim', ascending=False).head(10)
+    azalan_10 = df_gunluk[df_gunluk['Gunluk_Degisim'] < 0].sort_values('Gunluk_Degisim', ascending=True).head(10)
+    
+    with c_art:
+        st.markdown("<div style='color:#ef4444; font-weight:700; font-size:16px; margin-bottom:10px;'>🔺 EN ÇOK ARTAN 10 ÜRÜN</div>", unsafe_allow_html=True)
+        if not artan_10.empty:
+            disp_artan = artan_10[[ctx['ad_col'], ctx['son']]].copy()
+            disp_artan['Değişim'] = artan_10['Gunluk_Degisim'] * 100
+            st.dataframe(
+                disp_artan,
+                column_config={
+                    ctx['ad_col']: "Ürün Adı",
+                    ctx['son']: st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
+                    "Değişim": st.column_config.NumberColumn("% Değişim", format="+%.2f %%")
+                },
+                hide_index=True, use_container_width=True
+            )
+        else:
+            st.info("Bugün fiyatı artan ürün tespit edilmedi.")
+            
+    with c_az:
+        st.markdown("<div style='color:#22c55e; font-weight:700; font-size:16px; margin-bottom:10px;'>🔻 EN ÇOK DÜŞEN 10 ÜRÜN</div>", unsafe_allow_html=True)
+        if not azalan_10.empty:
+            disp_azalan = azalan_10[[ctx['ad_col'], ctx['son']]].copy()
+            disp_azalan['Değişim'] = azalan_10['Gunluk_Degisim'] * 100
+            st.dataframe(
+                disp_azalan,
+                column_config={
+                    ctx['ad_col']: "Ürün Adı",
+                    ctx['son']: st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
+                    "Değişim": st.column_config.NumberColumn("% Değişim", format="%.2f %%")
+                },
+                hide_index=True, use_container_width=True
+            )
+        else:
+            st.info("Bugün fiyatı düşen ürün tespit edilmedi.")
+
+    st.markdown("---")
+    
+    # Treemap (Isı Haritası)
     st.subheader("Sektörel Isı Haritası")
     fig_tree = px.treemap(df, path=[px.Constant("Enflasyon Sepeti"), 'Grup', ctx['ad_col']], values=ctx['agirlik_col'], color='Fark', color_continuous_scale='RdYlGn_r')
     st.plotly_chart(style_chart(fig_tree, is_sunburst=True), use_container_width=True)
@@ -1293,6 +1340,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
