@@ -772,37 +772,79 @@ def style_chart(fig, is_pdf=False, is_sunburst=False):
 # --- 9. VERİ VE HESAPLAMA MOTORLARI ---
 
 # 1. VERİ GETİR
-# @st.cache_data(ttl=600, show_spinner=False)  <--- BU SATIRI SİLİYORUZ
 def verileri_getir_cache():
-    # (İçerik aynı kalacak...)
-    df_f = github_excel_oku(FIYAT_DOSYASI)
-    df_s = github_excel_oku(EXCEL_DOSYASI, SAYFA_ADI)
-    if df_f.empty or df_s.empty: return None, None, None
+    try:
+        # --- NÜKLEER ÇÖZÜM: PYGITHUB'I DEVREDEN ÇIKARTIYORUZ ---
+        repo_name = st.secrets["github"]["repo_name"]
+        branch = st.secrets["github"]["branch"]
+        token = st.secrets["github"]["token"]
+        
+        # GitHub'ın bize eski dosya yollamasını YASAKLAYAN anti-cache başlıkları
+        headers = {
+            "Authorization": f"token {token}",
+            "Cache-Control": "no-cache, max-age=0, must-revalidate",
+            "Pragma": "no-cache",
+            "If-None-Match": "" 
+        }
+        
+        # 1. FIYAT DOSYASINI ZORLA İNDİR
+        url_fiyat = f"https://api.github.com/repos/{repo_name}/contents/{FIYAT_DOSYASI}?ref={branch}"
+        res_fiyat = requests.get(url_fiyat, headers=headers)
+        
+        if res_fiyat.status_code != 200:
+            st.sidebar.error("Fiyat dosyası GitHub'dan okunamadı!")
+            return None, None, None
+            
+        content_fiyat = base64.b64decode(res_fiyat.json()['content'])
+        df_f = pd.read_excel(BytesIO(content_fiyat), dtype=str)
+        
+        # 2. KONFİGÜRASYON DOSYASINI ZORLA İNDİR
+        url_conf = f"https://api.github.com/repos/{repo_name}/contents/{EXCEL_DOSYASI}?ref={branch}"
+        res_conf = requests.get(url_conf, headers=headers)
+        
+        if res_conf.status_code == 200:
+            content_conf = base64.b64decode(res_conf.json()['content'])
+            df_s = pd.read_excel(BytesIO(content_conf), sheet_name=SAYFA_ADI, dtype=str)
+        else:
+            df_s = pd.DataFrame()
 
-    df_f['Tarih_DT'] = pd.to_datetime(df_f['Tarih'], errors='coerce')
-    df_f = df_f.dropna(subset=['Tarih_DT']).sort_values('Tarih_DT')
-    df_f['Tarih_Str'] = df_f['Tarih_DT'].dt.strftime('%Y-%m-%d')
-    raw_dates = df_f['Tarih_Str'].unique().tolist()
+        # --- VERİ İŞLEME (Senin Orijinal Mantığın) ---
+        if df_f.empty or df_s.empty: return None, None, None
 
-    df_s.columns = df_s.columns.str.strip()
-    kod_col = next((c for c in df_s.columns if c.lower() == 'kod'), 'Kod')
-    ad_col = next((c for c in df_s.columns if 'ad' in c.lower()), 'Madde_Adi')
-    df_f['Kod'] = df_f['Kod'].astype(str).apply(kod_standartlastir)
-    df_s['Kod'] = df_s[kod_col].astype(str).apply(kod_standartlastir)
-    df_s = df_s.drop_duplicates(subset=['Kod'], keep='first')
-    df_f['Fiyat'] = pd.to_numeric(df_f['Fiyat'], errors='coerce')
-    df_f = df_f[df_f['Fiyat'] > 0]
-    
-    pivot = df_f.pivot_table(index='Kod', columns='Tarih_Str', values='Fiyat', aggfunc='mean')
-    pivot = pivot.ffill(axis=1).bfill(axis=1).reset_index()
-    if pivot.empty: return None, None, None
+        df_f['Tarih_DT'] = pd.to_datetime(df_f['Tarih'], errors='coerce')
+        df_f = df_f.dropna(subset=['Tarih_DT']).sort_values('Tarih_DT')
+        df_f['Tarih_Str'] = df_f['Tarih_DT'].dt.strftime('%Y-%m-%d')
+        raw_dates = df_f['Tarih_Str'].unique().tolist()
+        
+        # 🔴 SİSTEMİN KÖR OLMADIĞINI KANITLAYAN RADAR (Sol menüde çıkacak)
+        st.sidebar.info(f"📡 API'nin Gördüğü Son Tarih: {raw_dates[-1] if raw_dates else 'YOK'}")
 
-    if 'Grup' not in df_s.columns:
-        grup_map = {"01": "Gıda", "02": "Alkol-Tütün", "03": "Giyim", "04": "Konut"}
-        df_s['Grup'] = df_s['Kod'].str[:2].map(grup_map).fillna("Diğer")
+        # Sütunları standartlaştır
+        df_s.columns = df_s.columns.str.strip()
+        kod_col = next((c for c in df_s.columns if c.lower() == 'kod'), 'Kod')
+        ad_col = next((c for c in df_s.columns if 'ad' in c.lower()), 'Madde_Adi')
+        
+        df_f['Kod'] = df_f['Kod'].astype(str).apply(kod_standartlastir)
+        df_s['Kod'] = df_s[kod_col].astype(str).apply(kod_standartlastir)
+        df_s = df_s.drop_duplicates(subset=['Kod'], keep='first')
+        
+        df_f['Fiyat'] = pd.to_numeric(df_f['Fiyat'], errors='coerce')
+        df_f = df_f[df_f['Fiyat'] > 0]
+        
+        pivot = df_f.pivot_table(index='Kod', columns='Tarih_Str', values='Fiyat', aggfunc='mean')
+        pivot = pivot.ffill(axis=1).bfill(axis=1).reset_index()
+        if pivot.empty: return None, None, None
 
-    df_analiz_base = pd.merge(df_s, pivot, on='Kod', how='left')
-    return df_analiz_base, raw_dates, ad_col
+        if 'Grup' not in df_s.columns:
+            grup_map = {"01": "Gıda", "02": "Alkol-Tütün", "03": "Giyim", "04": "Konut"}
+            df_s['Grup'] = df_s['Kod'].str[:2].map(grup_map).fillna("Diğer")
+
+        df_analiz_base = pd.merge(df_s, pivot, on='Kod', how='left')
+        return df_analiz_base, raw_dates, ad_col
+
+    except Exception as e:
+        st.sidebar.error(f"Kritik Hata: {str(e)}")
+        return None, None, None
 
 # 2. HESAPLAMA YAP
 # 2. HESAPLAMA YAP (GÜNCELLENMİŞ TAM BLOK)
@@ -1503,6 +1545,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
