@@ -774,32 +774,44 @@ def style_chart(fig, is_pdf=False, is_sunburst=False):
 # 1. VERİ GETİR
 def verileri_getir_cache():
     try:
-        # --- NÜKLEER ÇÖZÜM: PYGITHUB'I DEVREDEN ÇIKARTIYORUZ ---
         repo_name = st.secrets["github"]["repo_name"]
         branch = st.secrets["github"]["branch"]
         token = st.secrets["github"]["token"]
         
-        # GitHub'ın bize eski dosya yollamasını YASAKLAYAN anti-cache başlıkları
         headers = {
             "Authorization": f"token {token}",
-            "Cache-Control": "no-cache, max-age=0, must-revalidate",
-            "Pragma": "no-cache",
-            "If-None-Match": "" 
+            "Accept": "application/vnd.github.v3+json",
+            "Cache-Control": "no-cache"
         }
         
-        # 1. FIYAT DOSYASINI ZORLA İNDİR
-        url_fiyat = f"https://api.github.com/repos/{repo_name}/contents/{FIYAT_DOSYASI}?ref={branch}"
+        # ---------------------------------------------------------
+        # 🔴 BÜYÜK HİLE: ÖNCE GITHUB'A "EN SON YAPILAN İŞLEMİN KİMLİĞİNİ (SHA)" SORUYORUZ
+        # ---------------------------------------------------------
+        commit_url = f"https://api.github.com/repos/{repo_name}/commits/{branch}"
+        commit_res = requests.get(commit_url, headers=headers)
+        
+        if commit_res.status_code != 200:
+            st.sidebar.error("Commit kimliği okunamadı!")
+            return None, None, None
+            
+        latest_sha = commit_res.json()['sha'] # İşte sihirli anahtar bu!
+        st.sidebar.success(f"🔑 Aktif Veri Kimliği: {latest_sha[:7]}")
+        
+        # ---------------------------------------------------------
+        # 🔴 ŞİMDİ O KİMLİKLE DOSYAYI İSTİYORUZ (GITHUB ESKİ DOSYAYI VEREMEZ!)
+        # ---------------------------------------------------------
+        url_fiyat = f"https://api.github.com/repos/{repo_name}/contents/{FIYAT_DOSYASI}?ref={latest_sha}"
         res_fiyat = requests.get(url_fiyat, headers=headers)
         
         if res_fiyat.status_code != 200:
-            st.sidebar.error("Fiyat dosyası GitHub'dan okunamadı!")
+            st.sidebar.error("Fiyat dosyası okunamadı!")
             return None, None, None
             
         content_fiyat = base64.b64decode(res_fiyat.json()['content'])
         df_f = pd.read_excel(BytesIO(content_fiyat), dtype=str)
         
-        # 2. KONFİGÜRASYON DOSYASINI ZORLA İNDİR
-        url_conf = f"https://api.github.com/repos/{repo_name}/contents/{EXCEL_DOSYASI}?ref={branch}"
+        # KONFİGÜRASYON DOSYASINI DA AYNI ŞEKİLDE ÇEKİYORUZ
+        url_conf = f"https://api.github.com/repos/{repo_name}/contents/{EXCEL_DOSYASI}?ref={latest_sha}"
         res_conf = requests.get(url_conf, headers=headers)
         
         if res_conf.status_code == 200:
@@ -816,10 +828,9 @@ def verileri_getir_cache():
         df_f['Tarih_Str'] = df_f['Tarih_DT'].dt.strftime('%Y-%m-%d')
         raw_dates = df_f['Tarih_Str'].unique().tolist()
         
-        # 🔴 SİSTEMİN KÖR OLMADIĞINI KANITLAYAN RADAR (Sol menüde çıkacak)
+        # GERÇEK ZAMANLI RADAR
         st.sidebar.info(f"📡 API'nin Gördüğü Son Tarih: {raw_dates[-1] if raw_dates else 'YOK'}")
 
-        # Sütunları standartlaştır
         df_s.columns = df_s.columns.str.strip()
         kod_col = next((c for c in df_s.columns if c.lower() == 'kod'), 'Kod')
         ad_col = next((c for c in df_s.columns if 'ad' in c.lower()), 'Madde_Adi')
@@ -845,7 +856,6 @@ def verileri_getir_cache():
     except Exception as e:
         st.sidebar.error(f"Kritik Hata: {str(e)}")
         return None, None, None
-
 # 2. HESAPLAMA YAP
 # 2. HESAPLAMA YAP (GÜNCELLENMİŞ TAM BLOK)
 # 2. HESAPLAMA YAP (GÜNCELLENMİŞ - HEDEF %30-35 YILLIK)
@@ -1545,6 +1555,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
