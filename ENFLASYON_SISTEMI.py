@@ -1035,8 +1035,8 @@ def sayfa_piyasa_ozeti(ctx):
     
     # Gunluk_Degisim yerine simüle edilmiş "Fark" kolonunu baz alıyoruz
     df_fark = ctx["df_analiz"].dropna(subset=['Fark', ctx['son'], ctx['ad_col']])
-    artan_10 = df_fark[df_fark['Fark'] > 0].sort_values('Fark', ascending=False).head(10)
-    azalan_10 = df_fark[df_fark['Fark'] < 0].sort_values('Fark', ascending=True).head(10)
+    artan_10 = df_fark[df_fark['Fark'] > 0].sort_values('Fark', ascending=False).head(15)
+    azalan_10 = df_fark[df_fark['Fark'] < 0].sort_values('Fark', ascending=True).head(15)
     
     with c_art:
         st.markdown("<div style='color:#ef4444; font-weight:700; font-size:16px; margin-bottom:10px;'>🔺 EN ÇOK ARTAN 10 ÜRÜN</div>", unsafe_allow_html=True)
@@ -1351,6 +1351,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
