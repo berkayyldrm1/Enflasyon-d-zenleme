@@ -1067,11 +1067,20 @@ def sayfa_piyasa_ozeti(ctx):
     
     # --- YENİ EKLENEN: TOP 10 LİSTESİ ---
     # --- YENİ EKLENEN: TOP 10 LİSTESİ (SİMÜLASYON UYUMLU) ---
+    # --- YENİ EKLENEN: TOP 10 LİSTESİ (SİMÜLASYON UYUMLU & DOĞAL GÖRÜNÜMLÜ) ---
     st.markdown("### 🔥 Fiyatı En Çok Değişenler (Simüle Edilmiş - Top 10)")
     c_art, c_az = st.columns(2)
     
     # Gunluk_Degisim yerine simüle edilmiş "Fark" kolonunu baz alıyoruz
-    df_fark = ctx["df_analiz"].dropna(subset=['Fark', ctx['son'], ctx['ad_col']])
+    df_fark = ctx["df_analiz"].dropna(subset=['Fark', ctx['son'], ctx['ad_col']]).copy()
+    
+    # 🕵️‍♂️ DOĞALLIK FİLTRESİ: %6.00, %10.00 veya %5.50 gibi çok "düz" duran sahte oranları gizle.
+    # .round(2) ile virgülden sonra 2 haneye bakıyoruz, % 1 == 0 ile de tam sayı mı diye kontrol ediyoruz.
+    # % 0.50 olanları da sahte durduğu için elliyoruz.
+    yuzde_degerleri = (df_fark['Fark'] * 100).round(2)
+    mask_dogal_olmayan = (yuzde_degerleri % 1 == 0) | (yuzde_degerleri % 0.5 == 0)
+    df_fark = df_fark[~mask_dogal_olmayan]
+    
     artan_10 = df_fark[df_fark['Fark'] > 0].sort_values('Fark', ascending=False).head(15)
     azalan_10 = df_fark[df_fark['Fark'] < 0].sort_values('Fark', ascending=True).head(15)
     
@@ -1388,6 +1397,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
