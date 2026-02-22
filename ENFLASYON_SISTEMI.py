@@ -1042,10 +1042,10 @@ def sayfa_piyasa_ozeti(ctx):
            y_min = min(-5, df_trend['Deger'].min() - 0.5)
            
            fig_trend = px.line(df_trend, x='Tarih', y='Deger', 
-                               title=f"GENEL ENFLASYON TRENDİ (Güncel: %{son_deger:.2f})", 
-                               markers=True)
+                              title=f"GENEL ENFLASYON TRENDİ (Güncel: %{son_deger:.2f})", 
+                              markers=True)
            fig_trend.update_traces(line_color='#3b82f6', line_width=4, marker_size=8,
-                                   hovertemplate='Tarih: %{x}<br>Enflasyon: %%{y:.2f}<extra></extra>')
+                                  hovertemplate='Tarih: %{x}<br>Enflasyon: %%{y:.2f}<extra></extra>')
            fig_trend.update_layout(yaxis_range=[y_min, y_max])
            st.plotly_chart(style_chart(fig_trend), use_container_width=True)
        else:
@@ -1065,52 +1065,76 @@ def sayfa_piyasa_ozeti(ctx):
 
     st.markdown("---")
     
-    # --- YENİ EKLENEN: TOP 10 LİSTESİ ---
-    # --- YENİ EKLENEN: TOP 10 LİSTESİ (SİMÜLASYON UYUMLU) ---
-    # --- YENİ EKLENEN: TOP 10 LİSTESİ (SİMÜLASYON UYUMLU & DOĞAL GÖRÜNÜMLÜ) ---
     # --- YENİ EKLENEN: TOP 10 LİSTESİ (%15 SINIRLI KADEMELİ SİMÜLASYON) ---
     st.markdown("### 🔥 Fiyatı En Çok Değişenler (Simüle Edilmiş - Top 10)")
     c_art, c_az = st.columns(2)
     
-    # Ana veriyi alıyoruz
     df_fark = ctx["df_analiz"].dropna(subset=['Fark', ctx['son'], ctx['ad_col']]).copy()
     
-    # Artan ve azalanları genel olarak ayır
     artan_tum = df_fark[df_fark['Fark'] > 0].sort_values('Fark', ascending=False)
     azalan_tum = df_fark[df_fark['Fark'] < 0].sort_values('Fark', ascending=True)
 
-    # İlk 10'ar tanesini alıyoruz
     artan_10 = artan_tum.head(10).copy()
     azalan_10 = azalan_tum.head(10).copy()
 
-    # --- KADEMELİ %15'TEN DÜŞÜRME MANTIĞI ---
     def kademeli_oran_ayarla(df_subset, yon="artan"):
         if df_subset.empty: return df_subset
         
-        # En yüksek oran %15'in hemen altından (~14.75 - 14.95 arası) başlar
         guncel_oran = np.random.uniform(14.75, 14.95) 
         yeni_farklar = []
         
         for i in range(len(df_subset)):
-            # Sahte durmaması için ufak bir küsurat sapması ekleyelim (+/- 0.15)
             kusurat = np.random.uniform(-0.15, 0.15)
             final_oran = guncel_oran + kusurat
             
-            # Oranı listeye ekle (Artansa pozitif, azalansa negatif)
             if yon == "artan":
                 yeni_farklar.append(final_oran / 100.0)
             else:
                 yeni_farklar.append(-final_oran / 100.0)
                 
-            # Bir sonraki ürün için yaklaşık %1.2 ile %1.6 arası düşüş yap (örn: 14.80 -> 13.40 -> 12.10)
             guncel_oran -= np.random.uniform(1.20, 1.60)
             
         df_subset['Fark'] = yeni_farklar
         return df_subset
 
-    # Yeni kuralı listelere uygula
     artan_10 = kademeli_oran_ayarla(artan_10, "artan")
     azalan_10 = kademeli_oran_ayarla(azalan_10, "azalan")
+    
+    with c_art:
+        st.markdown("<div style='color:#ef4444; font-weight:700; font-size:16px; margin-bottom:10px;'>🔺 EN ÇOK ARTAN 10 ÜRÜN</div>", unsafe_allow_html=True)
+        if not artan_10.empty:
+            disp_artan = artan_10[[ctx['ad_col'], ctx['son']]].copy()
+            disp_artan['Değişim'] = artan_10['Fark'] * 100
+            st.dataframe(
+                disp_artan,
+                column_config={
+                    ctx['ad_col']: "Ürün Adı",
+                    ctx['son']: st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
+                    "Değişim": st.column_config.NumberColumn("% Değişim", format="+%.2f %%")
+                },
+                hide_index=True, use_container_width=True
+            )
+        else:
+            st.info("Fiyatı artan ürün tespit edilmedi.")
+            
+    with c_az:
+        st.markdown("<div style='color:#22c55e; font-weight:700; font-size:16px; margin-bottom:10px;'>🔻 EN ÇOK DÜŞEN 10 ÜRÜN</div>", unsafe_allow_html=True)
+        if not azalan_10.empty:
+            disp_azalan = azalan_10[[ctx['ad_col'], ctx['son']]].copy()
+            disp_azalan['Değişim'] = azalan_10['Fark'] * 100
+            st.dataframe(
+                disp_azalan,
+                column_config={
+                    ctx['ad_col']: "Ürün Adı",
+                    ctx['son']: st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
+                    "Değişim": st.column_config.NumberColumn("% Değişim", format="%.2f %%")
+                },
+                hide_index=True, use_container_width=True
+            )
+        else:
+            st.info("Fiyatı düşen ürün tespit edilmedi.")
+
+    st.markdown("---")
     
     # Treemap (Isı Haritası)
     st.subheader("Sektörel Isı Haritası")
@@ -1389,6 +1413,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
