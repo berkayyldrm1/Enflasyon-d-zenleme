@@ -42,8 +42,8 @@ def google_sheets_guncelle(ctx, artan_10, azalan_10):
         client = gspread.authorize(creds)
         
         # BURAYA KENDİ E-TABLO LİNKİNİZİ YAPIŞTIRIN
-        sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/SİZİN_LİNKİNİZ/edit").sheet1
-        
+        sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1EU5GHrkjrxnRvPVJDRWmYwNhuPs5e1E7C_YFYEYwxDQ/edit").worksheet("veri") 
+
         # --- 1. TARİH FORMATI (B4 Hücresi) ---
         aylar = ["", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
         simdi = datetime.utcnow() + timedelta(hours=3)
@@ -1477,6 +1477,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
