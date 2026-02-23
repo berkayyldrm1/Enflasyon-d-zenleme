@@ -41,9 +41,9 @@ def google_sheets_guncelle(ctx, artan_10, azalan_10):
         creds = Credentials.from_service_account_info(s_creds, scopes=scopes)
         client = gspread.authorize(creds)
         
-        # BURAYA KENDİ E-TABLO LİNKİNİZİ YAPIŞTIRIN
-        sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1EU5GHrkjrxnRvPVJDRWmYwNhuPs5e1E7C_YFYEYwxDQ/edit").worksheet("veri") 
-
+        # Linkinizi buraya tam olarak yerleştirdik
+        sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1EU5GHrkjrxnRvPVJDRWmYwNhuPs5e1E7C_YFYEYwxDQ/edit").worksheet("veri")
+        
         # --- 1. TARİH FORMATI (B4 Hücresi) ---
         aylar = ["", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
         simdi = datetime.utcnow() + timedelta(hours=3)
@@ -71,6 +71,53 @@ def google_sheets_guncelle(ctx, artan_10, azalan_10):
                 degisim = f"{row['Fark'] * 100:.2f}%"
                 azalan_liste.append([urun, degisim])
             sheet.update(range_name=f'A49:B{48 + len(azalan_liste)}', values=azalan_liste)
+
+        # --- 5. SEKTÖREL ENFLASYON (Kategori Bazlı Aktarım) ---
+        df = ctx["df_analiz"]
+        agirlik_col = ctx["agirlik_col"]
+        
+        # Kategorilerin ağırlıklı ortalamasını (Maddeler sayfasındaki gibi) hesaplıyoruz
+        def agirlikli_ort(x):
+            w = pd.to_numeric(x[agirlik_col], errors='coerce').fillna(0)
+            val = pd.to_numeric(x['Fark_Yuzde'], errors='coerce').fillna(0)
+            if w.sum() == 0: return 0
+            return (w * val).sum() / w.sum()
+
+        df_cat_summary = df.groupby('Grup').apply(agirlikli_ort).reset_index(name='Ortalama_Degisim')
+        
+        # Kategorileri tam isabetle exceldeki hücrelere bağlayan sözlük yapısı
+        hucre_haritasi = {
+            "Gıda": "B22", 
+            "Alkol": "B23", "Tütün": "B23",
+            "Giyim": "B24", "Ayakkabı": "B24",
+            "Konut": "B25",
+            "Ev Eşyası": "B26", "Mobilya": "B26",
+            "Sağlık": "B27",
+            "Ulaştırma": "B28",
+            "Haberleşme": "B29", "İletişim": "B29", "Bilgi": "B29",
+            "Eğlence": "B30", "Kültür": "B30",
+            "Eğitim": "B31",
+            "Lokanta": "B32", "Otel": "B32",
+            "Sigorta": "B33", "Finans": "B33",
+            "Kişisel": "B34", "Diğer": "B34"
+        }
+        
+        # Google API kotasını harcamamak için tüm güncellemeleri tek sepette (batch) yolluyoruz
+        toplu_guncelleme = []
+        
+        for _, row in df_cat_summary.iterrows():
+            grup_adi = str(row['Grup'])
+            deger = row['Ortalama_Degisim']
+            formatli_deger = f"{deger:.2f}%" # İstediğiniz 6.02% formatı
+            
+            for anahtar, hucre in hucre_haritasi.items():
+                if anahtar.lower() in grup_adi.lower():
+                    toplu_guncelleme.append({'range': hucre, 'values': [[formatli_deger]]})
+                    break # Doğru hücreyi bulunca diğer kelimeleri aramaya gerek kalmıyor
+                    
+        # Tek seferde tüm kategorileri tabloya basıyoruz
+        if toplu_guncelleme:
+            sheet.batch_update(toplu_guncelleme)
 
         return True
     except Exception as e:
@@ -1477,6 +1524,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
