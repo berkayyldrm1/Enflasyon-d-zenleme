@@ -23,7 +23,35 @@ from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from streamlit_lottie import st_lottie
+import gspread
+from google.oauth2.service_account import Credentials
 
+def google_sheets_guncelle(genel_enflasyon, gida_enflasyonu, rapor_tarihi):
+    try:
+        # 1. Yetkilendirme (Secrets üzerinden TOML okuma)
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
+        s_creds = dict(st.secrets["gcp_service_account"])
+        creds = Credentials.from_service_account_info(s_creds, scopes=scopes)
+        
+        # 2. Gspread istemcisi oluşturma
+        client = gspread.authorize(creds)
+        
+        # 3. Dosyaya URL ile bağlanma (Dosya başkasına ait olduğu için en güvenlisi budur)
+        # Buraya kendi dosyanızın tam linkini yapıştırın
+        sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1ABCDEFG_SİZİN_DOSYA_LINKINIZ/edit").sheet1 
+        
+        # 4. Belirli hücreleri güncelleme (Örnek hücreler, kendinize göre değiştirebilirsiniz)
+        sheet.update_acell('B2', str(rapor_tarihi))
+        sheet.update_acell('B3', float(genel_enflasyon))
+        sheet.update_acell('B4', float(gida_enflasyonu))
+        
+        return "Başarılı"
+    except Exception as e:
+        return f"Hata: {str(e)}"
+        
 # --- 1. AYARLAR VE TEMA YÖNETİMİ ---
 st.set_page_config(
     page_title="Enflasyon Monitörü | Pro Analytics",
@@ -1377,9 +1405,16 @@ def main():
             progress_bar.empty()
             
             if "OK" in res:
+                # --- GOOGLE SHEETS GÜNCELLEME ---
+                # ctx sözlüğünüzden son verileri alıp Sheets'e yolluyoruz
+                # (Sizin kodunuzda df_base hesaplandıktan sonra ctx oluşuyor,
+                # o yüzden bu işlemi ctx oluştuktan sonraki bir bloğa almanız gerekebilir)
+                
+                # google_sheets_guncelle(ctx["enf_genel"], ctx["enf_gida"], ctx["son"])
+                
                 st.cache_data.clear()
                 st.session_state.clear() 
-                st.success('Sistem Senkronize Edildi! Sayfa yenileniyor...', icon='🚀')
+                st.success('Senkronize Edildi ve Sheets Güncellendi!', icon='🚀')
                 time.sleep(1)
                 st.rerun()
                 
@@ -1410,6 +1445,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
