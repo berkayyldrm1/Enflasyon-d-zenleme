@@ -10,3 +10,5 @@ beautifulsoup4
 requests
 matplotlib
 PyGithub
+gspread
+google-auth
