@@ -1,1 +1,32 @@
+name: Enflasyon Botu Otomasyonu
 
+on:
+  schedule:
+    # GitHub saatleri UTC'ye (Türkiye'den 3 saat geriye) göre hesaplar.
+    # TSİ 08:56 olması için UTC 05:56 yazıyoruz.
+    - cron: '56 5 * * *'
+    # TSİ 20:56 olması için UTC 17:56 yazıyoruz.
+    - cron: '56 17 * * *'
+  
+  # İstediğiniz zaman GitHub üzerinden manuel çalıştırabilmek için:
+  workflow_dispatch: 
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodları Kopyala
+        uses: actions/checkout@v3
+
+      - name: Python Kur
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Gerekli Paketleri Yükle
+        run: |
+          pip install playwright
+          playwright install chromium
+
+      - name: Sanal Asistanı Başlat
+        run: python otomasyon.py
