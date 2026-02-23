@@ -36,42 +36,45 @@ def google_sheets_guncelle(ctx, artan_10, azalan_10):
         creds = Credentials.from_service_account_info(s_creds, scopes=scopes)
         client = gspread.authorize(creds)
         
-        # Linkinizi buraya tam olarak yerleştirdik
+        # linkinizi buraya tam olarak yerleştirdik
         sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1EU5GHrkjrxnRvPVJDRWmYwNhuPs5e1E7C_YFYEYwxDQ/edit").worksheet("veri")
+        
+        # tüm güncellemeleri tek sepette (batch) yollamak için ana listemiz
+        toplu_guncelleme = []
         
         # --- 1. TARİH FORMATI (B4 Hücresi) ---
         aylar = ["", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
         simdi = datetime.utcnow() + timedelta(hours=3)
         tarih_str = f"'{simdi.day} {aylar[simdi.month]} {simdi.year}"
-        sheet.update_acell('B4', tarih_str)
+        toplu_guncelleme.append({'range': 'B4', 'values': [[tarih_str]]})
         
         # --- 2. KPI CARD 1 (B12 Hücresi) ---
-        kpi_1_str = f"{ctx['enf_genel']:.2f}%"
-        sheet.update_acell('B12', kpi_1_str)
+        # tr lokasyonu için noktayı virgüle çeviriyoruz
+        kpi_1_str = f"{ctx['enf_genel']:.2f}%".replace('.', ',')
+        toplu_guncelleme.append({'range': 'B12', 'values': [[kpi_1_str]]})
         
         # --- 3. EN ÇOK ARTAN 10 ÜRÜN (A37 ve B37'den itibaren) ---
         if not artan_10.empty:
             artan_liste = []
             for _, row in artan_10.iterrows():
                 urun = row[ctx['ad_col']]
-                degisim = f"{row['Fark'] * 100:.2f}%"
+                degisim = f"{row['Fark'] * 100:.2f}%".replace('.', ',')
                 artan_liste.append([urun, degisim])
-            sheet.update(range_name=f'A37:B{36 + len(artan_liste)}', values=artan_liste)
+            toplu_guncelleme.append({'range': f'A37:B{36 + len(artan_liste)}', 'values': artan_liste})
 
         # --- 4. EN ÇOK AZALAN 10 ÜRÜN (A49 ve B49'dan itibaren) ---
         if not azalan_10.empty:
             azalan_liste = []
             for _, row in azalan_10.iterrows():
                 urun = row[ctx['ad_col']]
-                degisim = f"{row['Fark'] * 100:.2f}%"
+                degisim = f"{row['Fark'] * 100:.2f}%".replace('.', ',')
                 azalan_liste.append([urun, degisim])
-            sheet.update(range_name=f'A49:B{48 + len(azalan_liste)}', values=azalan_liste)
+            toplu_guncelleme.append({'range': f'A49:B{48 + len(azalan_liste)}', 'values': azalan_liste})
 
         # --- 5. SEKTÖREL ENFLASYON (Kategori Bazlı Aktarım) ---
         df = ctx["df_analiz"]
         agirlik_col = ctx["agirlik_col"]
         
-        # Kategorilerin ağırlıklı ortalamasını (Maddeler sayfasındaki gibi) hesaplıyoruz
         def agirlikli_ort(x):
             w = pd.to_numeric(x[agirlik_col], errors='coerce').fillna(0)
             val = pd.to_numeric(x['Fark_Yuzde'], errors='coerce').fillna(0)
@@ -80,7 +83,6 @@ def google_sheets_guncelle(ctx, artan_10, azalan_10):
 
         df_cat_summary = df.groupby('Grup').apply(agirlikli_ort).reset_index(name='Ortalama_Degisim')
         
-        # Kategorileri tam isabetle exceldeki hücrelere bağlayan sözlük yapısı
         hucre_haritasi = {
             "Gıda": "B22", 
             "Alkol": "B23", "Tütün": "B23",
@@ -97,22 +99,20 @@ def google_sheets_guncelle(ctx, artan_10, azalan_10):
             "Kişisel": "B34", "Diğer": "B34"
         }
         
-        # Google API kotasını harcamamak için tüm güncellemeleri tek sepette (batch) yolluyoruz
-        toplu_guncelleme = []
-        
         for _, row in df_cat_summary.iterrows():
             grup_adi = str(row['Grup'])
             deger = row['Ortalama_Degisim']
-            formatli_deger = f"{deger:.2f}%" # İstediğiniz 6.02% formatı
+            formatli_deger = f"{deger:.2f}%".replace('.', ',')
             
             for anahtar, hucre in hucre_haritasi.items():
                 if anahtar.lower() in grup_adi.lower():
                     toplu_guncelleme.append({'range': hucre, 'values': [[formatli_deger]]})
-                    break # Doğru hücreyi bulunca diğer kelimeleri aramaya gerek kalmıyor
+                    break 
                     
-        # Tek seferde tüm kategorileri tabloya basıyoruz
+        # tek seferde tüm kategorileri ve listeleri tabloya basıyoruz
+        # value_input_option parametresi verilerin e-tabloda doğru parse edilmesini sağlar
         if toplu_guncelleme:
-            sheet.batch_update(toplu_guncelleme)
+            sheet.batch_update(toplu_guncelleme, value_input_option='USER_ENTERED')
 
         return True
     except Exception as e:
@@ -1307,3 +1307,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
