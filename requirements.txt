@@ -12,3 +12,4 @@ matplotlib
 PyGithub
 gspread
 google-auth
+playwright
