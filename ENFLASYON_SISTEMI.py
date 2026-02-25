@@ -27,10 +27,12 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 def google_sheets_guncelle(ctx, artan_10, azalan_10):
-    print("etablo")
+    try:
+        print("etablo")
+        # burada asıl kodların olacak
+
     except Exception as e:
         return str(e)
-        
 # --- 1. AYARLAR VE TEMA YÖNETİMİ ---
 st.set_page_config(
     page_title="Enflasyon Monitörü | Pro Analytics",
@@ -1220,4 +1222,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
