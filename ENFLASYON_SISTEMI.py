@@ -951,7 +951,7 @@ def sayfa_piyasa_ozeti(ctx):
     
     # 1. Veriyi hazırla ve ilk 10'ları çek
    # --- YENİ SABİT ŞUBAT BAŞI HESAPLAMA ---
-    BAZ_TARIH_SUBAT = "2026-02-04" 
+    BAZ_TARIH_SUBAT = "2026-02-02" 
     
     # Dosyada Şubat başı yoksa eldeki en eski günü seçer
     mevcut_baz = BAZ_TARIH_SUBAT if BAZ_TARIH_SUBAT in df_analiz.columns else ctx['baz_col']
@@ -1288,6 +1288,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
