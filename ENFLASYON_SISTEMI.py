@@ -954,32 +954,13 @@ def sayfa_piyasa_ozeti(ctx):
     artan_tum = df_fark[df_fark['Fark'] > 0].sort_values('Fark', ascending=False)
     azalan_tum = df_fark[df_fark['Fark'] < 0].sort_values('Fark', ascending=True)
 
+    # 1. Gerçek veriden ilk 10'ları al (Filtreleme ve Sıralama zaten yukarıda yapıldı)
     artan_10 = artan_tum.head(10).copy()
     azalan_10 = azalan_tum.head(10).copy()
 
-    def kademeli_oran_ayarla(df_subset, yon="artan"):
-        if df_subset.empty: return df_subset
-        
-        guncel_oran = np.random.uniform(14.75, 14.95) 
-        yeni_farklar = []
-        
-        for i in range(len(df_subset)):
-            kusurat = np.random.uniform(-0.15, 0.15)
-            final_oran = guncel_oran + kusurat
-            
-            if yon == "artan":
-                yeni_farklar.append(final_oran / 100.0)
-            else:
-                yeni_farklar.append(-final_oran / 100.0)
-                
-            guncel_oran -= np.random.uniform(1.20, 1.60)
-            
-        df_subset['Fark'] = yeni_farklar
-        return df_subset
+    # 2. Görsel tabloları oluştur
+    c_art, c_az = st.columns(2)
 
-    artan_10 = kademeli_oran_ayarla(artan_10, "artan")
-    azalan_10 = kademeli_oran_ayarla(azalan_10, "azalan")
-    
     with c_art:
         st.markdown("<div style='color:#ef4444; font-weight:800; font-size:16px; margin-bottom:15px; text-shadow: 0 0 10px rgba(239,68,68,0.3);'>🔺 EN ÇOK ARTAN 10 ÜRÜN</div>", unsafe_allow_html=True)
         if not artan_10.empty:
@@ -996,7 +977,7 @@ def sayfa_piyasa_ozeti(ctx):
             )
         else:
             st.info("Fiyatı artan ürün tespit edilmedi.")
-            
+
     with c_az:
         st.markdown("<div style='color:#22c55e; font-weight:800; font-size:16px; margin-bottom:15px; text-shadow: 0 0 10px rgba(34,197,94,0.3);'>🔻 EN ÇOK DÜŞEN 10 ÜRÜN</div>", unsafe_allow_html=True)
         if not azalan_10.empty:
@@ -1013,6 +994,8 @@ def sayfa_piyasa_ozeti(ctx):
             )
         else:
             st.info("Fiyatı düşen ürün tespit edilmedi.")
+
+    
 
     st.markdown("---")
                         
@@ -1306,6 +1289,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
