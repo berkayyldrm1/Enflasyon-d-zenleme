@@ -950,14 +950,17 @@ def sayfa_piyasa_ozeti(ctx):
     c_art, c_az = st.columns(2)
     
     # 1. Veriyi hazırla ve ilk 10'ları çek
-   # --- YENİ SABİT ŞUBAT BAŞI HESAPLAMA ---
-    BAZ_TARIH_SUBAT = "2026-02-02" 
+   # --- YENİ SABİT ŞUBAT BAŞI HESAPLAMA (HATA DÜZELTİLDİ) ---
+    BAZ_TARIH_SUBAT = "2026-02-04" 
+    
+    # df_analiz yerine ctx['df_analiz'] kullanıyoruz
+    df_veri = ctx['df_analiz']
     
     # Dosyada Şubat başı yoksa eldeki en eski günü seçer
-    mevcut_baz = BAZ_TARIH_SUBAT if BAZ_TARIH_SUBAT in df_analiz.columns else ctx['baz_col']
+    mevcut_baz = BAZ_TARIH_SUBAT if BAZ_TARIH_SUBAT in df_veri.columns else ctx['baz_col']
     
     # Veriyi temizle ve kopyala
-    df_fark = ctx["df_analiz"].dropna(subset=[ctx['son'], mevcut_baz, ctx['ad_col']]).copy()
+    df_fark = df_veri.dropna(subset=[ctx['son'], mevcut_baz, ctx['ad_col']]).copy()
 
     # Gerçek matematiksel fark: ((Bugün / Şubat Başı) - 1) * 100
     df_fark['Net_Degisim'] = ((df_fark[ctx['son']] / df_fark[mevcut_baz].replace(0, np.nan)) - 1) * 100
@@ -994,8 +997,6 @@ def sayfa_piyasa_ozeti(ctx):
                 },
                 hide_index=True, use_container_width=True
             )
-    # --- HESAPLAMA BİTİŞ ---
-
     st.markdown("---")
                         
     st.subheader("Sektörel Isı Haritası")
@@ -1288,6 +1289,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
