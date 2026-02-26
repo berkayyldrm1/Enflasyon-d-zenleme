@@ -950,38 +950,39 @@ def sayfa_piyasa_ozeti(ctx):
     c_art, c_az = st.columns(2)
     
     # 1. Veriyi hazırla ve ilk 10'ları çek
-   # --- AKILLI BAZ TARİH VE GERÇEK FARK HESAPLAMA (GÜNCEL) ---
+   # --- GÜVENLİ BAZ TARİH VE UÇ DEĞER TEMİZLEME ---
     BAZ_TARIH_HEDEFI = "2026-02-02" 
     df_veri = ctx['df_analiz'].copy()
     
-    # Mevcut tarih sütunlarını bul
     mevcut_sutunlar = [c for c in df_veri.columns if "2026-" in str(c)]
     
-    # Hedef tarihi kontrol et, yoksa eldeki en eski günü seç
     if BAZ_TARIH_HEDEFI in mevcut_sutunlar:
         baz_sutunu = BAZ_TARIH_HEDEFI
     else:
         baz_sutunu = sorted(mevcut_sutunlar)[0]
 
-    # Sadece bugün ve baz günü dolu/geçerli olanları filtrele
-    # (Hem boş olmamalı hem de 0'dan büyük olmalı)
+    # 1. TEMİZLİK: Sadece fiyatı 1 TL'den büyük olan ürünleri baz al 
+    # (Böylece 0.01 gibi hatalı düşük baz fiyatlardan kurtuluruz)
     df_fark = df_veri.dropna(subset=[ctx['son'], baz_sutunu, ctx['ad_col']]).copy()
-    df_fark = df_fark[(df_fark[baz_sutunu] > 0) & (df_fark[ctx['son']] > 0)]
+    df_fark = df_fark[(df_fark[baz_sutunu] > 1.0) & (df_fark[ctx['son']] > 0.1)]
 
-    # Gerçek farkı hesapla (Simülasyon Değil!)
+    # 2. HESAPLAMA
     df_fark['Net_Degisim'] = ((df_fark[ctx['son']] / df_fark[baz_sutunu]) - 1) * 100
 
-    # En çok artan ve azalan 10'u çek
-    # (0.001 filtresi ile hiç değişmeyenleri listeden eliyoruz)
-    artan_10 = df_fark[df_fark['Net_Degisim'] > 0.001].sort_values('Net_Degisim', ascending=False).head(10)
-    azalan_10 = df_fark[df_fark['Net_Degisim'] < -0.001].sort_values('Net_Degisim', ascending=True).head(10)
+    # 3. MANTIKLILIK FİLTRESİ: Bir ayda %100'den fazla artan veya %90'dan fazla düşen 
+    # ürünleri "Hatalı Veri" kabul et ve listeden çıkar.
+    df_fark = df_fark[(df_fark['Net_Degisim'] < 100) & (df_fark['Net_Degisim'] > -90)]
 
-    st.markdown(f"### 🔥 Fiyat Değişim Analizi ({baz_sutunu} → {ctx['son']})")
+    # 4. SIRALAMA
+    artan_10 = df_fark[df_fark['Net_Degisim'] > 0.01].sort_values('Net_Degisim', ascending=False).head(10)
+    azalan_10 = df_fark[df_fark['Net_Degisim'] < -0.01].sort_values('Net_Degisim', ascending=True).head(10)
+
+    st.markdown(f"### 🔥 Gerçek Zamanlı Fiyat Değişimi ({baz_sutunu} → {ctx['son']})")
     
     c_art, c_az = st.columns(2)
 
     with c_art:
-        st.markdown(f"<div style='color:#ef4444; font-weight:800; font-size:16px; margin-bottom:15px; text-shadow: 0 0 10px rgba(239,68,68,0.2);'>🔺 EN ÇOK ARTAN 10 ÜRÜN</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:#ef4444; font-weight:800; font-size:16px; margin-bottom:15px;'>🔺 EN ÇOK ARTAN 10 ÜRÜN</div>", unsafe_allow_html=True)
         if not artan_10.empty:
             st.dataframe(
                 artan_10[[ctx['ad_col'], ctx['son'], 'Net_Degisim']],
@@ -992,11 +993,9 @@ def sayfa_piyasa_ozeti(ctx):
                 },
                 hide_index=True, use_container_width=True
             )
-        else:
-            st.info("Artış gösteren veri bulunamadı.")
 
     with c_az:
-        st.markdown(f"<div style='color:#22c55e; font-weight:800; font-size:16px; margin-bottom:15px; text-shadow: 0 0 10px rgba(34,197,94,0.2);'>🔻 EN ÇOK DÜŞEN 10 ÜRÜN</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:#22c55e; font-weight:800; font-size:16px; margin-bottom:15px;'>🔻 EN ÇOK DÜŞEN 10 ÜRÜN</div>", unsafe_allow_html=True)
         if not azalan_10.empty:
             st.dataframe(
                 azalan_10[[ctx['ad_col'], ctx['son'], 'Net_Degisim']],
@@ -1007,9 +1006,6 @@ def sayfa_piyasa_ozeti(ctx):
                 },
                 hide_index=True, use_container_width=True
             )
-        else:
-            st.info("Düşüş gösteren veri bulunamadı.")
-    # --- HESAPLAMA VE GÖSTERİM BİTİŞ ---
     st.markdown("---")
                         
     st.subheader("Sektörel Isı Haritası")
@@ -1302,6 +1298,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
