@@ -950,52 +950,51 @@ def sayfa_piyasa_ozeti(ctx):
     c_art, c_az = st.columns(2)
     
     # 1. Veriyi hazırla ve ilk 10'ları çek
-    df_fark = ctx["df_analiz"].dropna(subset=[ctx['son'], ctx['baz_col'], ctx['ad_col']]).copy()
+   # --- YENİ SABİT ŞUBAT BAŞI HESAPLAMA ---
+    BAZ_TARIH_SUBAT = "2026-02-04" 
     
-    # Gerçek farkı burada anlık hesaplayalım ki simülasyon hataları karışmasın
-    df_fark['Gercek_Fark'] = (df_fark[ctx['son']] / df_fark[ctx['baz_col']]) - 1
+    # Dosyada Şubat başı yoksa eldeki en eski günü seçer
+    mevcut_baz = BAZ_TARIH_SUBAT if BAZ_TARIH_SUBAT in df_analiz.columns else ctx['baz_col']
     
-    # Artanlar ve Azalanlar (Gerçek Fark üzerinden sırala)
-    artan_10 = df_fark[df_fark['Gercek_Fark'] > 0].sort_values('Gercek_Fark', ascending=False).head(10)
-    azalan_10 = df_fark[df_fark['Gercek_Fark'] < 0].sort_values('Gercek_Fark', ascending=True).head(10)
+    # Veriyi temizle ve kopyala
+    df_fark = ctx["df_analiz"].dropna(subset=[ctx['son'], mevcut_baz, ctx['ad_col']]).copy()
 
+    # Gerçek matematiksel fark: ((Bugün / Şubat Başı) - 1) * 100
+    df_fark['Net_Degisim'] = ((df_fark[ctx['son']] / df_fark[mevcut_baz].replace(0, np.nan)) - 1) * 100
+
+    # Oranlara göre sırala ve ilk 10'u al
+    artan_10 = df_fark[df_fark['Net_Degisim'] > 0].sort_values('Net_Degisim', ascending=False).head(10)
+    azalan_10 = df_fark[df_fark['Net_Degisim'] < 0].sort_values('Net_Degisim', ascending=True).head(10)
+
+    st.markdown("### 🔥 Fiyatı En Çok Değişenler (Şubat Başından Beri)")
     c_art, c_az = st.columns(2)
 
     with c_art:
         st.markdown("<div style='color:#ef4444; font-weight:800; font-size:16px; margin-bottom:15px;'>🔺 EN ÇOK ARTAN 10 ÜRÜN</div>", unsafe_allow_html=True)
         if not artan_10.empty:
-            disp_artan = artan_10[[ctx['ad_col'], ctx['son']]].copy()
-            disp_artan['Değişim'] = artan_10['Gercek_Fark'] * 100
             st.dataframe(
-                disp_artan,
+                artan_10[[ctx['ad_col'], ctx['son'], 'Net_Degisim']],
                 column_config={
                     ctx['ad_col']: "Ürün Adı",
                     ctx['son']: st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
-                    "Değişim": st.column_config.NumberColumn("% Değişim", format="+%.2f %%")
+                    "Net_Degisim": st.column_config.NumberColumn("% Değişim", format="+%.2f %%")
                 },
                 hide_index=True, use_container_width=True
             )
-        else:
-            st.info("Artış yok.")
 
     with c_az:
         st.markdown("<div style='color:#22c55e; font-weight:800; font-size:16px; margin-bottom:15px;'>🔻 EN ÇOK DÜŞEN 10 ÜRÜN</div>", unsafe_allow_html=True)
         if not azalan_10.empty:
-            disp_azalan = azalan_10[[ctx['ad_col'], ctx['son']]].copy()
-            disp_azalan['Değişim'] = azalan_10['Gercek_Fark'] * 100
             st.dataframe(
-                disp_azalan,
+                azalan_10[[ctx['ad_col'], ctx['son'], 'Net_Degisim']],
                 column_config={
                     ctx['ad_col']: "Ürün Adı",
                     ctx['son']: st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
-                    "Değişim": st.column_config.NumberColumn("% Değişim", format="%.2f %%")
+                    "Net_Degisim": st.column_config.NumberColumn("% Değişim", format="%.2f %%")
                 },
                 hide_index=True, use_container_width=True
             )
-        else:
-            st.info("Düşüş yok.")
-
-    
+    # --- HESAPLAMA BİTİŞ ---
 
     st.markdown("---")
                         
@@ -1289,6 +1288,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
