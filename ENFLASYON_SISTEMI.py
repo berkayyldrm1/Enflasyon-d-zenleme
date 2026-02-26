@@ -945,39 +945,41 @@ def sayfa_piyasa_ozeti(ctx):
        st.markdown(ozet_html, unsafe_allow_html=True)
 
     st.markdown("---")
-    
-    st.markdown("### 🔥 Fiyatı En Çok Değişenler (Simüle Edilmiş - Top 10)")
-    c_art, c_az = st.columns(2)
-    
-    # 1. Veriyi hazırla ve ilk 10'ları çek
-   # --- GÜVENLİ BAZ TARİH VE UÇ DEĞER TEMİZLEME ---
-    BAZ_TARIH_HEDEFI = "2026-02-02" 
+    # --- AKILLI ÜRÜN BAZLI HESAPLAMA MOTORU (DİNAMİK BAŞLANGIÇ) ---
     df_veri = ctx['df_analiz'].copy()
     
-    mevcut_sutunlar = [c for c in df_veri.columns if "2026-" in str(c)]
-    
-    if BAZ_TARIH_HEDEFI in mevcut_sutunlar:
-        baz_sutunu = BAZ_TARIH_HEDEFI
-    else:
-        baz_sutunu = sorted(mevcut_sutunlar)[0]
+    # Sadece tarih içeren sütunları sıralı al
+    tarih_sutunlari = sorted([c for c in df_veri.columns if "2026-" in str(c)])
+    son_gun = ctx['son']
 
-    # 1. TEMİZLİK: Sadece fiyatı 1 TL'den büyük olan ürünleri baz al 
-    # (Böylece 0.01 gibi hatalı düşük baz fiyatlardan kurtuluruz)
-    df_fark = df_veri.dropna(subset=[ctx['son'], baz_sutunu, ctx['ad_col']]).copy()
-    df_fark = df_fark[(df_fark[baz_sutunu] > 1.0) & (df_fark[ctx['son']] > 0.1)]
+    def degisim_hesapla_dinamik(row):
+        # Ürünün tüm tarih sütunlarındaki fiyatlarına bak
+        fiyatlar = row[tarih_sutunlari]
+        # 0'dan büyük ve boş olmayan İLK fiyatı bul
+        gecerli_fiyatlar = fiyatlar[fiyatlar > 0].dropna()
+        
+        # Eğer kıyaslayacak en az 2 gün verisi yoksa (yeni ürünse) %0
+        if len(gecerli_fiyatlar) < 2:
+            return 0.0
+        
+        ilk_fiyat = gecerli_fiyatlar.iloc[0] # Ürünün sisteme girdiği İLK gün fiyatı
+        son_fiyat = row[son_gun]            # Bugünkü fiyat
+        
+        if ilk_fiyat <= 0: return 0.0
+        return ((son_fiyat / ilk_fiyat) - 1) * 100
 
-    # 2. HESAPLAMA
-    df_fark['Net_Degisim'] = ((df_fark[ctx['son']] / df_fark[baz_sutunu]) - 1) * 100
+    # Her satır için bu özel hesabı yap
+    df_veri['Net_Degisim'] = df_veri.apply(degisim_hesapla_dinamik, axis=1)
 
-    # 3. MANTIKLILIK FİLTRESİ: Bir ayda %100'den fazla artan veya %90'dan fazla düşen 
-    # ürünleri "Hatalı Veri" kabul et ve listeden çıkar.
-    df_fark = df_fark[(df_fark['Net_Degisim'] < 100) & (df_fark['Net_Degisim'] > -90)]
+    # TEMİZLİK: Mantıksız uç değerleri (%100+ artış gibi hataları) ele
+    df_fark = df_veri[(df_veri['Net_Degisim'] < 100) & (df_veri['Net_Degisim'] > -90)].copy()
 
-    # 4. SIRALAMA
+    # SIRALAMA
     artan_10 = df_fark[df_fark['Net_Degisim'] > 0.01].sort_values('Net_Degisim', ascending=False).head(10)
     azalan_10 = df_fark[df_fark['Net_Degisim'] < -0.01].sort_values('Net_Degisim', ascending=True).head(10)
 
-    st.markdown(f"### 🔥 Gerçek Zamanlı Fiyat Değişimi ({baz_sutunu} → {ctx['son']})")
+    st.markdown(f"### 🔥 Gerçek Fiyat Değişim Analizi (Giriş → Bugün)")
+    st.info("ℹ️ Bu tabloda her ürün, sisteme ilk girdiği günkü fiyatı ile kıyaslanır.")
     
     c_art, c_az = st.columns(2)
 
@@ -985,27 +987,32 @@ def sayfa_piyasa_ozeti(ctx):
         st.markdown("<div style='color:#ef4444; font-weight:800; font-size:16px; margin-bottom:15px;'>🔺 EN ÇOK ARTAN 10 ÜRÜN</div>", unsafe_allow_html=True)
         if not artan_10.empty:
             st.dataframe(
-                artan_10[[ctx['ad_col'], ctx['son'], 'Net_Degisim']],
+                artan_10[[ctx['ad_col'], son_gun, 'Net_Degisim']],
                 column_config={
                     ctx['ad_col']: "Ürün Adı",
-                    ctx['son']: st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
+                    son_gun: st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
                     "Net_Degisim": st.column_config.NumberColumn("% Değişim", format="+%.2f %%")
                 },
                 hide_index=True, use_container_width=True
             )
+        else:
+            st.write("Artış gösteren ürün yok.")
 
     with c_az:
         st.markdown("<div style='color:#22c55e; font-weight:800; font-size:16px; margin-bottom:15px;'>🔻 EN ÇOK DÜŞEN 10 ÜRÜN</div>", unsafe_allow_html=True)
         if not azalan_10.empty:
             st.dataframe(
-                azalan_10[[ctx['ad_col'], ctx['son'], 'Net_Degisim']],
+                azalan_10[[ctx['ad_col'], son_gun, 'Net_Degisim']],
                 column_config={
                     ctx['ad_col']: "Ürün Adı",
-                    ctx['son']: st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
+                    son_gun: st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
                     "Net_Degisim": st.column_config.NumberColumn("% Değişim", format="%.2f %%")
                 },
                 hide_index=True, use_container_width=True
             )
+        else:
+            st.write("Düşüş gösteren ürün yok.")
+    
     st.markdown("---")
                         
     st.subheader("Sektörel Isı Haritası")
@@ -1298,6 +1305,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
