@@ -1011,6 +1011,7 @@ def sayfa_piyasa_ozeti(ctx):
     c1, c2 = st.columns(2)
     tablo_ayar = {
         ctx['ad_col']: "Ürün Adı",
+        "Baz_Tarih": "Baz Tarih",
         "Baz_Fiyat": st.column_config.NumberColumn("Baz Fiyat", format="%.2f ₺"),
         "Son_Fiyat_G": st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
         "Net_Degisim": st.column_config.NumberColumn("Değişim", format="+%.2f %%")
@@ -1018,12 +1019,12 @@ def sayfa_piyasa_ozeti(ctx):
 
     with c1:
         st.markdown("<b style='color:#ef4444;'>🔺 EN ÇOK ARTANLAR</b>", unsafe_allow_html=True)
-        st.dataframe(artan_10[[ctx['ad_col'], 'Baz_Tarih', 'Baz_Fiyat', 'Son_Fiyat_G', 'Net_Degisim']], 
+        st.dataframe(artan_10[[ctx['ad_col'],  'Baz_Fiyat', 'Son_Fiyat_G', 'Net_Degisim']], 
                      column_config=tablo_ayar, hide_index=True, use_container_width=True)
 
     with c2:
         st.markdown("<b style='color:#22c55e;'>🔻 EN ÇOK DÜŞENLER</b>", unsafe_allow_html=True)
-        st.dataframe(azalan_10[[ctx['ad_col'], 'Baz_Tarih', 'Baz_Fiyat', 'Son_Fiyat_G', 'Net_Degisim']], 
+        st.dataframe(azalan_10[[ctx['ad_col'], 'Baz_Fiyat', 'Son_Fiyat_G', 'Net_Degisim']], 
                      column_config=tablo_ayar, hide_index=True, use_container_width=True)
             
     st.markdown("---")
