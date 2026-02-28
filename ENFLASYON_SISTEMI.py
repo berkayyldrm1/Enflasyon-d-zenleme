@@ -945,67 +945,70 @@ def sayfa_piyasa_ozeti(ctx):
        st.markdown(ozet_html, unsafe_allow_html=True)
 
     st.markdown("---")
-    # --- TAM KAPSAMLI ŞUBAT ANALİZİ (İLK BULUNAN VERİ -> SON GÜN) ---
+    # --- GELİŞMİŞ TARİH TARAMA VE DOĞRULAMA MOTORU (v6) ---
     df_veri = ctx['df_analiz'].copy()
     
-    # Sadece Şubat ayı tarih sütunlarını filtrele (04 Şubat ve sonrası)
-    subat_sutunlari = sorted([
+    # Şubat ayı içindeki tüm potansiyel tarih sütunlarını bul (04'ten itibaren)
+    tum_subat_gunleri = sorted([
         c for c in df_veri.columns 
-        if re.match(r'^\d{4}-02-\d{2}$', str(c)) and str(c) >= "2026-02-04"
+        if "2026-02" in str(c) and str(c) >= "2026-02-04"
     ])
     
     son_gun = ctx['son'] 
 
-    def enflasyon_hesapla_v4(row):
-        # Üründeki Şubat ayı sütunlarını sayıya çevir
-        fiyatlar = pd.to_numeric(row[subat_sutunlari], errors='coerce')
-        # 1 TL'den büyük olan İLK geçerli fiyatı bul (Boşları ve 0'ları atlar)
-        gecerli_fiyatlar = fiyatlar[fiyatlar > 1].dropna()
+    def dinamik_baz_bulucu(row):
+        # 1. Tüm Şubat verilerini sayıya çevir ve 1 TL altını (hatalı/boş) temizle
+        fiyatlar = pd.to_numeric(row[tum_subat_gunleri], errors='coerce')
+        gecerli = fiyatlar[fiyatlar > 1].dropna()
         
-        # Eğer kıyaslayacak en az 2 günlük veri yoksa (Yeni giren ürün veya hep boşsa) pas geç
-        if len(gecerli_fiyatlar) < 2:
-            return pd.Series([None, None, 0.0, 0.0], index=['Baz_F', 'Baz_T', 'Son_F', 'Degisim'])
-        
-        # BAZ FİYAT BELİRLEME (Sistemin gördüğü ilk gün)
-        ilk_fiyat = gecerli_fiyatlar.iloc[0]
-        ilk_tarih = gecerli_fiyatlar.index[0]
-        
-        # ÖZEL KONTROL: Eğer ilk gün (örn 4 Şubat) hatalı/çok düşükse ve 2. gün devasa fark varsa
-        if len(gecerli_fiyatlar) > 1:
-            ikinci_fiyat = gecerli_fiyatlar.iloc[1]
-            # Eğer 2. gün fiyatı 1. günün 2 katından fazlaysa, 1. günü "Hatalı" say ve 2. günü baz al
-            if ikinci_fiyat > (ilk_fiyat * 2):
-                ilk_fiyat = ikinci_fiyat
-                ilk_tarih = gecerli_fiyatlar.index[1]
+        if len(gecerli) < 2:
+            return pd.Series([None, None, 0.0, 0.0], index=['B_F', 'B_T', 'S_F', 'Deg'])
 
-        # SON GÜN FİYATI (Seçilen gün, yoksa sepetindeki en son gerçek fiyat)
+        # 2. İLK ADAYI SEÇ (Normalde 4 Şubat)
+        baz_fiyat = gecerli.iloc[0]
+        baz_tarih = gecerli.index[0]
+
+        # 3. TİŞÖRT/BEYAZ EŞYA KONTROLÜ (4 Şubat hatasını ayıkla)
+        # Eğer listede birden fazla gün varsa, ilk günü sonrakilerle kıyasla
+        if len(gecerli) > 1:
+            sonraki_fiyat = gecerli.iloc[1]
+            # Eğer 4 Şubat fiyatı, 5 Şubat fiyatından %50'den fazla düşükse (629 vs 3300 gibi)
+            # veya anlamsız bir sıçrama varsa, 4 Şubat'ı ATLA, 5 Şubat'ı BAZ AL.
+            if sonraki_fiyat > (baz_fiyat * 1.5): 
+                baz_fiyat = sonraki_fiyat
+                baz_tarih = gecerli.index[1]
+
+        # 4. GÜNCEL FİYATI AL
         son_fiyat = pd.to_numeric(row[son_gun], errors='coerce')
         if pd.isna(son_fiyat) or son_fiyat <= 0:
-            son_fiyat = gecerli_fiyatlar.iloc[-1]
+            son_fiyat = gecerli.iloc[-1]
             
-        degisim_oran = ((son_fiyat / ilk_fiyat) - 1) * 100
-        return pd.Series([ilk_fiyat, ilk_tarih, son_fiyat, degisim_oran], 
-                         index=['Baz_F', 'Baz_T', 'Son_F', 'Degisim'])
+        degisim = ((son_fiyat / baz_fiyat) - 1) * 100
+        return pd.Series([baz_fiyat, baz_tarih, son_fiyat, degisim], 
+                         index=['B_F', 'B_T', 'S_F', 'Deg'])
 
-    # Hesaplamayı başlat
-    analiz_df = df_veri.apply(enflasyon_hesapla_v4, axis=1)
-    df_veri['Baz_Fiyat'] = analiz_df['Baz_F']
-    df_veri['Baz_Tarih'] = analiz_df['Baz_T']
-    df_veri['Son_Fiyat_G'] = analiz_df['Son_F']
-    df_veri['Net_Degisim'] = analiz_df['Degisim']
+    # Hesaplamayı çalıştır
+    sonuclar = df_veri.apply(dinamik_baz_bulucu, axis=1)
+    df_veri['Baz_Fiyat'] = sonuclar['B_F']
+    df_veri['Baz_Tarih'] = sonuclar['B_T']
+    df_veri['Son_Fiyat_G'] = sonuclar['S_F']
+    df_veri['Net_Degisim'] = sonuclar['Deg']
 
-    # Filtreleme (Sadece hesaplanabilenler)
+    # Tabloyu hazırla
     df_tablo = df_veri.dropna(subset=['Baz_Fiyat']).copy()
     
-    # En çok artan/azalan 10
+    # Ekranı temiz tutmak için aşırı uç hataları (%500+ artış) gösterme
+    df_tablo = df_tablo[df_tablo['Net_Degisim'] < 500]
+
     artan_10 = df_tablo.sort_values('Net_Degisim', ascending=False).head(10)
     azalan_10 = df_tablo.sort_values('Net_Degisim', ascending=True).head(10)
 
-    st.markdown(f"### 🛡️ Şubatta İlk Veri - Son Veri Analizi ({son_gun})")
-    st.info("ℹ️ **Mantık:** Ürün 4 Şubat'ta yoksa 5 Şubat'taki fiyatı baz alınır. Bu sayede ay içinde sepete giren tüm ürünler analize dahil edilir.")
+    # --- GÖRSEL ÇIKTI ---
+    st.markdown(f"### 🎯 04 Şubat ve Sonrası Dinamik Analiz ({son_gun})")
+    st.info("💡 **Nasıl çalışır?** Sistem 4 Şubat'ı kontrol eder. Eğer veri yoksa veya 5 Şubat'taki fiyata göre aşırı düşükse (veri hatası), otomatik olarak 5 Şubat'ı 'Baz Tarih' kabul eder.")
 
-    col1, col2 = st.columns(2)
-    cfg = {
+    c1, c2 = st.columns(2)
+    tablo_ayar = {
         ctx['ad_col']: "Ürün Adı",
         "Baz_Tarih": "Baz Tarih",
         "Baz_Fiyat": st.column_config.NumberColumn("Baz Fiyat", format="%.2f ₺"),
@@ -1013,15 +1016,15 @@ def sayfa_piyasa_ozeti(ctx):
         "Net_Degisim": st.column_config.NumberColumn("Değişim", format="+%.2f %%")
     }
 
-    with col1:
+    with c1:
         st.markdown("<b style='color:#ef4444;'>🔺 EN ÇOK ARTANLAR</b>", unsafe_allow_html=True)
         st.dataframe(artan_10[[ctx['ad_col'], 'Baz_Tarih', 'Baz_Fiyat', 'Son_Fiyat_G', 'Net_Degisim']], 
-                     column_config=cfg, hide_index=True, use_container_width=True)
+                     column_config=tablo_ayar, hide_index=True, use_container_width=True)
 
-    with col2:
+    with c2:
         st.markdown("<b style='color:#22c55e;'>🔻 EN ÇOK DÜŞENLER</b>", unsafe_allow_html=True)
         st.dataframe(azalan_10[[ctx['ad_col'], 'Baz_Tarih', 'Baz_Fiyat', 'Son_Fiyat_G', 'Net_Degisim']], 
-                     column_config=cfg, hide_index=True, use_container_width=True)
+                     column_config=tablo_ayar, hide_index=True, use_container_width=True)
             
     st.markdown("---")
                         
@@ -1347,6 +1350,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
