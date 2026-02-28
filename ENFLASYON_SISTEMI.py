@@ -944,7 +944,7 @@ def sayfa_piyasa_ozeti(ctx):
        """
        st.markdown(ozet_html, unsafe_allow_html=True)
 
-   st.markdown("---")
+    st.markdown("---")
     # --- KESİN DOĞRULAMA MODU (04 ŞUBAT VE SONRASI) ---
     df_veri = ctx['df_analiz'].copy()
     
@@ -1348,6 +1348,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
