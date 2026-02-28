@@ -945,74 +945,69 @@ def sayfa_piyasa_ozeti(ctx):
        st.markdown(ozet_html, unsafe_allow_html=True)
 
     st.markdown("---")
-    # --- AKILLI ÜRÜN BAZLI HESAPLAMA MOTORU (DOĞRULAMA MODU) ---
+    # --- DİNAMİK ŞUBAT AYI ANALİZİ (İLK GÖRÜLEN -> SON GÖRÜLEN) ---
     df_veri = ctx['df_analiz'].copy()
-    tarih_sutunlari = sorted([c for c in df_veri.columns if "2026-" in str(c)])
-    son_gun = ctx['son']
+    
+    # Sadece 2026-02 ile başlayan (Şubat ayı) tarih sütunlarını alalım
+    subat_sutunlari = sorted([c for c in df_veri.columns if str(c).startswith("2026-02")])
+    son_gun = ctx['son'] # Kilit mekanizman sayesinde 25 Şubat gelir
 
-    def dinamik_analiz_yap(row):
-        fiyatlar = row[tarih_sutunlari]
-        # 0'dan büyük ve boş olmayan tüm fiyatları bul
+    def subat_ilk_son_analiz(row):
+        # Ürünün Şubat ayındaki tüm fiyatlarını al
+        fiyatlar = row[subat_sutunlari]
+        # 0'dan büyük olanları filtrele (çekilemeyen/boş verileri atla)
         gecerli_fiyatlar = fiyatlar[fiyatlar > 0].dropna()
         
+        # Eğer kıyaslama için en az 2 farklı günün verisi yoksa işleme alma
         if len(gecerli_fiyatlar) < 2:
-            return pd.Series([0.0, 0.0], index=['Ilk_Fiyat', 'Net_Degisim'])
+            return pd.Series([None, None, 0.0], index=['Referans_Fiyat', 'Referans_Tarih', 'Net_Degisim'])
         
-        ilk_fiyat = gecerli_fiyatlar.iloc[0]  # Ürünün veritabanına girdiği İLK fiyat
-        son_fiyat = row[son_gun]             # Bugünkü fiyat
+        ilk_fiyat = gecerli_fiyatlar.iloc[0]        # Şubat'ta bulabildiği İLK fiyat
+        ilk_tarih = gecerli_fiyatlar.index[0]      # O fiyatın tarihi (Örn: 04-02 veya 06-02)
+        son_fiyat = row[son_gun]                   # Bugünkü (25 Şubat) fiyat
         
         degisim = ((son_fiyat / ilk_fiyat) - 1) * 100
-        return pd.Series([ilk_fiyat, degisim], index=['Ilk_Fiyat', 'Net_Degisim'])
+        return pd.Series([ilk_fiyat, ilk_tarih, degisim], index=['Referans_Fiyat', 'Referans_Tarih', 'Net_Degisim'])
 
-    # Hesaplamaları tabloya uygula
-    analiz_sonuclari = df_veri.apply(dinamik_analiz_yap, axis=1)
-    df_veri['Ilk_Fiyat'] = analiz_sonuclari['Ilk_Fiyat']
+    # Analizi uygula
+    analiz_sonuclari = df_veri.apply(subat_ilk_son_analiz, axis=1)
+    df_veri['Referans_Fiyat'] = analiz_sonuclari['Referans_Fiyat']
+    df_veri['Referans_Tarih'] = analiz_sonuclari['Referans_Tarih']
     df_veri['Net_Degisim'] = analiz_sonuclari['Net_Degisim']
 
-    # Filtreleme: Hatalı uç değerleri temizle
-    df_fark = df_veri[(df_veri['Net_Degisim'] < 200) & (df_veri['Net_Degisim'] > -90)].copy()
-
-    # İlk fiyatı 0 olanları (yeni ürünleri) listeden çıkar ki kıyaslama doğru olsun
-    df_fark = df_fark[df_fark['Ilk_Fiyat'] > 0]
+    # Sadece geçerli hesabı olanları filtrele
+    df_fark = df_veri.dropna(subset=['Referans_Fiyat']).copy()
+    
+    # Uç değer temizliği (%200 üstü hatalı kabul edilir)
+    df_fark = df_fark[(df_fark['Net_Degisim'] < 200) & (df_fark['Net_Degisim'] > -90)]
 
     # Sıralama
-    artan_10 = df_fark[df_fark['Net_Degisim'] > 0.01].sort_values('Net_Degisim', ascending=False).head(10)
-    azalan_10 = df_fark[df_fark['Net_Degisim'] < -0.01].sort_values('Net_Degisim', ascending=True).head(10)
+    artan_10 = df_fark.sort_values('Net_Degisim', ascending=False).head(10)
+    azalan_10 = df_fark.sort_values('Net_Degisim', ascending=True).head(10)
 
-    st.markdown(f"### 🔥 Gerçek Fiyat Değişim Analizi (Giriş → Bugün)")
-    st.info("ℹ️ **Doğrulama Modu:** Ürünler sisteme ilk girdiği (veritabanındaki ilk kayıt) fiyatı ile bugünkü fiyatı üzerinden kıyaslanmaktadır.")
-    
+    st.markdown(f"### 🚀 Şubat Ayı Değişim Analizi (Giriş → {son_gun})")
+    st.info("ℹ️ **Yöntem:** Her ürünün Şubat ayında veritabanına girdiği **ilk başarılı fiyatı** baz alınarak bugünkü fiyatıyla kıyaslanmıştır.")
+
     c_art, c_az = st.columns(2)
 
-    # Ortak Sütun Ayarları
-    tablo_ayarlari = {
+    # Tablo Görünüm Ayarları (Referans Tarih sütunu doğrulama için eklendi)
+    tablo_konfig = {
         ctx['ad_col']: "Ürün Adı",
-        "Ilk_Fiyat": st.column_config.NumberColumn("İlk Fiyat", format="%.2f ₺"),
+        "Referans_Tarih": "Baz Tarih",
+        "Referans_Fiyat": st.column_config.NumberColumn("Baz Fiyat", format="%.2f ₺"),
         son_gun: st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
-        "Net_Degisim": st.column_config.NumberColumn("% Değişim", format="+%.2f %%")
+        "Net_Degisim": st.column_config.NumberColumn("Değişim", format="+%.2f %%")
     }
 
     with c_art:
-        st.markdown("<div style='color:#ef4444; font-weight:800; font-size:16px; margin-bottom:15px;'>🔺 EN ÇOK ARTAN 10 ÜRÜN</div>", unsafe_allow_html=True)
-        if not artan_10.empty:
-            st.dataframe(
-                artan_10[[ctx['ad_col'], 'Ilk_Fiyat', son_gun, 'Net_Degisim']],
-                column_config=tablo_ayarlari,
-                hide_index=True, use_container_width=True
-            )
-        else:
-            st.write("Artış verisi bulunamadı.")
+        st.markdown("<div style='color:#ef4444; font-weight:800; font-size:16px; margin-bottom:15px;'>🔺 EN ÇOK ARTANLAR</div>", unsafe_allow_html=True)
+        st.dataframe(artan_10[[ctx['ad_col'], 'Referans_Tarih', 'Referans_Fiyat', son_gun, 'Net_Degisim']], 
+                     column_config=tablo_konfig, hide_index=True, use_container_width=True)
 
     with c_az:
-        st.markdown("<div style='color:#22c55e; font-weight:800; font-size:16px; margin-bottom:15px;'>🔻 EN ÇOK DÜŞEN 10 ÜRÜN</div>", unsafe_allow_html=True)
-        if not azalan_10.empty:
-            st.dataframe(
-                azalan_10[[ctx['ad_col'], 'Ilk_Fiyat', son_gun, 'Net_Degisim']],
-                column_config=tablo_ayarlari,
-                hide_index=True, use_container_width=True
-            )
-        else:
-            st.write("Düşüş verisi bulunamadı.")
+        st.markdown("<div style='color:#22c55e; font-weight:800; font-size:16px; margin-bottom:15px;'>🔻 EN ÇOK DÜŞENLER</div>", unsafe_allow_html=True)
+        st.dataframe(azalan_10[[ctx['ad_col'], 'Referans_Tarih', 'Referans_Fiyat', son_gun, 'Net_Degisim']], 
+                     column_config=tablo_konfig, hide_index=True, use_container_width=True)
             
     st.markdown("---")
                         
@@ -1338,6 +1333,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
