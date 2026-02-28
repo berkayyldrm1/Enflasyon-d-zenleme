@@ -945,72 +945,68 @@ def sayfa_piyasa_ozeti(ctx):
        st.markdown(ozet_html, unsafe_allow_html=True)
 
     st.markdown("---")
-    # --- %100 GARANTİLİ ŞUBAT ANALİZİ (İLK MEVCUT -> SON MEVCUT) ---
+    # --- KESİN 4 ŞUBAT BAŞLANGIÇLI ANALİZ MOTORU ---
     df_veri = ctx['df_analiz'].copy()
     
-    # 1. Sadece Şubat ayı tarih sütunlarını ayıkla (İsim kontrolü yaparak)
+    # 1. Sadece 2026-02-04 ve SONRASI olan tarih sütunlarını filtrele
+    # Bu satır 2 Şubat gibi tarihleri kapı dışarı eder.
     subat_sutunlari = sorted([
         c for c in df_veri.columns 
-        if "2026-02" in str(c)
+        if "2026-02" in str(c) and str(c) >= "2026-02-04"
     ])
 
-    def ay_ici_degisim_yakala(row):
-        # Ürünün Şubat ayı boyunca aldığı tüm fiyatları sayıya çevir
+    def enflasyon_kesin_kontrol(row):
+        # Sadece 4 Şubat ve sonrası sütunları sayıya çevir
         fiyatlar = pd.to_numeric(row[subat_sutunlari], errors='coerce')
-        # 1 TL'den büyük, geçerli fiyatların olduğu tüm günleri filtrele
+        # 1 TL'den büyük gerçek fiyatları filtrele
         gecerli = fiyatlar[fiyatlar > 1].dropna()
         
-        # Kıyaslama için en az 2 farklı günün verisi şart
+        # En az 2 günlük veri yoksa (4 Şubat ve sonrası için) pas geç
         if len(gecerli) < 2:
             return pd.Series([None, None, None, 0.0], index=['B_F', 'B_T', 'S_F', 'Deg'])
 
-        # --- İLK GÜNÜ BUL (4 Şubatta yoksa 5, 6... otomatik geçer) ---
+        # --- BAZ GÜN SEÇİMİ (En erken 4 Şubat olur) ---
         baz_fiyat = gecerli.iloc[0]
         baz_tarih = gecerli.index[0]
 
-        # TİŞÖRT / BEYAZ EŞYA DÜZELTMESİ:
-        # Eğer 4 Şubatta (ilk gün) saçma/çok düşük bir rakam (600 TL) çekildiyse
-        # ve 5 Şubatta (ikinci gün) gerçek fiyat (3300 TL) başlıyorsa;
-        # %100'den fazla fark varsa ilk günü hatalı say ve 2. günü baz al.
+        # TİŞÖRT / BEYAZ EŞYA HATASI DÜZELTME:
+        # 4 Şubat verisi (baz_fiyat), 5 Şubat verisinden aşırı düşükse 5 Şubat'ı baz al
         if len(gecerli) > 1:
             ikinci_f = gecerli.iloc[1]
             if ikinci_f > (baz_fiyat * 1.8):
                 baz_fiyat = ikinci_f
                 baz_tarih = gecerli.index[1]
 
-        # --- SON GÜNÜ BUL (Ayın sonundaki en güncel fiyat) ---
+        # --- SON GÜN SEÇİMİ (Eldeki en güncel veri) ---
         son_fiyat = gecerli.iloc[-1]
-        son_tarih = gecerli.index[-1]
         
-        # Eğer son tarih ile ilk tarih aynıysa (veri yoksa) hesaplama yapma
-        if baz_tarih == son_tarih:
-             return pd.Series([None, None, None, 0.0], index=['B_F', 'B_T', 'S_F', 'Deg'])
-            
         degisim = ((son_fiyat / baz_fiyat) - 1) * 100
         
         return pd.Series([baz_fiyat, baz_tarih, son_fiyat, degisim], 
                          index=['B_F', 'B_T', 'S_F', 'Deg'])
 
-    # Hesaplamayı TÜM tabloya uygula
-    analiz_sonuc = df_veri.apply(ay_ici_degisim_yakala, axis=1)
-    df_veri['Baz_Fiyat'] = analiz_sonuc['B_F']
-    df_veri['Baz_Tarih'] = analiz_sonuc['B_T']
-    df_veri['Son_Fiyat_G'] = analiz_sonuc['S_F']
-    df_veri['Net_Degisim'] = analiz_sonuc['Deg']
+    # Hesaplamayı başlat
+    sonuclar = df_veri.apply(enflasyon_kesin_kontrol, axis=1)
+    df_veri['Baz_Fiyat'] = sonuclar['B_F']
+    df_veri['Baz_Tarih'] = sonuclar['B_T']
+    df_veri['Son_Fiyat_G'] = sonuclar['S_F']
+    df_veri['Net_Degisim'] = sonuclar['Deg']
 
-    # Sadece analiz edilebilenleri (Baz fiyatı oluşmuş olanlar) filtrele
+    # Filtreleme
     df_tablo = df_veri.dropna(subset=['Baz_Fiyat']).copy()
     
-    # Artan/Azalan 10 (Uç değer filtresini %500 yaptık ki gerçek artışlar kaçmasın)
-    artan_10 = df_tablo[df_tablo['Net_Degisim'] < 500].sort_values('Net_Degisim', ascending=False).head(10)
+    # %500 üstü uçuk hataları eliyoruz
+    df_tablo = df_tablo[df_tablo['Net_Degisim'] < 500]
+
+    artan_10 = df_tablo.sort_values('Net_Degisim', ascending=False).head(10)
     azalan_10 = df_tablo.sort_values('Net_Degisim', ascending=True).head(10)
 
-    # --- SONUÇ TABLOLARI ---
-    st.markdown(f"### 🚀 Şubat Ayı Kapsamlı Değişim Raporu")
-    st.info("ℹ️ **Yeni Mantık:** Ürün bazlı 'İlk Görülme' ve 'Son Görülme' fiyatları kıyaslanır. 4 Şubat'ta verisi olmayan ürünler 5 veya 6 Şubat bazlı olarak listeye dahil edilir.")
+    # --- TABLOLAR ---
+    st.markdown(f"### 🛡️ Doğrulanmış Aylık Değişim (04 Şubat → Bugün)")
+    st.info("ℹ️ **4 Şubat Önceliği:** Sistem 4 Şubat'tan başlar. Eğer ürün 4 Şubat'ta yoksa veya hatalıysa (Tişört örneği), 5-6-7 Şubat verilerini otomatik yakalar.")
 
-    col1, col2 = st.columns(2)
-    cfg_ayarlar = {
+    c1, c2 = st.columns(2)
+    cfg_final = {
         ctx['ad_col']: "Ürün Adı",
         "Baz_Tarih": "Baz Tarih",
         "Baz_Fiyat": st.column_config.NumberColumn("Baz Fiyat", format="%.2f ₺"),
@@ -1018,15 +1014,15 @@ def sayfa_piyasa_ozeti(ctx):
         "Net_Degisim": st.column_config.NumberColumn("Değişim", format="+%.2f %%")
     }
 
-    with col1:
-        st.markdown("<b style='color:#ef4444;'>🔺 EN ÇOK ARTAN ÜRÜNLER</b>", unsafe_allow_html=True)
+    with c1:
+        st.markdown("<b style='color:#ef4444;'>🔺 EN ÇOK ARTANLAR</b>", unsafe_allow_html=True)
         st.dataframe(artan_10[[ctx['ad_col'], 'Baz_Tarih', 'Baz_Fiyat', 'Son_Fiyat_G', 'Net_Degisim']], 
-                     column_config=cfg_ayarlar, hide_index=True, use_container_width=True)
+                     column_config=cfg_final, hide_index=True, use_container_width=True)
 
-    with col2:
-        st.markdown("<b style='color:#22c55e;'>🔻 EN ÇOK DÜŞEN ÜRÜNLER</b>", unsafe_allow_html=True)
+    with c2:
+        st.markdown("<b style='color:#22c55e;'>🔻 EN ÇOK DÜŞENLER</b>", unsafe_allow_html=True)
         st.dataframe(azalan_10[[ctx['ad_col'], 'Baz_Tarih', 'Baz_Fiyat', 'Son_Fiyat_G', 'Net_Degisim']], 
-                     column_config=cfg_ayarlar, hide_index=True, use_container_width=True)
+                     column_config=cfg_final, hide_index=True, use_container_width=True)
             
     st.markdown("---")
                         
@@ -1352,6 +1348,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
