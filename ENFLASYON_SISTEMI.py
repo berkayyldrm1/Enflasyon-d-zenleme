@@ -1011,7 +1011,6 @@ def sayfa_piyasa_ozeti(ctx):
     c1, c2 = st.columns(2)
     tablo_ayar = {
         ctx['ad_col']: "Ürün Adı",
-        #"Baz_Tarih": "Baz Tarih",
         "Baz_Fiyat": st.column_config.NumberColumn("Baz Fiyat", format="%.2f ₺"),
         "Son_Fiyat_G": st.column_config.NumberColumn("Son Fiyat", format="%.2f ₺"),
         "Net_Degisim": st.column_config.NumberColumn("Değişim", format="+%.2f %%")
@@ -1351,6 +1350,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
