@@ -945,68 +945,71 @@ def sayfa_piyasa_ozeti(ctx):
        st.markdown(ozet_html, unsafe_allow_html=True)
 
     st.markdown("---")
-    # --- KESİN 4 ŞUBAT BAŞLANGIÇLI ANALİZ MOTORU ---
+    # --- %100 ÇÖZÜM: İLK DOLU HÜCREYİ BULAN ANALİZ ---
     df_veri = ctx['df_analiz'].copy()
     
-    # 1. Sadece 2026-02-04 ve SONRASI olan tarih sütunlarını filtrele
-    # Bu satır 2 Şubat gibi tarihleri kapı dışarı eder.
-    subat_sutunlari = sorted([
+    # Sadece 4 Şubat ve sonrası olan sütunları tara
+    tarih_sutunlari = sorted([
         c for c in df_veri.columns 
         if "2026-02" in str(c) and str(c) >= "2026-02-04"
     ])
+    
+    son_gun = ctx['son'] # Raporlanan son gün
 
-    def enflasyon_kesin_kontrol(row):
-        # Sadece 4 Şubat ve sonrası sütunları sayıya çevir
-        fiyatlar = pd.to_numeric(row[subat_sutunlari], errors='coerce')
-        # 1 TL'den büyük gerçek fiyatları filtrele
-        gecerli = fiyatlar[fiyatlar > 1].dropna()
+    def analiz_et(row):
+        # 1. Sadece seçilen tarih sütunlarındaki verileri sayıya çevir
+        # errors='coerce' sayesinde yazı/boşluk olan yerler NaN (boş) olur
+        fiyatlar = pd.to_numeric(row[tarih_sutunlari], errors='coerce')
         
-        # En az 2 günlük veri yoksa (4 Şubat ve sonrası için) pas geç
-        if len(gecerli) < 2:
-            return pd.Series([None, None, None, 0.0], index=['B_F', 'B_T', 'S_F', 'Deg'])
-
-        # --- BAZ GÜN SEÇİMİ (En erken 4 Şubat olur) ---
-        baz_fiyat = gecerli.iloc[0]
-        baz_tarih = gecerli.index[0]
-
-        # TİŞÖRT / BEYAZ EŞYA HATASI DÜZELTME:
-        # 4 Şubat verisi (baz_fiyat), 5 Şubat verisinden aşırı düşükse 5 Şubat'ı baz al
-        if len(gecerli) > 1:
-            ikinci_f = gecerli.iloc[1]
-            if ikinci_f > (baz_fiyat * 1.8):
-                baz_fiyat = ikinci_f
-                baz_tarih = gecerli.index[1]
-
-        # --- SON GÜN SEÇİMİ (Eldeki en güncel veri) ---
-        son_fiyat = gecerli.iloc[-1]
+        # 2. Boş olmayan ve 1 TL'den büyük olan TÜM fiyatları al
+        dolu_fiyatlar = fiyatlar[fiyatlar > 1].dropna()
         
-        degisim = ((son_fiyat / baz_fiyat) - 1) * 100
+        # Eğer bu ürüne ait 4 Şubat ve sonrası hiç veri yoksa veya sadece 1 gün varsa pas geç
+        if len(dolu_fiyatlar) < 2:
+            return pd.Series([None, None, 0.0, 0.0], index=['Baz_F', 'Baz_T', 'Son_F', 'Degisim'])
+
+        # 3. İLK VERİYİ BUL (4'ünde yoksa otomatik 5, 6, 7 diye gider)
+        ilk_fiyat = dolu_fiyatlar.iloc[0]
+        ilk_tarih = dolu_fiyatlar.index[0]
         
-        return pd.Series([baz_fiyat, baz_tarih, son_fiyat, degisim], 
-                         index=['B_F', 'B_T', 'S_F', 'Deg'])
+        # --- TİŞÖRT / BEYAZ EŞYA KRİTİK DÜZELTME ---
+        # Eğer ilk gün çekilen veri (629 TL), bir sonraki günden (3300 TL) %100+ daha düşükse
+        # ilk gün verisini "hatalı" say ve ikinci günü baz al.
+        if len(dolu_fiyatlar) > 1:
+            ikinci_fiyat = dolu_fiyatlar.iloc[1]
+            if ikinci_fiyat > (ilk_fiyat * 1.8):
+                ilk_fiyat = ikinci_fiyat
+                ilk_tarih = dolu_fiyatlar.index[1]
 
-    # Hesaplamayı başlat
-    sonuclar = df_veri.apply(enflasyon_kesin_kontrol, axis=1)
-    df_veri['Baz_Fiyat'] = sonuclar['B_F']
-    df_veri['Baz_Tarih'] = sonuclar['B_T']
-    df_veri['Son_Fiyat_G'] = sonuclar['S_F']
-    df_veri['Net_Degisim'] = sonuclar['Deg']
+        # 4. SON VERİYİ BUL
+        # Eğer ctx['son'] (25 Şubat) verisi bu üründe boşsa, eldeki en güncel dolu fiyatı al
+        son_fiyat = pd.to_numeric(row[son_gun], errors='coerce')
+        if pd.isna(son_fiyat) or son_fiyat <= 0:
+            son_fiyat = dolu_fiyatlar.iloc[-1]
+            
+        # Değişim Oranı
+        oran = ((son_fiyat / ilk_fiyat) - 1) * 100
+        return pd.Series([ilk_fiyat, ilk_tarih, son_fiyat, oran], index=['Baz_F', 'Baz_T', 'Son_F', 'Degisim'])
 
-    # Filtreleme
+    # Analizi tüm tabloya uygula
+    analiz_df = df_veri.apply(analiz_et, axis=1)
+    df_veri['Baz_Fiyat'] = analiz_df['Baz_F']
+    df_veri['Baz_Tarih'] = analiz_df['Baz_T']
+    df_veri['Son_Fiyat_G'] = analiz_df['Son_F']
+    df_veri['Net_Degisim'] = analiz_df['Degisim']
+
+    # Filtre: Sadece baz fiyatı olanları al
     df_tablo = df_veri.dropna(subset=['Baz_Fiyat']).copy()
     
-    # %500 üstü uçuk hataları eliyoruz
-    df_tablo = df_tablo[df_tablo['Net_Degisim'] < 500]
-
-    artan_10 = df_tablo.sort_values('Net_Degisim', ascending=False).head(10)
+    # En çok artan/azalan (Hatalı veri olmasın diye %450 üstünü listeden eliyoruz)
+    artan_10 = df_tablo[df_tablo['Net_Degisim'] < 450].sort_values('Net_Degisim', ascending=False).head(10)
     azalan_10 = df_tablo.sort_values('Net_Degisim', ascending=True).head(10)
 
-    # --- TABLOLAR ---
-    st.markdown(f"### 🛡️ Doğrulanmış Aylık Değişim (04 Şubat → Bugün)")
-    st.info("ℹ️ **4 Şubat Önceliği:** Sistem 4 Şubat'tan başlar. Eğer ürün 4 Şubat'ta yoksa veya hatalıysa (Tişört örneği), 5-6-7 Şubat verilerini otomatik yakalar.")
-
+    # --- TABLO GÖSTERİMİ ---
+    st.markdown(f"### 🛡️ Şubat Ayı Dinamik Değişim Analizi ({son_gun})")
+    
     c1, c2 = st.columns(2)
-    cfg_final = {
+    tablo_ayar = {
         ctx['ad_col']: "Ürün Adı",
         "Baz_Tarih": "Baz Tarih",
         "Baz_Fiyat": st.column_config.NumberColumn("Baz Fiyat", format="%.2f ₺"),
@@ -1017,12 +1020,12 @@ def sayfa_piyasa_ozeti(ctx):
     with c1:
         st.markdown("<b style='color:#ef4444;'>🔺 EN ÇOK ARTANLAR</b>", unsafe_allow_html=True)
         st.dataframe(artan_10[[ctx['ad_col'], 'Baz_Tarih', 'Baz_Fiyat', 'Son_Fiyat_G', 'Net_Degisim']], 
-                     column_config=cfg_final, hide_index=True, use_container_width=True)
+                     column_config=tablo_ayar, hide_index=True, use_container_width=True)
 
     with c2:
         st.markdown("<b style='color:#22c55e;'>🔻 EN ÇOK DÜŞENLER</b>", unsafe_allow_html=True)
         st.dataframe(azalan_10[[ctx['ad_col'], 'Baz_Tarih', 'Baz_Fiyat', 'Son_Fiyat_G', 'Net_Degisim']], 
-                     column_config=cfg_final, hide_index=True, use_container_width=True)
+                     column_config=tablo_ayar, hide_index=True, use_container_width=True)
             
     st.markdown("---")
                         
@@ -1348,6 +1351,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
