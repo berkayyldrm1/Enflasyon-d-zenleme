@@ -945,65 +945,64 @@ def sayfa_piyasa_ozeti(ctx):
        st.markdown(ozet_html, unsafe_allow_html=True)
 
     st.markdown("---")
-    # --- DOĞRULANMIŞ ANALİZ MOTORU (4 ŞUBAT BAZLI) ---
+    # --- TAM KAPSAMLI ŞUBAT ANALİZİ (İLK BULUNAN VERİ -> SON GÜN) ---
     df_veri = ctx['df_analiz'].copy()
     
-    # 1. Sadece 4 Şubat ve sonrası gerçek tarih sütunlarını filtrele
-    gecerli_tarihler = sorted([
+    # Sadece Şubat ayı tarih sütunlarını filtrele (04 Şubat ve sonrası)
+    subat_sutunlari = sorted([
         c for c in df_veri.columns 
-        if re.match(r'^\d{4}-\d{2}-\d{2}$', str(c)) and str(c) >= "2026-02-04"
+        if re.match(r'^\d{4}-02-\d{2}$', str(c)) and str(c) >= "2026-02-04"
     ])
     
     son_gun = ctx['son'] 
 
-    def enflasyon_hesapla(row):
-        # Üründeki tarih sütunlarını sayıya çevir, hatalıları (0, yazı vs.) temizle
-        fiyatlar = pd.to_numeric(row[gecerli_tarihler], errors='coerce')
-        fiyatlar = fiyatlar[fiyatlar > 1].dropna() # 1 TL altı fiyatları ciddiye alma
+    def enflasyon_hesapla_v4(row):
+        # Üründeki Şubat ayı sütunlarını sayıya çevir
+        fiyatlar = pd.to_numeric(row[subat_sutunlari], errors='coerce')
+        # 1 TL'den büyük olan İLK geçerli fiyatı bul (Boşları ve 0'ları atlar)
+        gecerli_fiyatlar = fiyatlar[fiyatlar > 1].dropna()
         
-        if len(fiyatlar) < 2:
+        # Eğer kıyaslayacak en az 2 günlük veri yoksa (Yeni giren ürün veya hep boşsa) pas geç
+        if len(gecerli_fiyatlar) < 2:
             return pd.Series([None, None, 0.0, 0.0], index=['Baz_F', 'Baz_T', 'Son_F', 'Degisim'])
         
-        # --- HATALI VERİ KONTROLÜ (Tişört Problemi İçin) ---
-        ilk_fiyat = fiyatlar.iloc[0]
-        ilk_tarih = fiyatlar.index[0]
+        # BAZ FİYAT BELİRLEME (Sistemin gördüğü ilk gün)
+        ilk_fiyat = gecerli_fiyatlar.iloc[0]
+        ilk_tarih = gecerli_fiyatlar.index[0]
         
-        # Eğer ilk günün fiyatı, ikinci günden %100 daha ucuzsa (629 vs 3300 gibi)
-        # İlk günü "hatalı çekim" kabul et ve ikinci günü baz al.
-        if len(fiyatlar) > 1:
-            ikinci_fiyat = fiyatlar.iloc[1]
+        # ÖZEL KONTROL: Eğer ilk gün (örn 4 Şubat) hatalı/çok düşükse ve 2. gün devasa fark varsa
+        if len(gecerli_fiyatlar) > 1:
+            ikinci_fiyat = gecerli_fiyatlar.iloc[1]
+            # Eğer 2. gün fiyatı 1. günün 2 katından fazlaysa, 1. günü "Hatalı" say ve 2. günü baz al
             if ikinci_fiyat > (ilk_fiyat * 2):
                 ilk_fiyat = ikinci_fiyat
-                ilk_tarih = fiyatlar.index[1]
+                ilk_tarih = gecerli_fiyatlar.index[1]
 
-        # Son fiyatı al (Seçili günden, yoksa eldeki en son veriden)
+        # SON GÜN FİYATI (Seçilen gün, yoksa sepetindeki en son gerçek fiyat)
         son_fiyat = pd.to_numeric(row[son_gun], errors='coerce')
         if pd.isna(son_fiyat) or son_fiyat <= 0:
-            son_fiyat = fiyatlar.iloc[-1]
+            son_fiyat = gecerli_fiyatlar.iloc[-1]
             
         degisim_oran = ((son_fiyat / ilk_fiyat) - 1) * 100
         return pd.Series([ilk_fiyat, ilk_tarih, son_fiyat, degisim_oran], 
                          index=['Baz_F', 'Baz_T', 'Son_F', 'Degisim'])
 
-    # Hesaplamayı uygula
-    analiz_df = df_veri.apply(enflasyon_hesapla, axis=1)
+    # Hesaplamayı başlat
+    analiz_df = df_veri.apply(enflasyon_hesapla_v4, axis=1)
     df_veri['Baz_Fiyat'] = analiz_df['Baz_F']
     df_veri['Baz_Tarih'] = analiz_df['Baz_T']
     df_veri['Son_Fiyat_G'] = analiz_df['Son_F']
     df_veri['Net_Degisim'] = analiz_df['Degisim']
 
-    # Tablo için filtreleme: Sadece verisi olanlar ve mantıklı değişimler
-    # ( %400'den fazla artış veya %80'den fazla düşüşü "veri hatası" sayıyoruz)
+    # Filtreleme (Sadece hesaplanabilenler)
     df_tablo = df_veri.dropna(subset=['Baz_Fiyat']).copy()
-    df_tablo = df_tablo[(df_tablo['Net_Degisim'] < 400) & (df_tablo['Net_Degisim'] > -80)]
-
-    # İlk 10'ları belirle
+    
+    # En çok artan/azalan 10
     artan_10 = df_tablo.sort_values('Net_Degisim', ascending=False).head(10)
     azalan_10 = df_tablo.sort_values('Net_Degisim', ascending=True).head(10)
 
-    # --- GÖRSELLEŞTİRME ---
-    st.markdown(f"### 🛡️ Doğrulanmış Fiyat Analizi (Giriş → {son_gun})")
-    st.info("ℹ️ **Nasıl Hesaplanıyor?** Her ürünün Şubat ayındaki ilk gerçek fiyatı baz alınır. Eğer ilk gün verisi (örn. 629 TL) sonraki güne göre aşırı tutarsızsa, sistem otomatik olarak bir sonraki günü baz kabul eder.")
+    st.markdown(f"### 🛡️ Şubatta İlk Veri - Son Veri Analizi ({son_gun})")
+    st.info("ℹ️ **Mantık:** Ürün 4 Şubat'ta yoksa 5 Şubat'taki fiyatı baz alınır. Bu sayede ay içinde sepete giren tüm ürünler analize dahil edilir.")
 
     col1, col2 = st.columns(2)
     cfg = {
@@ -1348,6 +1347,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
