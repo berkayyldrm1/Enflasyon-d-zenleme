@@ -1254,6 +1254,21 @@ def main():
     if err_msg:
         st.sidebar.error(err_msg)
 
+    # --- 🛠️ KESİN TEST KİLİDİ: KAYNAKTA KESİNTİ ---
+    if df_base is not None:
+        test_baz_gun = "2026-02-25"
+        
+        # 1. Ana tabloyu (df_base) sadece 25 Şubat ve öncesiyle sınırla
+        # Bu işlem tüm hesaplamaları (KPI dahil) 25 Şubat'a hapseder.
+        mask = [c for c in df_base.columns if not (("-" in str(c)) and (str(c) > test_baz_gun))]
+        df_base = df_base[mask].copy()
+        
+        # 2. Tarih listesini de güncelle
+        r_dates = [d for d in r_dates if d <= test_baz_gun]
+        
+        st.error(f"🚫 SİSTEM 25 ŞUBAT'A MÜHÜRLENDİ. (Rakamlar 26 Şubat'ı göremez)")
+    # --- KİLİT BİTİŞ ---
+
     ctx = None
     if df_base is not None:
         ctx = ui_sidebar_ve_veri_hazirlama(df_base, r_dates, col_name)
@@ -1322,6 +1337,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
