@@ -1257,25 +1257,23 @@ def main():
     ctx = None
     if df_base is not None:
         ctx = ui_sidebar_ve_veri_hazirlama(df_base, r_dates, col_name)
-        # --- 🛠️ TEST KİLİDİ: 25 ŞUBAT'TA DONDURMA DENEMESİ ---
+        # --- 🛠️ TEST KİLİDİ GÜNCELLEME (25 ŞUBAT TAM KİLİT) ---
     if ctx:
-        # 1. Sistemi zorla 25 Şubat'a bakmaya itiyoruz
         test_baz_gun = "2026-02-25"
         
-        if test_baz_gun in ctx["gunler"]:
-            ctx["son"] = test_baz_gun
-            
-        # 2. 26 Şubat (ve sonrası) verilerini dataframe'den tamamen siliyoruz
-        # Böylece hesaplama motoru Mart gelmiş gibi sadece 25'ine kadar olanı görür
+        # 1. Analiz DataFrame'ini sadece 25 Şubat ve öncesine kısıtla
         df_temp = ctx["df_analiz"].copy()
-        
-        # Sadece 25 Şubat ve öncesindeki tarih kolonlarını tut
-        gecerli_kolonlar = [c for c in df_temp.columns if not str(c) > test_baz_gun or not "-" in str(c)]
+        gecerli_kolonlar = [c for c in df_temp.columns if not (("-" in str(c)) and (str(c) > test_baz_gun))]
         ctx["df_analiz"] = df_temp[gecerli_kolonlar]
         
-        # 3. Ekranda test modunda olduğunu belirten bir uyarı göster
-        st.warning(f"⚠️ TEST MODU AKTİF: Veriler {test_baz_gun} tarihinde donduruldu. (26 Şubat verileri gizlendi)")
-    # --- TEST BİTİŞ ---
+        # 2. KRİTİK NOKTA: 'gunler' listesini de filtrele! 
+        # Genel Enflasyon kartı en son günü bu listeden seçiyor olabilir.
+        ctx["gunler"] = [g for g in ctx["gunler"] if g <= test_baz_gun]
+        
+        # 3. 'son' değişkenini zorla 25 Şubat yap
+        ctx["son"] = test_baz_gun
+    
+        st.warning(f"⚠️ TEST MODU TAM KİLİT: Genel Enflasyon şu an {test_baz_gun} verisidir.")
 
     # --- E-TABLOYA AKTAR İŞLEMİ (Eğer butona basıldıysa) ---
     if export_clicked and ctx:
@@ -1324,6 +1322,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
