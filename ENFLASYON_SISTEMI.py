@@ -637,53 +637,52 @@ def verileri_getir_cache():
 def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, ad_col, agirlik_col, baz_col, aktif_agirlik_col, son):
     df_analiz = df_analiz_base.copy()
     
-    # 1. Sütun İsimlerini Sabitle (Hata payını sıfıra indiriyoruz)
+    # 1. TARİHLERİ KİLİTLE (Hata payını yok ediyoruz)
     BAZ_GUN = "2026-02-28"
     GUNCEL_GUN = "2026-03-01"
     
-    # 2. Sayısal Dönüşüm
+    # 2. SAYISAL DÖNÜŞÜM (Excel'deki metinleri sayıya çeviriyoruz)
     for col in [BAZ_GUN, GUNCEL_GUN]:
         if col in df_analiz.columns:
             df_analiz[col] = pd.to_numeric(df_analiz[col], errors='coerce').fillna(0)
     
     df_analiz[aktif_agirlik_col] = pd.to_numeric(df_analiz.get(aktif_agirlik_col, 0), errors='coerce').fillna(0)
     
-    # Sadece ağırlığı olan ve her iki günde de fiyatı olan ürünleri al
-    gecerli_veri = df_analiz[(df_analiz[aktif_agirlik_col] > 0) & 
-                            (df_analiz[BAZ_GUN] > 0) & 
-                            (df_analiz[GUNCEL_GUN] > 0)].copy()
+    # 3. SADECE GEÇERLİ ÜRÜNLERİ FİLTRELE
+    # Ağırlığı olan ve her iki günde de fiyatı 0'dan büyük olanlar
+    mask = (df_analiz[aktif_agirlik_col] > 0) & (df_analiz[BAZ_GUN] > 0) & (df_analiz[GUNCEL_GUN] > 0)
+    gecerli_veri = df_analiz[mask].copy()
 
     if not gecerli_veri.empty:
-        # 3. ORAN HESABI: (1 Mart / 28 Şubat)
-        # Örn: 1100 / 1000 = 1.10 (Yani %10 artış)
+        # 4. TEK GERÇEK HESAP: (1 Mart / 28 Şubat)
+        # p_rel = Oran (Örn: 1.05 = %5 artış)
         p_rel = gecerli_veri[GUNCEL_GUN] / gecerli_veri[BAZ_GUN]
-        
         w = gecerli_veri[aktif_agirlik_col]
         
-        # Genel ve Gıda Enflasyonu
-        enf_genel = (w * p_rel).sum() / w.sum() * 100 - 100
+        # GENEL ENFLASYON: Ağırlıklı Ortalama (Simülasyon SIFIRLANMIŞTIR)
+        # Toplam (Değişim * Ağırlık) / Toplam Ağırlık
+        enf_genel = ( (p_rel - 1) * w ).sum() / w.sum() * 100
         
-        gida_df = gecerli_veri[gecerli_veri['Kod'].astype(str).str.startswith("01")]
-        if not gida_df.empty:
-            g_w = gida_df[aktif_agirlik_col]
-            g_rel = gida_df[GUNCEL_GUN] / gida_df[BAZ_GUN]
-            enf_gida = (g_w * g_rel).sum() / g_w.sum() * 100 - 100
+        # GIDA ENFLASYONU (Kod 01 ile başlayanlar)
+        gida_mask = gecerli_veri['Kod'].astype(str).str.startswith("01")
+        if gida_mask.any():
+            enf_gida = ( (p_rel[gida_mask] - 1) * w[gida_mask] ).sum() / w[gida_mask].sum() * 100
         else:
             enf_gida = 0.0
             
-        # Sonuçları Tabloya Yaz
+        # 5. TABLO SÜTUNLARINI GÜNCELLE (Artan/Azalan Tablosu Buradan Okur)
         df_analiz.loc[gecerli_veri.index, 'Gunluk_Degisim'] = p_rel - 1
         df_analiz.loc[gecerli_veri.index, 'Fark_Yuzde'] = (p_rel - 1) * 100
-        df_analiz['Fark'] = df_analiz['Gunluk_Degisim']
+        df_analiz.loc[gecerli_veri.index, 'Fark'] = p_rel - 1
     else:
         enf_genel, enf_gida = 0.0, 0.0
 
-    # Diğer sayfaların hata vermemesi için gerekli veriler
+    # 6. RETURN (Gereksiz tüm projeksiyonları ve rastgelelikleri sildik)
     return {
         "df_analiz": df_analiz, 
         "enf_genel": enf_genel, 
         "enf_gida": enf_gida,
-        "yillik_enf": ((1 + enf_genel/100) * (1.0303)**11 - 1) * 100, 
+        "yillik_enf": ((1 + enf_genel/100) * (1.0303)**11 - 1) * 100, # Basit projeksiyon
         "resmi_aylik_degisim": 4.84,
         "son": GUNCEL_GUN, "onceki_gun": BAZ_GUN, "gunler": gunler,
         "ad_col": ad_col, "agirlik_col": aktif_agirlik_col, "baz_col": BAZ_GUN
@@ -1367,3 +1366,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
