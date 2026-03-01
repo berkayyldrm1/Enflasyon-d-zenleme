@@ -737,7 +737,7 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
         "baz_tarih": baz_col,          # Yedek olarak kalsın
         "resmi_aylik_degisim": 4.84,   # Önceki hatayı engelleyen TUİK verisi
         "resmi_yillik_enf": 31.47      # Önceki hatayı engelleyen TUİK verisi
-    }}
+    }
     
 # 3. SIDEBAR UI
 def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
@@ -1361,6 +1361,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
