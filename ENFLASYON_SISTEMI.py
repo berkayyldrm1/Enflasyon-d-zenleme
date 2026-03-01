@@ -750,6 +750,13 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
 def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
     if df_analiz_base is None: return None
 
+    # --- 1. DEĞİŞKENLERİ TANIMLIYORUZ (Hata almamak için) ---
+    # Excel'indeki ağırlık sütunlarının adları genelde bunlardır, kontrol et:
+    agirlik_col = "Agirlik" 
+    aktif_agirlik_col = "Agirlik"
+    baz_col = "2026-02-28" # Sabitlenen Baz Tarih
+    son = "2026-03-01"     # Sabitlenen Güncel Tarih
+
     with st.sidebar.expander("🛠️ Sistem Radarı", expanded=False):
         st.caption("Veritabanına İşlenen Son Günler:")
         st.write(raw_dates[-3:] if len(raw_dates)>2 else raw_dates)
@@ -764,6 +771,28 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
         with st.sidebar:
              if lottie_json: st_lottie(lottie_json, height=100, key="nav_anim")
     except: pass
+
+    # --- 2. HESAPLAMA MOTORUNU ÇALIŞTIRIYORUZ ---
+    # Burada senin istediğin 28 Şubat - 1 Mart kıyaslamasını yapıyoruz
+    ctx = hesapla_metrikler(
+        df_analiz_base, 
+        son,           # secilen_tarih (1 Mart)
+        raw_dates, 
+        raw_dates, 
+        ad_col, 
+        agirlik_col, 
+        baz_col,       # baz_col (28 Şubat)
+        aktif_agirlik_col, 
+        son            # son (1 Mart)
+    )
+
+    # ctx sözlüğüne diğer bilgileri de ekleyelim ki uygulama hata vermesin
+    if isinstance(ctx, dict):
+        ctx['ad_col'] = ad_col
+        ctx['agirlik_col'] = agirlik_col
+        ctx['df_analiz'] = ctx.get('df_analiz', df_analiz_base) # Eğer hesaplamada hata olursa ana veriyi koru
+
+    return ctx
 
     # Eski hali: BASLANGIC_LIMITI = "2026-02-04"
     BASLANGIC_LIMITI = "2026-02-28"
@@ -1383,6 +1412,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
