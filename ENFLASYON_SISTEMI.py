@@ -726,6 +726,7 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
 
     # --- 6. ÇIKTI (Tüm KeyError hatalarını önlemek için eksiksiz liste) ---
     # --- 6. ÇIKTI (Tüm KeyError hatalarını ve isim uyuşmazlıklarını çözer) ---
+    # --- 6. ÇIKTI (Tüm KeyError hatalarını ve eksik parametreleri çözer) ---
     return {
         "enf_genel": enf_genel,
         "enf_gida": enf_gida,
@@ -733,10 +734,12 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
         "df_analiz": df_analiz,
         "ad_col": ad_col,
         "agirlik_col": aktif_agirlik_col,
-        "baz_col": baz_col,            # Hata veren anahtar düzeltildi
-        "baz_tarih": baz_col,          # Yedek olarak kalsın
-        "resmi_aylik_degisim": 4.84,   # Önceki hatayı engelleyen TUİK verisi
-        "resmi_yillik_enf": 31.47      # Önceki hatayı engelleyen TUİK verisi
+        "baz_col": baz_col,            # Önceki hata düzeltmesi
+        "baz_tarih": baz_col,          # Yedek isim
+        "gunler": gunler,              # ŞİMDİKİ HATA BURASIYDI, EKLENDİ
+        "tum_gunler": tum_gunler_sirali, # Sayfa fonksiyonu bunu da isteyebilir, önlem olarak ekledik
+        "resmi_aylik_degisim": 4.84,   
+        "resmi_yillik_enf": 31.47      
     }
     
 # 3. SIDEBAR UI
@@ -1361,6 +1364,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
