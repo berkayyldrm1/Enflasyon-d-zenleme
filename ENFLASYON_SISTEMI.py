@@ -681,6 +681,9 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     df_analiz['Gunluk_Degisim'] = df_analiz.get('Gunluk_Degisim', 0).fillna(0)
     df_analiz['Fark_Yuzde'] = df_analiz.get('Fark_Yuzde', 0).fillna(0)
 
+    # --- EKLEMEN GEREKEN SATIR BURASI ---
+    df_analiz['Fark'] = df_analiz['Gunluk_Degisim']
+    
     return {
         "df_analiz": df_analiz, 
         "enf_genel": enf_genel, 
@@ -1369,6 +1372,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
