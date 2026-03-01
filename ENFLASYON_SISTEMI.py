@@ -765,7 +765,8 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
              if lottie_json: st_lottie(lottie_json, height=100, key="nav_anim")
     except: pass
 
-    BASLANGIC_LIMITI = "2026-02-04"
+    # Eski hali: BASLANGIC_LIMITI = "2026-02-04"
+    BASLANGIC_LIMITI = "2026-02-28"
     tum_tarihler = sorted([d for d in raw_dates if d >= BASLANGIC_LIMITI], reverse=True)
     
     if not tum_tarihler:
@@ -798,7 +799,21 @@ def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
     else:
         aktif_agirlik_col = col_w25
 
-    ctx = hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, ad_col, agirlik_col=None, baz_col=baz_col, aktif_agirlik_col=aktif_agirlik_col, son=son)
+   # --- BAZ TARİH SABİTLEME ---
+    baz_gun_sabit = "2026-02-28"
+    guncel_gun_sabit = "2026-03-01"
+    
+    ctx = hesapla_metrikler(
+        df_analiz_base, 
+        guncel_gun_sabit, 
+        raw_dates, 
+        raw_dates, 
+        ad_col, 
+        agirlik_col, 
+        baz_gun_sabit, 
+        aktif_agirlik_col, 
+        guncel_gun_sabit
+    )
 
     with ai_container:
         st.markdown("### 🧠 AI Görüşü")
@@ -1368,6 +1383,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
