@@ -722,6 +722,9 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     df_analiz['Gunluk_Degisim'] = (df_analiz[son] / df_analiz[baz_col].replace(0, np.nan)) - 1
 
     # --- 6. ÇIKTI (Sidebardaki KeyError'ı burası çözer) ---
+   # ... (Fonksiyonun önceki hesaplama kısımları aynı kalsın) ...
+
+    # --- 6. ÇIKTI (Tüm KeyError hatalarını önlemek için eksiksiz liste) ---
     return {
         "enf_genel": enf_genel,
         "enf_gida": enf_gida,
@@ -729,7 +732,10 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
         "df_analiz": df_analiz,
         "ad_col": ad_col,
         "agirlik_col": aktif_agirlik_col,
-        "baz_tarih": baz_col
+        "baz_tarih": baz_col,
+        # HATA ALAN EKSİK ANAHTARLAR BURADA:
+        "resmi_aylik_degisim": 4.84, # Buraya TUİK'in son açıkladığı sabit rakamı girebilirsin
+        "resmi_yillik_enf": 31.47    # Karşılaştırma için ek veri
     }
     
 # 3. SIDEBAR UI
@@ -1354,6 +1360,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
