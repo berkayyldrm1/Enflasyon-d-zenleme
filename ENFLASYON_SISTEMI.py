@@ -652,7 +652,7 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     if not gecerli_veri.empty:
         # p_rel artık sadece: (Bugünkü Fiyat / 28 Şubat Fiyatı)
         # Örn: 100 TL / 100 TL = 1.0 (Değişim %0)
-        p_rel = gecerli_veri[son] / gecerli_veri[baz_col].replace(0, np.nan)
+        p_rel = gecerli_veri["2026-03-01"] / gecerli_veri["2026-02-28"].replace(0, np.nan)
         p_rel = p_rel.fillna(1.0) # Veri yoksa değişim yok kabul et
 
         w = gecerli_veri[aktif_agirlik_col]
@@ -1372,6 +1372,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
