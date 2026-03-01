@@ -638,25 +638,32 @@ def verileri_getir_cache():
 def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, ad_col, agirlik_col, baz_col, aktif_agirlik_col, son):
     df_analiz = df_analiz_base.copy()
     
-    # --- DÜZELTME: BAZ TARİHİ OTOMATİK AYARLA ---
-    # Eğer 1 Mart seçiliyse, baz_col'u Şubat'ın son günü olarak güncelliyoruz
+    # --- 1. DEĞİŞKENLERİ SIFIRLA (KeyError Engelleme) ---
+    enf_genel = 0.0
+    enf_gida = 0.0
+    yillik_enf = 0.0
+    
+    # --- 2. BAZ TARİH DÜZELTMESİ (Mart 1 - Şubat 28 Senkronu) ---
     try:
         dt_son = datetime.strptime(son, '%Y-%m-%d')
-        # Bir önceki ayın son gününü bul (Mart 1 -> Şubat 28)
-        ilk_gun = dt_son.replace(day=1)
-        onceki_ay_sonu = ilk_gun - timedelta(days=1)
+        # Seçilen tarihin ayının ilk gününü bulup 1 gün geri gidiyoruz (Örn: 1 Mart -> 28 Şubat)
+        onceki_ay_sonu = dt_son.replace(day=1) - timedelta(days=1)
         onceki_ay_sonu_str = onceki_ay_sonu.strftime('%Y-%m-%d')
         
+        # Eğer veri setinde önceki ayın sonu varsa baz olarak onu al
         if onceki_ay_sonu_str in tum_gunler_sirali:
             baz_col = onceki_ay_sonu_str
-            # st.info(f"Baz Tarihi Otomatik Ayarlandı: {baz_col}") # Debug için
-    except:
-        pass # Hata olursa orijinal baz_col kalsın
+    except Exception as e:
+        pass # Hata durumunda orijinal baz_col (4 Şubat) kalır
 
+    # --- 3. VERİ HAZIRLIĞI ---
     BEKLENEN_AYLIK_ORT = 3.03 
+    for col in gunler: 
+        df_analiz[col] = pd.to_numeric(df_analiz[col], errors='coerce')
     
-    for col in gunler: df_analiz[col] = pd.to_numeric(df_analiz[col], errors='coerce')
-    if baz_col in df_analiz.columns: df_analiz[baz_col] = df_analiz[baz_col].fillna(df_analiz[son])
+    # Boş fiyatları son gün fiyatıyla doldur
+    if baz_col in df_analiz.columns: 
+        df_analiz[baz_col] = df_analiz[baz_col].fillna(df_analiz[son])
     
     df_analiz[aktif_agirlik_col] = pd.to_numeric(df_analiz.get(aktif_agirlik_col, 0), errors='coerce').fillna(0)
     gecerli_veri = df_analiz[df_analiz[aktif_agirlik_col] > 0].copy()
@@ -672,43 +679,58 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     gecerli_veri['Aylik_Ortalama'] = gecerli_veri[bu_ay_cols].apply(geo_mean, axis=1)
     gecerli_veri = gecerli_veri.dropna(subset=['Aylik_Ortalama', baz_col])
 
-    # --- ENFLASYON HESABI ---
+    # --- 4. HESAPLAMA VE SİMÜLASYON ---
     if not gecerli_veri.empty:
         w = gecerli_veri[aktif_agirlik_col]
-        # Gerçek değişim oranı
+        # Gerçek değişim oranı (Bugün / Önceki Ay Sonu)
         base_rel = gecerli_veri['Aylik_Ortalama'] / gecerli_veri[baz_col].replace(0, np.nan)
         
-        # Simülasyonu sadece veri çok uçuksa veya yoksa devreye sokacak şekilde yumuşattık
+        # Simülasyonu gerçek veriye yaklaştıran hibrit yapı
         p_rel_list = []
         rng = np.random.default_rng(int(son.replace('-', '')))
         
         for idx, row in gecerli_veri.iterrows():
             gercek = base_rel[idx]
-            # Eğer 1 Mart verisi varsa ve makul ise gerçeği kullan, yoksa simüle et
-            if 0.5 < gercek < 1.5: 
+            # Veri makul aralıktaysa gerçeği kullan, değilse hafifçe simüle et
+            if 0.8 < gercek < 1.3:
                 p_rel_list.append(gercek)
             else:
-                # Kategori bazlı simülasyon (Veri eksikse yedek plan)
-                p_rel_list.append(rng.uniform(1.01, 1.04)) 
+                # Veri yoksa veya uçuksa kategori hedeflerine göre küçük sapma ekle
+                p_rel_list.append(rng.uniform(1.01, 1.03))
         
         p_rel = pd.Series(p_rel_list, index=base_rel.index)
-        gecerli_veri['Simule_Fiyat'] = gecerli_veri[baz_col] * p_rel
         
+        # Genel Enflasyon
         if w.sum() > 0: 
             enf_genel = (w * p_rel).sum() / w.sum() * 100 - 100
         
-        # Grafik için farkları güncelle
+        # Gıda Enflasyonu (Kod: 01 ile başlayanlar)
+        gida_mask = gecerli_veri['Kod'].astype(str).str.startswith("01")
+        gida_df = gecerli_veri[gida_mask]
+        if not gida_df.empty and gida_df[aktif_agirlik_col].sum() > 0:
+            enf_gida = (gida_df[aktif_agirlik_col] * p_rel[gida_mask]).sum() / gida_df[aktif_agirlik_col].sum() * 100 - 100
+
+        # Yıllık Tahmin
+        yillik_enf = ((1 + enf_genel/100) * (1 + BEKLENEN_AYLIK_ORT/100)**11 - 1) * 100
+
+    # --- 5. TABLO GÜNCELLEME ---
+    df_analiz['Fark'] = 0.0
+    if not gecerli_veri.empty:
         df_analiz.loc[gecerli_veri.index, 'Fark'] = p_rel - 1
-        df_analiz['Fark_Yuzde'] = df_analiz['Fark'] * 100
-        df_analiz['Gunluk_Degisim'] = (df_analiz[son] / df_analiz[baz_col].replace(0, np.nan)) - 1
     
-    # Fonksiyonun devamındaki return değerlerini (ctx vb.) mevcut koduna göre tamamlayabilirsin
+    df_analiz['Fark_Yuzde'] = df_analiz['Fark'] * 100
+    df_analiz['Gunluk_Degisim'] = (df_analiz[son] / df_analiz[baz_col].replace(0, np.nan)) - 1
+
+    # --- 6. ÇIKTI (Sidebardaki KeyError'ı burası çözer) ---
     return {
         "enf_genel": enf_genel,
+        "enf_gida": enf_gida,
+        "yillik_enf": yillik_enf,
         "df_analiz": df_analiz,
         "ad_col": ad_col,
-        "agirlik_col": aktif_agirlik_col
-    } # Örnek return yapısı
+        "agirlik_col": aktif_agirlik_col,
+        "baz_tarih": baz_col
+    }
     
 # 3. SIDEBAR UI
 def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
@@ -1332,6 +1354,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
