@@ -662,6 +662,11 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
         # GENEL ENFLASYON: Ağırlıklı Ortalama (Simülasyon SIFIRLANMIŞTIR)
         # Toplam (Değişim * Ağırlık) / Toplam Ağırlık
         enf_genel = ( (p_rel - 1) * w ).sum() / w.sum() * 100
+
+        # --- DEBUG (HATA TAKİBİ) ---
+        st.write(f"Sayılan Ürün Sayısı: {len(gecerli_veri)}")
+        st.write(f"Fiyatı Artan Ürün Sayısı: {len(gecerli_veri[gecerli_veri['2026-03-01'] > gecerli_veri['2026-02-28']])}")
+        st.write(f"Hesaplanan Ham Enflasyon: {enf_genel}")
         
         # GIDA ENFLASYONU (Kod 01 ile başlayanlar)
         gida_mask = gecerli_veri['Kod'].astype(str).str.startswith("01")
@@ -1366,4 +1371,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
