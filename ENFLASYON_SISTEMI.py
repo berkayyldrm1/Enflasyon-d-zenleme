@@ -748,51 +748,63 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
     
 # 3. SIDEBAR UI
 def ui_sidebar_ve_veri_hazirlama(df_analiz_base, raw_dates, ad_col):
-    if df_analiz_base is None: return None
+    # --- 1. GÜVENLİK KONTROLÜ (Hata Almamak İçin) ---
+    if df_analiz_base is None or (isinstance(df_analiz_base, pd.DataFrame) and df_analiz_base.empty):
+        st.error("⚠️ Veritabanı yüklenemedi. Lütfen Excel dosyasını ve GitHub bağlantısını kontrol edin.")
+        return None
 
-    # --- 1. DEĞİŞKENLERİ TANIMLIYORUZ (Hata almamak için) ---
-    # Excel'indeki ağırlık sütunlarının adları genelde bunlardır, kontrol et:
+    # --- 2. SÜTUN İSİMLERİNİ NETLEŞTİRELİM ---
+    # Excel'indeki ağırlık sütunu ismini bulmaya çalışalım
     agirlik_col = "Agirlik" 
-    aktif_agirlik_col = "Agirlik"
-    baz_col = "2026-02-28" # Sabitlenen Baz Tarih
-    son = "2026-03-01"     # Sabitlenen Güncel Tarih
+    if "Agirlik" not in df_analiz_base.columns:
+        # Eğer "Agirlik" yoksa, içinde 'agirlik' geçen ilk sütunu bulalım
+        cols = [c for c in df_analiz_base.columns if 'agirlik' in str(c).lower()]
+        agirlik_col = cols[0] if cols else None
 
-    with st.sidebar.expander("🛠️ Sistem Radarı", expanded=False):
-        st.caption("Veritabanına İşlenen Son Günler:")
-        st.write(raw_dates[-3:] if len(raw_dates)>2 else raw_dates)
+    if not agirlik_col:
+        st.error("⚠️ Excel'de 'Agirlik' sütunu bulunamadı!")
+        return None
 
-    ai_container = st.sidebar.container()
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### ⚙️ Veri Ayarları")
-    
-    lottie_url = "https://lottie.host/98606416-297c-4a37-9b2a-714013063529/5D6o8k8fW0.json"
+    # --- 3. TARİHLERİ KİLİTLEYELİM ---
+    baz_col = "2026-02-28" 
+    son = "2026-03-01"
+
+    # Tarihlerin Excel'de olup olmadığını kontrol edelim
+    eksik_tarihler = []
+    if baz_col not in df_analiz_base.columns: eksik_tarihler.append(baz_col)
+    if son not in df_analiz_base.columns: eksik_tarihler.append(son)
+
+    if eksik_tarihler:
+        st.warning(f"⚠️ Dikkat: {', '.join(eksik_tarihler)} sütunları Excel'de bulunamadı. Mevcut son tarihleri kullanıyorum.")
+        baz_col = raw_dates[-2] if len(raw_dates) > 1 else raw_dates[0]
+        son = raw_dates[-1]
+
+    # --- 4. HESAPLAMA ÇAĞRISI ---
     try:
-        lottie_json = load_lottieurl(lottie_url)
-        with st.sidebar:
-             if lottie_json: st_lottie(lottie_json, height=100, key="nav_anim")
-    except: pass
+        ctx = hesapla_metrikler(
+            df_analiz_base, 
+            son,           # 1 Mart
+            raw_dates, 
+            raw_dates, 
+            ad_col, 
+            agirlik_col, 
+            baz_col,       # 28 Şubat
+            agirlik_col,   # aktif_agirlik_col
+            son            # 1 Mart
+        )
+        
+        # Ek bilgileri CTX içine mühürle
+        if ctx and isinstance(ctx, dict):
+            ctx['ad_col'] = ad_col
+            ctx['agirlik_col'] = agirlik_col
+            ctx['df_analiz'] = ctx.get('df_analiz', df_analiz_base)
+            return ctx
+            
+    except Exception as e:
+        st.error(f"🧮 Hesaplama hatası: {str(e)}")
+        return None
 
-    # --- 2. HESAPLAMA MOTORUNU ÇALIŞTIRIYORUZ ---
-    # Burada senin istediğin 28 Şubat - 1 Mart kıyaslamasını yapıyoruz
-    ctx = hesapla_metrikler(
-        df_analiz_base, 
-        son,           # secilen_tarih (1 Mart)
-        raw_dates, 
-        raw_dates, 
-        ad_col, 
-        agirlik_col, 
-        baz_col,       # baz_col (28 Şubat)
-        aktif_agirlik_col, 
-        son            # son (1 Mart)
-    )
-
-    # ctx sözlüğüne diğer bilgileri de ekleyelim ki uygulama hata vermesin
-    if isinstance(ctx, dict):
-        ctx['ad_col'] = ad_col
-        ctx['agirlik_col'] = agirlik_col
-        ctx['df_analiz'] = ctx.get('df_analiz', df_analiz_base) # Eğer hesaplamada hata olursa ana veriyi koru
-
-    return ctx
+    return None
 
     # Eski hali: BASLANGIC_LIMITI = "2026-02-04"
     BASLANGIC_LIMITI = "2026-02-28"
@@ -1412,6 +1424,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
