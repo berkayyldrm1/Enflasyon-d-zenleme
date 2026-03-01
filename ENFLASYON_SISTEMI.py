@@ -637,63 +637,56 @@ def verileri_getir_cache():
 def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, ad_col, agirlik_col, baz_col, aktif_agirlik_col, son):
     df_analiz = df_analiz_base.copy()
     
-    # 1. Verileri sayısal formata çevir
-    for col in gunler: 
-        df_analiz[col] = pd.to_numeric(df_analiz[col], errors='coerce')
+    # 1. Sütun İsimlerini Sabitle (Hata payını sıfıra indiriyoruz)
+    BAZ_GUN = "2026-02-28"
+    GUNCEL_GUN = "2026-03-01"
     
-    if baz_col in df_analiz.columns: 
-        df_analiz[baz_col] = df_analiz[baz_col].fillna(df_analiz[son])
+    # 2. Sayısal Dönüşüm
+    for col in [BAZ_GUN, GUNCEL_GUN]:
+        if col in df_analiz.columns:
+            df_analiz[col] = pd.to_numeric(df_analiz[col], errors='coerce').fillna(0)
     
     df_analiz[aktif_agirlik_col] = pd.to_numeric(df_analiz.get(aktif_agirlik_col, 0), errors='coerce').fillna(0)
-    gecerli_veri = df_analiz[df_analiz[aktif_agirlik_col] > 0].copy()
+    
+    # Sadece ağırlığı olan ve her iki günde de fiyatı olan ürünleri al
+    gecerli_veri = df_analiz[(df_analiz[aktif_agirlik_col] > 0) & 
+                            (df_analiz[BAZ_GUN] > 0) & 
+                            (df_analiz[GUNCEL_GUN] > 0)].copy()
 
-    # 2. GERÇEK DEĞİŞİM HESABI (28 Şubat vs 1 Mart)
-    # Simülasyon, Limitler ve Rastgele Gürültü tamamen kaldırıldı.
     if not gecerli_veri.empty:
-        # p_rel artık sadece: (Bugünkü Fiyat / 28 Şubat Fiyatı)
-        # Örn: 100 TL / 100 TL = 1.0 (Değişim %0)
-        p_rel = gecerli_veri["2026-03-01"] / gecerli_veri["2026-02-28"].replace(0, np.nan)
-        p_rel = p_rel.fillna(1.0) # Veri yoksa değişim yok kabul et
-
+        # 3. ORAN HESABI: (1 Mart / 28 Şubat)
+        # Örn: 1100 / 1000 = 1.10 (Yani %10 artış)
+        p_rel = gecerli_veri[GUNCEL_GUN] / gecerli_veri[BAZ_GUN]
+        
         w = gecerli_veri[aktif_agirlik_col]
         
-        # Genel Enflasyon (Ağırlıklı Ortalama)
+        # Genel ve Gıda Enflasyonu
         enf_genel = (w * p_rel).sum() / w.sum() * 100 - 100
         
-        # Gıda Enflasyonu (Sadece 01 ile başlayanlar)
         gida_df = gecerli_veri[gecerli_veri['Kod'].astype(str).str.startswith("01")]
-        if not gida_df.empty and gida_df[aktif_agirlik_col].sum() > 0:
-            gida_rel = gida_df[son] / gida_df[baz_col].replace(0, np.nan)
-            enf_gida = ((gida_df[aktif_agirlik_col] * gida_rel.fillna(1.0)).sum() / gida_df[aktif_agirlik_col].sum() * 100) - 100
+        if not gida_df.empty:
+            g_w = gida_df[aktif_agirlik_col]
+            g_rel = gida_df[GUNCEL_GUN] / gida_df[BAZ_GUN]
+            enf_gida = (g_w * g_rel).sum() / g_w.sum() * 100 - 100
         else:
             enf_gida = 0.0
-
-        # Yıllık Projeksiyon (Mevcut değişim üzerine 11 ay %3.03 ekler)
-        yillik_enf = ((1 + enf_genel/100) * (1 + 3.03/100)**11 - 1) * 100
-
-        # Tabloya sonuçları yaz
-        # Tabloyu ve oranları güncelle
+            
+        # Sonuçları Tabloya Yaz
         df_analiz.loc[gecerli_veri.index, 'Gunluk_Degisim'] = p_rel - 1
         df_analiz.loc[gecerli_veri.index, 'Fark_Yuzde'] = (p_rel - 1) * 100
-        df_analiz['Fark'] = df_analiz['Gunluk_Degisim'] # Önceki KeyError hatasını önlemek için
+        df_analiz['Fark'] = df_analiz['Gunluk_Degisim']
     else:
-        enf_genel, enf_gida, yillik_enf = 0.0, 0.0, 0.0
+        enf_genel, enf_gida = 0.0, 0.0
 
-    # Eksik değerleri temizle
-    df_analiz['Gunluk_Degisim'] = df_analiz.get('Gunluk_Degisim', 0).fillna(0)
-    df_analiz['Fark_Yuzde'] = df_analiz.get('Fark_Yuzde', 0).fillna(0)
-
-    # --- EKLEMEN GEREKEN SATIR BURASI ---
-    df_analiz['Fark'] = df_analiz['Gunluk_Degisim']
-    
+    # Diğer sayfaların hata vermemesi için gerekli veriler
     return {
         "df_analiz": df_analiz, 
         "enf_genel": enf_genel, 
         "enf_gida": enf_gida,
-        "yillik_enf": yillik_enf, 
+        "yillik_enf": ((1 + enf_genel/100) * (1.0303)**11 - 1) * 100, 
         "resmi_aylik_degisim": 4.84,
-        "son": son, "onceki_gun": baz_col, "gunler": gunler,
-        "ad_col": ad_col, "agirlik_col": aktif_agirlik_col, "baz_col": baz_col
+        "son": GUNCEL_GUN, "onceki_gun": BAZ_GUN, "gunler": gunler,
+        "ad_col": ad_col, "agirlik_col": aktif_agirlik_col, "baz_col": BAZ_GUN
     }
     
 # 3. SIDEBAR UI
@@ -1374,6 +1367,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
