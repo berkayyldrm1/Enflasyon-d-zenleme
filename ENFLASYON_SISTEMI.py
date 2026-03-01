@@ -672,8 +672,10 @@ def hesapla_metrikler(df_analiz_base, secilen_tarih, gunler, tum_gunler_sirali, 
         yillik_enf = ((1 + enf_genel/100) * (1 + 3.03/100)**11 - 1) * 100
 
         # Tabloya sonuçları yaz
+        # Tabloyu ve oranları güncelle
         df_analiz.loc[gecerli_veri.index, 'Gunluk_Degisim'] = p_rel - 1
         df_analiz.loc[gecerli_veri.index, 'Fark_Yuzde'] = (p_rel - 1) * 100
+        df_analiz['Fark'] = df_analiz['Gunluk_Degisim'] # Önceki KeyError hatasını önlemek için
     else:
         enf_genel, enf_gida, yillik_enf = 0.0, 0.0, 0.0
 
@@ -1372,6 +1374,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
